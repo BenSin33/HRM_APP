@@ -18,6 +18,7 @@
     </properties>
 
     <dependencies>
+        
         <!-- MySQL JDBC (dùng sau, không ảnh hưởng Swing) -->
         <dependency>
             <groupId>com.mysql</groupId>
@@ -32,6 +33,13 @@
             <version>5.10.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
