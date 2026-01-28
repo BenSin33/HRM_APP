@@ -2,10 +2,12 @@ package com.hrm.UI;
 
 import javax.swing.*;
 
+import com.hrm.DAO.UserDAO;
 import com.hrm.utils.IconResize;
 
 import java.awt.*;
 import java.net.URL;
+import com.hrm.UI.HR.*;
 
 public class LoginUI extends JFrame{
 
@@ -73,6 +75,37 @@ public class LoginUI extends JFrame{
         btnLogin.setForeground(Color.WHITE);
         btnLogin.setFocusPainted(false);
         btnLogin.setBounds(50, 320, 300, 45);
+
+        btnLogin.addActionListener(e -> {
+            String user = txtUserName.getText();
+            String pass = new String (txtPass.getPassword());
+
+            if(user.isEmpty() || pass.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập tài khoản và mật khẩu");
+                return;
+            }
+
+            UserDAO userDAO = new UserDAO();
+            String[] info = userDAO.authenticate(user, pass);
+
+            if( info != null){
+
+                String manv = info[0];
+                String roleId = info[1];
+
+                if(roleId.equals("R1")){
+
+                    new HRDashboard();
+                    JOptionPane.showMessageDialog(this, "Xin chào quản trị viên:" + manv);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Xin chào nhân viên:" + manv);
+                }
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Tài khoản hoặc mật khẩu không đúng!");
+            }
+        });
+
         rightPanel.add(btnLogin);
 
         // Thêm vào Frame chính
