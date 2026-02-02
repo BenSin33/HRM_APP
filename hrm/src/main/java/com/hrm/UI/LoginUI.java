@@ -11,110 +11,121 @@ import com.hrm.UI.HR.*;
 
 public class LoginUI extends JFrame{
 
-    ImageIcon icon = new ImageIcon("HRM_Icon");
+    ImageIcon Logo = new ImageIcon("HRM_Icon");
 
     URL url;
     
-    public LoginUI(){
+    public LoginUI() {
+    // 1. Khởi tạo dữ liệu ảnh
+    url = getClass().getResource("/icons/HRM_Logo.png");
+    ImageIcon logoIcon = (url != null) ? new ImageIcon(url) : new ImageIcon();
+    
+    // 2. Cấu hình Frame chính
+    this.setTitle("Login to HRM System");
+    this.setSize(800, 500);
+    this.setResizable(false); // Thường Login nên để cố định size cho đẹp
+    this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    this.setLocationRelativeTo(null);
+    this.setLayout(new BorderLayout());
 
-        url = getClass().getResource("/icons/HRM_Icon.png");
-        ImageIcon icon = (url != null) ? new ImageIcon(url) : new ImageIcon();
-        
-        this.setTitle("Login to HRM System");
-        this.setSize(800, 500);
-        this.setResizable(true);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setLocationRelativeTo(null);
-        this.setLayout(new BorderLayout());
+    // 3. PANEL BÊN TRÁI (Chứa Logo và Title)
+    JPanel leftPanel = new JPanel();
+    leftPanel.setBackground(new Color(102, 0, 204));
+    leftPanel.setPreferredSize(new Dimension(350, 500));
+    
+    // Sử dụng GridBagLayout để căn giữa theo chiều dọc
+    leftPanel.setLayout(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();  // Thiết lập chung cho các thành phần bên trong leftPanel
+    gbc.gridx = 0; // Luôn nằm ở cột 0
+    gbc.insets = new Insets(10, 0, 10, 0); // Khoảng cách giữa các thành phần
+    gbc.anchor = GridBagConstraints.CENTER;
 
-        JLabel AppIcon = new JLabel();
-        AppIcon.setIcon(IconResize.resizeIcon(icon, 100, 100));
-        
-        
-        // 
-        JPanel LeftPanel = new JPanel();
-        
-        LeftPanel.setBackground(new Color(102,0,204));
-        LeftPanel.setPreferredSize(new Dimension (350,500));
-        LeftPanel.setLayout(new GridBagLayout());
+    // Logo App (Icon) - Đặt ở hàng 0
+    JLabel appIcon = new JLabel();
+    appIcon.setIcon(IconResize.resizeIcon(logoIcon, 120, 120)); // Tăng size một chút cho nổi bật
+    appIcon.setOpaque(false);
+    gbc.gridy = 0; 
+    leftPanel.add(appIcon, gbc);
 
-        JLabel LogoLabel = new JLabel("HRM SYSTEM");
-        LogoLabel.setFont ( new Font("Times new roman", Font.BOLD, 28));
-        LogoLabel.setForeground(Color.white);
+    // Label chữ - Đặt ở hàng 1 (Tự động xuống dưới Logo)
+    JLabel logoLabel = new JLabel("HRM SYSTEM");
+    logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 28)); // Segoe UI trông hiện đại hơn
+    logoLabel.setForeground(Color.white);
+    gbc.gridy = 1;
+    leftPanel.add(logoLabel, gbc);
 
-        LeftPanel.add(LogoLabel);
-        LeftPanel.add(AppIcon);
+    // 4. PANEL BÊN PHẢI (Form đăng nhập)
+    JPanel rightPanel = new JPanel();
+    rightPanel.setBackground(Color.white);
+    rightPanel.setLayout(null);
 
-        JPanel rightPanel = new JPanel();
-        rightPanel.setBackground(Color.white);
-        rightPanel.setLayout(null);
+    JLabel welcomeLabel = new JLabel("Welcome to HRM System");
+    welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+    welcomeLabel.setBounds(50, 50, 300, 40);
+    rightPanel.add(welcomeLabel);
 
-        JLabel WelcomeLabel = new JLabel("Welcome to HRM system");
-        WelcomeLabel.setFont(new Font ("Times new roman", Font.BOLD, 24));
-        WelcomeLabel.setBounds(50,80,300,30);
-        rightPanel.add(WelcomeLabel);
+    // Username
+    JLabel userLabel = new JLabel("Username");
+    userLabel.setBounds(50, 130, 150, 20);
+    rightPanel.add(userLabel);
 
-        JLabel UserLabel = new JLabel("Username");
-        UserLabel.setBounds(50,150,150,20);
-        rightPanel.add(UserLabel);
+    JTextField txtUserName = new JTextField();
+    txtUserName.setBounds(50, 155, 300, 40);
+    // Tùy chỉnh border cho đẹp hơn
+    txtUserName.putClientProperty("JTextField.placeholderText", "Nhập tài khoản...");
+    rightPanel.add(txtUserName);
 
-        JTextField txtUserName = new JTextField();
-        txtUserName.setBounds(50,175,300,40);
-        rightPanel.add(txtUserName);
+    // Password
+    JLabel lblPass = new JLabel("Mật khẩu");
+    lblPass.setBounds(50, 215, 150, 20);
+    rightPanel.add(lblPass);
 
-        JLabel lblPass = new JLabel("Mật khẩu");
-        lblPass.setBounds(50, 230, 150, 20);
-        rightPanel.add(lblPass);
+    JPasswordField txtPass = new JPasswordField();
+    txtPass.setBounds(50, 240, 300, 40);
+    rightPanel.add(txtPass);
 
-        JPasswordField txtPass = new JPasswordField();
-        txtPass.setBounds(50, 255, 300, 40);
-        rightPanel.add(txtPass);
+    // Button Đăng nhập
+    JButton btnLogin = new JButton("Đăng nhập");
+    btnLogin.setBackground(new Color(102, 0, 204));
+    btnLogin.setForeground(Color.WHITE);
+    btnLogin.setFocusPainted(false);
+    btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    btnLogin.setBounds(50, 310, 300, 45);
+    
+    // Xử lý sự kiện khi bấm nút Đăng nhập
+    btnLogin.addActionListener(e -> {
+        String user = txtUserName.getText();
+        String pass = new String(txtPass.getPassword());
 
-        JButton btnLogin = new JButton("Đăng nhập");
-        btnLogin.setBackground(new Color(102, 0, 204));
-        btnLogin.setForeground(Color.WHITE);
-        btnLogin.setFocusPainted(false);
-        btnLogin.setBounds(50, 320, 300, 45);
+        if(user.isEmpty() || pass.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập tài khoản và mật khẩu");
+            return;
+        }
 
-        btnLogin.addActionListener(e -> {
-            String user = txtUserName.getText();
-            String pass = new String (txtPass.getPassword());
+        UserDAO userDAO = new UserDAO();
+        String[] info = userDAO.authenticate(user, pass);
 
-            if(user.isEmpty() || pass.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng nhập tài khoản và mật khẩu");
-                return;
-            }
-
-            UserDAO userDAO = new UserDAO();
-            String[] info = userDAO.authenticate(user, pass);
-
-            if( info != null){
-
-                String manv = info[0];
-                String roleId = info[1];
-
-                if(roleId.equals("R1")){
-
-                    new HRDashboard();
-                    JOptionPane.showMessageDialog(this, "Xin chào quản trị viên:" + manv);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Xin chào nhân viên:" + manv);
-                }
-                this.dispose();
+        if(info != null){
+            String manv = info[0];
+            String roleId = info[1];
+            if(roleId.equals("R1")){
+                new HRDashboard();
+                JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + manv);
             } else {
-                JOptionPane.showMessageDialog(this, "Tài khoản hoặc mật khẩu không đúng!");
+                JOptionPane.showMessageDialog(this, "Xin chào nhân viên: " + manv);
             }
-        });
+            this.dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "Tài khoản hoặc mật khẩu không đúng!");
+        }
+    });
+    rightPanel.add(btnLogin);
 
-        rightPanel.add(btnLogin);
+    // 5. Thêm vào Frame chính
+    add(leftPanel, BorderLayout.WEST);
+    add(rightPanel, BorderLayout.CENTER);
 
-        // Thêm vào Frame chính
-        add(LeftPanel, BorderLayout.WEST);
-        add(rightPanel, BorderLayout.CENTER);
-
-
-        this.setVisible(true);
-
-    }
+    this.setVisible(true);
+}
 
 }

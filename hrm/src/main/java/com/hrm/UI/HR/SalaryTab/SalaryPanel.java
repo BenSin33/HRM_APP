@@ -1,0 +1,45 @@
+package com.hrm.UI.HR.SalaryTab;
+
+import com.formdev.flatlaf.FlatClientProperties;
+import javax.swing.*;
+import java.awt.*;
+
+public class SalaryPanel extends JPanel {
+    public SalaryPanel() {
+        setLayout(new BorderLayout(0, 20));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
+
+        // 1. Khởi tạo Header và truyền sự kiện (Xử lý lỗi không tìm thấy constructor)
+        SalaryHeader header = new SalaryHeader(
+            e -> handleLockSalary(),   // Sự kiện khi bấm Khóa lương
+            e -> handleUnlockSalary()  // Sự kiện khi bấm Mở khóa
+        );
+        add(header, BorderLayout.NORTH);
+
+        // 2. Nội dung chính
+        JPanel content = new JPanel(new BorderLayout(0, 20));
+        content.setOpaque(false);
+
+        // Phần B: Thống kê (Summary)
+        content.add(new SalarySummary(), BorderLayout.NORTH);
+        
+        // Phần C: Bảng dữ liệu (Tạm thời là placeholder)
+        JPanel tablePlaceholder = new JPanel(new BorderLayout());
+        tablePlaceholder.putClientProperty(FlatClientProperties.STYLE, "arc: 15; background: #ffffff");
+        tablePlaceholder.add(new JLabel("Vùng JTable sẽ hiển thị ở đây", SwingConstants.CENTER));
+        content.add(tablePlaceholder, BorderLayout.CENTER);
+
+        add(content, BorderLayout.CENTER);
+    }
+
+    private void handleLockSalary() {
+        // Dự định: Gọi xuống Service để đổi trạng thái toàn bộ record sang 'locked'
+        JOptionPane.showMessageDialog(this, "Đã thực hiện khóa lương tháng này!");
+    }
+
+    private void handleUnlockSalary() {
+        // Dự định: Cho phép chỉnh sửa lại bảng lương
+        System.out.println("Mở khóa bảng lương...");
+    }
+}
