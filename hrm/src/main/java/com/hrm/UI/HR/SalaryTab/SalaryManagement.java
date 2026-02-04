@@ -4,8 +4,8 @@ import com.formdev.flatlaf.FlatClientProperties;
 import javax.swing.*;
 import java.awt.*;
 
-public class SalaryPanel extends JPanel {
-    public SalaryPanel() {
+public class SalaryManagement extends JPanel {
+    public SalaryManagement() {
         setLayout(new BorderLayout(0, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
@@ -15,7 +15,7 @@ public class SalaryPanel extends JPanel {
             e -> handleLockSalary(),   // Sự kiện khi bấm Khóa lương
             e -> handleUnlockSalary()  // Sự kiện khi bấm Mở khóa
         );
-        add(header, BorderLayout.NORTH);
+        this.add(header, BorderLayout.NORTH);
 
         // 2. Nội dung chính
         JPanel content = new JPanel(new BorderLayout(0, 20));
@@ -25,12 +25,10 @@ public class SalaryPanel extends JPanel {
         content.add(new SalarySummary(), BorderLayout.NORTH);
         
         // Phần C: Bảng dữ liệu (Tạm thời là placeholder)
-        JPanel tablePlaceholder = new JPanel(new BorderLayout());
-        tablePlaceholder.putClientProperty(FlatClientProperties.STYLE, "arc: 15; background: #ffffff");
-        tablePlaceholder.add(new JLabel("Vùng JTable sẽ hiển thị ở đây", SwingConstants.CENTER));
-        content.add(tablePlaceholder, BorderLayout.CENTER);
+        SalaryTable salaryTableContent = new SalaryTable();
+        content.add(salaryTableContent);
 
-        add(content, BorderLayout.CENTER);
+        this.add(content, BorderLayout.CENTER);
     }
 
     private void handleLockSalary() {
