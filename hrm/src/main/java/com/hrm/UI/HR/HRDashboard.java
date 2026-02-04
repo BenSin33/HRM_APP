@@ -9,7 +9,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
-import com.hrm.UI.HR.SalaryTab.SalaryPanel;
+import com.hrm.UI.HR.SalaryTab.SalaryManagement;
 
 import com.hrm.UI.component.*;
 
@@ -39,9 +39,9 @@ public class HRDashboard extends JFrame {
         HRTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
 
         //contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Tổng quan"), "DASHBOARD");
-        contentPanel.add(createDashboardPanel(new EmployeeManagePanel()), "EMPLOYEE_MANAGEMENT");
+        //contentPanel.add(createDashboardPanel(new EmployeeManagePanel()), "EMPLOYEE_MANAGEMENT");
         //contentPanel.add(createDashboardPanel("Trang Quản lý Hợp đồng"), "ATTENDANCE_MANAGEMENT");
-        contentPanel.add(createDashboardPanel(new SalaryPanel()), "PAYROLL_MANAGEMENT");
+        contentPanel.add(createDashboardPanel(new SalaryManagement()), "PAYROLL_MANAGEMENT");
         //contentPanel.add(createDashboardPanel("Đăng xuất"), "LOGOUT");
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, HRTabs); // tạo sidebar
