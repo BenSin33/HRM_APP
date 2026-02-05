@@ -7,6 +7,8 @@ import com.hrm.utils.IconResize;
 
 import java.awt.*;
 import java.net.URL;
+
+import com.hrm.UI.Employee.*;
 import com.hrm.UI.HR.*;
 
 public class LoginUI extends JFrame{
@@ -112,6 +114,8 @@ public class LoginUI extends JFrame{
                 new HRDashboard();
                 JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + manv);
             } else {
+                new EDashboard();
+                
                 JOptionPane.showMessageDialog(this, "Xin chào nhân viên: " + manv);
             }
             this.dispose();
