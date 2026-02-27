@@ -2,11 +2,16 @@ package com.hrm.UI.Employee.ProfileEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
+import com.hrm.DAO.UserDAO;
+import com.hrm.utils.JDBCConection;
+
 import java.awt.*;
 
 public class ProfileHeader extends JPanel {
+    private UserDAO userDAO = new UserDAO();
 
-    public ProfileHeader() {
+    public ProfileHeader(String manv) {
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt
         setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -14,8 +19,10 @@ public class ProfileHeader extends JPanel {
         // 1. Phần lời chào (Welcome Section)
         JPanel welcomePanel = new JPanel(new GridLayout(2, 1));
         welcomePanel.setOpaque(false);
+
+        String fullname = fetchEmployeeName(manv);
+        JLabel lblWelcome = new JLabel("Xin chào, " + fullname + "!");
         
-        JLabel lblWelcome = new JLabel("Xin chào, Lê Văn Employee!");
         lblWelcome.setFont(new Font("Arial", Font.BOLD, 24));
         lblWelcome.setForeground(new Color(33, 37, 41));
 
@@ -80,5 +87,23 @@ public class ProfileHeader extends JPanel {
         cardPanel.add(leftPanel, BorderLayout.CENTER);
         cardPanel.add(iconPanel, BorderLayout.EAST);
         return cardPanel;
+    }
+    private String fetchEmployeeName(String manv) {
+        String name = "Nhân viên"; // Giá trị mặc định
+        String sql = "SELECT HOTEN FROM nhanvien WHERE MANV = ?";
+        
+        try (java.sql.Connection conn = JDBCConection.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, manv);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    name = rs.getString("HOTEN");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return name;
     }
 }

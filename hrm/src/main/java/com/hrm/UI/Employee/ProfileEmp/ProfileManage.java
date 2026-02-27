@@ -5,7 +5,7 @@ import java.awt.*;
 
 public class ProfileManage extends JPanel {
 
-    public ProfileManage() {
+    public ProfileManage(String manv) {
         // Sử dụng BorderLayout cho container chính
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
@@ -16,7 +16,7 @@ public class ProfileManage extends JPanel {
         contentPanel.setOpaque(false);
 
         // 1. Thêm phần Header (Lời chào + 4 thẻ thống kê)
-        contentPanel.add(new ProfileHeader());
+        contentPanel.add(new ProfileHeader(manv));
 
         // Khoảng cách giữa các phần
         contentPanel.add(Box.createVerticalStrut(10));

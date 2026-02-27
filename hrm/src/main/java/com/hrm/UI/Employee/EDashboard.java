@@ -21,7 +21,7 @@ public class EDashboard extends JFrame {
     private CardLayout cardLayout;
     private JPanel contentPanel;
     
-    public EDashboard(){
+    public EDashboard(String manv){
 
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
@@ -46,7 +46,7 @@ public class EDashboard extends JFrame {
 
         // Thêm các panel vào contentPanel
         contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Nhân viên"), "DASHBOARD");
-        contentPanel.add(createDashboardPanel(new ProfileManage()), "PROFILE");
+        contentPanel.add(createDashboardPanel(new ProfileManage(manv)), "PROFILE");
         contentPanel.add(createDashboardPanel("Chấm công"), "ATTENDANCE");
         contentPanel.add(createDashboardPanel("Lịch làm việc"), "SCHEDULE");
         contentPanel.add(createDashboardPanel("Bảng lương"), "PAYROLL");
