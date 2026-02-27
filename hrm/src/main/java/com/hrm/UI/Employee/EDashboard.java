@@ -46,9 +46,9 @@ public class EDashboard extends JFrame {
         // Thêm các panel vào contentPanel
         contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Nhân viên"), "DASHBOARD");
         contentPanel.add(createDashboardPanel("Hồ sơ cá nhân"), "PROFILE");
-        contentPanel.add(createDashboardPanel(new ContractManagement()), "ATTENDANCE");
+        contentPanel.add(createDashboardPanel("Chấm công"), "ATTENDANCE");
         contentPanel.add(createDashboardPanel("Lịch làm việc"), "SCHEDULE");
-        contentPanel.add(createDashboardPanel(new SalaryManagement()), "PAYROLL");
+        contentPanel.add(createDashboardPanel("Bảng lương"), "PAYROLL");
         contentPanel.add(createDashboardPanel("Quản lý nghỉ phép"), "LEAVE");
         contentPanel.add(createDashboardPanel("Đánh giá hiệu suất"), "EVALUATION");
 
