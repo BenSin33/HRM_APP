@@ -10,6 +10,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 
+import com.hrm.UI.Employee.AttendanceEmp.AttendanceManage;
 import com.hrm.UI.Employee.ProfileEmp.ProfileManage;
 import com.hrm.UI.HR.ContractTab.ContractManagement;
 import com.hrm.UI.HR.SalaryTab.SalaryManagement;
@@ -47,7 +48,7 @@ public class EDashboard extends JFrame {
         // Thêm các panel vào contentPanel
         contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Nhân viên"), "DASHBOARD");
         contentPanel.add(createDashboardPanel(new ProfileManage(manv)), "PROFILE");
-        contentPanel.add(createDashboardPanel("Chấm công"), "ATTENDANCE");
+        contentPanel.add(createDashboardPanel(new AttendanceManage(manv)), "ATTENDANCE");
         contentPanel.add(createDashboardPanel("Lịch làm việc"), "SCHEDULE");
         contentPanel.add(createDashboardPanel("Bảng lương"), "PAYROLL");
         contentPanel.add(createDashboardPanel("Quản lý nghỉ phép"), "LEAVE");

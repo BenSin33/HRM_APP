@@ -23,15 +23,15 @@ public class ProfileFooter extends JPanel {
         JPanel actionsGrid = new JPanel(new GridLayout(1, 4, 20, 0));
         actionsGrid.setOpaque(false);
 
-        actionsGrid.add(createActionBtn("Chấm công", new Color(59, 130, 246)));
-        actionsGrid.add(createActionBtn("Xin nghỉ phép", new Color(37, 99, 235)));
-        actionsGrid.add(createActionBtn("Bảng lương", new Color(31, 41, 55)));
-        actionsGrid.add(createActionBtn("Đánh giá", new Color(79, 70, 229)));
+        actionsGrid.add(createActionBtn("Chấm công", new Color(59, 130, 246), "Ghi nhận giờ vào/ra"));
+        actionsGrid.add(createActionBtn("Xin nghỉ phép", new Color(37, 99, 235), "Xin nghỉ phép"));
+        actionsGrid.add(createActionBtn("Bảng lương", new Color(31, 41, 55), "Xem bảng lương"));
+        actionsGrid.add(createActionBtn("Đánh giá", new Color(79, 70, 229), "Đánh giá hiệu suất"));
 
         add(actionsGrid, BorderLayout.CENTER);
     }
 
-    private JPanel createActionBtn(String label, Color iconColor) {
+    private JPanel createActionBtn(String label, Color iconColor, String noteString) {
         // Tạo panel đại diện cho nút bấm
         JPanel btn = new JPanel(new BorderLayout(0, 10)) {
             @Override
@@ -71,8 +71,14 @@ public class ProfileFooter extends JPanel {
         lblName.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblName.setForeground(new Color(55, 65, 81));
 
-        btn.add(iconPlaceholder, BorderLayout.CENTER);
-        btn.add(lblName, BorderLayout.SOUTH);
+        btn.add(iconPlaceholder, BorderLayout.NORTH);
+        btn.add(lblName, BorderLayout.CENTER);
+
+        // Thêm nhãn mô tả
+        JLabel lblNote = new JLabel(noteString, SwingConstants.CENTER);
+        lblNote.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblNote.setForeground(Color.GRAY);
+        btn.add(lblNote, BorderLayout.SOUTH);
 
         // Hiệu ứng Hover đơn giản
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
