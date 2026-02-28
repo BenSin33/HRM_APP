@@ -2,43 +2,45 @@ package com.hrm.UI.Employee.ProfileEmp;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Map;
+import com.hrm.DAO.Employee.ProfileDAO;
 
 public class ProfileManage extends JPanel {
-
+    
     public ProfileManage(String manv) {
-        // Sử dụng BorderLayout cho container chính
+        // 1. Lấy dữ liệu từ DAO
+        ProfileDAO dao = new ProfileDAO();
+        // Giả sử bạn đã cập nhật ProfileDAO để trả về Map đầy đủ thông tin
+        Map<String, String> data = dao.getProfileFullData(manv);
+
+        // 2. Thiết lập Layout chính
         setLayout(new BorderLayout());
-        setBackground(new Color(248, 249, 250));
+        setBackground(new Color(245, 246, 250)); // Màu nền xám nhạt hiện đại
 
-        // Tạo một Panel chứa toàn bộ nội dung (Content Panel)
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setOpaque(false);
+        // 3. Kiểm tra dữ liệu tránh lỗi NullPointer
+        if (data == null || data.isEmpty()) {
+            add(new JLabel("Không tìm thấy dữ liệu nhân viên: " + manv), BorderLayout.CENTER);
+            return;
+        }
 
-        // 1. Thêm phần Header (Lời chào + 4 thẻ thống kê)
-        contentPanel.add(new ProfileHeader(manv));
+        // --- PHẦN BÊN TRÁI: SIDEBAR (PROFILE CARD) ---
+        // Truyền toàn bộ Map 'data' vào Sidebar để vẽ Avatar và thông tin định danh
+        ProfileSidebar sidebar = new ProfileSidebar(data);
+        add(sidebar, BorderLayout.WEST);
 
-        // Khoảng cách giữa các phần
-        contentPanel.add(Box.createVerticalStrut(10));
-
-        // 2. Thêm phần Hoạt động & Lịch (Phần ở giữa)
-        contentPanel.add(new ProfileReport());
-
-        // Khoảng cách
-        contentPanel.add(Box.createVerticalStrut(10));
-
-        // 3. Thêm phần Thao tác nhanh (Phần dưới cùng)
-        contentPanel.add(new ProfileFooter());
-
-        // Cuối cùng thêm một khoảng trống linh hoạt phía dưới để các phần không bị giãn quá mức
-        contentPanel.add(Box.createVerticalGlue());
-
-        // Bọc contentPanel vào JScrollPane để có thể cuộn trang
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBorder(null); // Xóa viền ScrollPane để giao diện phẳng (flat)
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Giúp cuộn mượt hơn
-        scrollPane.getViewport().setBackground(new Color(248, 249, 250)); // Đồng bộ màu nền
-
-        add(scrollPane, BorderLayout.CENTER);
+        // --- PHẦN BÊN PHẢI: NỘI DUNG CHI TIẾT ---
+        JPanel mainContent = new JPanel(new BorderLayout());
+        mainContent.setOpaque(false);
+        
+        // Header: Tiêu đề trang
+        mainContent.add(new ProfileHeader(), BorderLayout.NORTH);
+        
+        // Info: Các thẻ chứa thông tin chi tiết (Email, SĐT, Phòng ban...)
+        mainContent.add(new ProfileInfo(data), BorderLayout.CENTER);
+        
+        // Footer: Dòng lưu ý dưới cùng
+        mainContent.add(new ProfileFooter(), BorderLayout.SOUTH);
+        
+        add(mainContent, BorderLayout.CENTER);
     }
 }

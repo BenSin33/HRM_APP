@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 
 import com.hrm.UI.Employee.AttendanceEmp.AttendanceManage;
 import com.hrm.UI.Employee.EvaluationEmp.EvaluationManage;
+import com.hrm.UI.Employee.HomeEmp.HomeManage;
 import com.hrm.UI.Employee.LeaveEmp.LeaveManage;
 import com.hrm.UI.Employee.PayrollEmp.PayrollManage;
 import com.hrm.UI.Employee.ProfileEmp.ProfileManage;
@@ -46,7 +47,7 @@ public class EDashboard extends JFrame {
         employeeTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
 
         // Thêm các panel vào contentPanel
-        contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Nhân viên"), "DASHBOARD");
+        contentPanel.add(createDashboardPanel(new HomeManage(manv)), "DASHBOARD");
         contentPanel.add(createDashboardPanel(new ProfileManage(manv)), "PROFILE");
         contentPanel.add(createDashboardPanel(new AttendanceManage(manv)), "ATTENDANCE");
         contentPanel.add(createDashboardPanel(new ScheduleManage(manv)), "SCHEDULE");

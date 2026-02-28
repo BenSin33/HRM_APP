@@ -1,4 +1,4 @@
-package com.hrm.UI.Employee.ProfileEmp;
+package com.hrm.UI.Employee.HomeEmp;
 
 
 import javax.swing.*;
@@ -6,9 +6,9 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
-public class ProfileReport extends JPanel {
+public class HomeReport extends JPanel {
 
-    public ProfileReport() {
+    public HomeReport() {
         setLayout(new GridLayout(1, 2, 25, 0)); // Chia làm 2 cột, khoảng cách 25px
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(0, 20, 20, 20));

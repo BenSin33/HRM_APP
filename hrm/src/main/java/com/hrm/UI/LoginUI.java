@@ -9,8 +9,6 @@ import java.awt.*;
 import java.net.URL;
 
 import com.hrm.UI.Employee.EDashboard;
-import com.hrm.UI.Employee.ProfileEmp.ProfileHeader;
-import com.hrm.UI.Employee.ProfileEmp.ProfileManage;
 import com.hrm.UI.HR.*;
 
 public class LoginUI extends JFrame{
