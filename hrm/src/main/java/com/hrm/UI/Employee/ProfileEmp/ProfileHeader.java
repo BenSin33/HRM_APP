@@ -12,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class ProfileHeader extends JPanel {
-    private UserDAO userDAO = new UserDAO();
 
     public ProfileHeader(String manv) {
         setLayout(new BorderLayout());
@@ -51,10 +50,10 @@ public class ProfileHeader extends JPanel {
         statsPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         // Thêm 4 thẻ vào panel
-        statsPanel.add(StatCard("Số ngày phép còn lại", "12", "ngày", new Color(59, 130, 246)));
+        statsPanel.add(StatCard("Số ngày nghỉ phép", "12", "ngày", new Color(59, 130, 246)));
         statsPanel.add(StatCard("Lương tháng trước", fetchLastMonthSalary(manv), "triệu", new Color(16, 185, 129)));
         statsPanel.add(StatCard("Số giờ làm tháng này", fetchTotalHours(manv), "giờ", new Color(168, 85, 247)));
-        statsPanel.add(StatCard("Điểm đánh giá Q4", fetchLatestEvaluationScore(manv), "/10", new Color(245, 158, 11)));
+        statsPanel.add(StatCard("Điểm đánh giá Q4", fetchLatestEvaluationScore(manv), "/100", new Color(245, 158, 11)));
 
         add(welcomePanel, BorderLayout.NORTH);
         add(statsPanel, BorderLayout.CENTER);
@@ -164,22 +163,23 @@ public class ProfileHeader extends JPanel {
         // Trả về số giờ, nếu là 0 thì hiển thị "0"
         return String.format("%.1f", totalHours);
     }
+
     private String fetchLatestEvaluationScore(String manv) {
-    String score = "0";
-    String sql = "SELECT TONGDIEM FROM phieudanhgia WHERE MANV = ? ORDER BY NGAYDANHGIA DESC LIMIT 1";
-    
-    try (java.sql.Connection conn = JDBCConection.getConnection();
-         java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-        
-        ps.setString(1, manv);
-        try (java.sql.ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                score = rs.getString("TONGDIEM");
+        String score = "0";
+        String sql = "SELECT TONGDIEM FROM phieudanhgia WHERE MANV = ? ORDER BY NGAYDANHGIA DESC LIMIT 1";
+
+        try (java.sql.Connection conn = JDBCConection.getConnection();
+                java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, manv);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    score = rs.getString("TONGDIEM");
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-    } catch (Exception e) {
-        e.printStackTrace();
+        return score;
     }
-    return score;
-}
 }

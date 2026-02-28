@@ -33,7 +33,7 @@ public class ProfileReport extends JPanel {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setOpaque(false);
 
-        // Thêm dữ liệu giả định
+        // Thêm dữ liệu
         listPanel.add(createActivityItem("Đơn xin nghỉ phép đã được duyệt", "2 giờ trước", new Color(16, 185, 129)));
         listPanel.add(Box.createVerticalStrut(15));
         listPanel.add(createActivityItem("Bảng lương tháng 12 đã được cập nhật", "1 ngày trước", new Color(59, 130, 246)));

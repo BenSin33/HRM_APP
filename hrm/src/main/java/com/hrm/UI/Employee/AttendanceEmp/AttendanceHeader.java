@@ -93,18 +93,20 @@ public class AttendanceHeader extends JPanel {
                     ps.setString(1, manv);
                     ResultSet rs = ps.executeQuery();
                     if (rs.next() && rs.getInt(1) > 0) {
-                        JOptionPane.showMessageDialog(this, "Bạn đã điểm danh vào ca hôm nay!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Bạn đã điểm danh vào ca hôm nay!", "Thông báo",
+                                JOptionPane.WARNING_MESSAGE);
                         return;
                     }
                 }
 
                 // Thực hiện Check-in (Sử dụng CASE để xét đi muộn dựa trên bảng calam)
-                String sqlCheckIn = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI, MACALAM) " +
+                String sqlCheckIn = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI, MACALAM) "
+                        +
                         "SELECT ?, ?, CURRENT_DATE, CURRENT_TIME, " +
                         "CASE WHEN CURRENT_TIME <= c.GIOVAOCA THEN 'Đúng giờ' ELSE 'Đi muộn' END, l.MACALAM " +
-                        "FROM lichlamviec l JOIN calam c ON l.MACALAM = c.MACALAM " +
+                        "FROM lichlamviec l " +
+                        "INNER JOIN calam c ON l.MACALAM = c.MACALAM " +
                         "WHERE l.MANV = ? AND l.NGAYLAMVIEC = CURRENT_DATE";
-
                 try (PreparedStatement ps = conn.prepareStatement(sqlCheckIn)) {
                     String maCC = "CC" + System.currentTimeMillis() % 1000000; // Mã duy nhất hơn
                     ps.setString(1, maCC);
@@ -113,7 +115,8 @@ public class AttendanceHeader extends JPanel {
                     if (ps.executeUpdate() > 0) {
                         JOptionPane.showMessageDialog(this, "Check-in thành công!");
                     } else {
-                        JOptionPane.showMessageDialog(this, "Bạn không có lịch làm việc hôm nay!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Bạn không có lịch làm việc hôm nay!", "Lỗi",
+                                JOptionPane.ERROR_MESSAGE);
                     }
                 }
             } else {
@@ -122,8 +125,10 @@ public class AttendanceHeader extends JPanel {
                         "JOIN calam c ON cc.MACALAM = c.MACALAM " +
                         "SET cc.CHECKOUT = CURRENT_TIME, " +
                         "cc.SOGIOLAM = CASE " +
-                        "   WHEN CURRENT_TIME >= cc.CHECKIN THEN ROUND(TIME_TO_SEC(TIMEDIFF(CURRENT_TIME, cc.CHECKIN))/3600, 1) " +
-                        "   ELSE ROUND((TIME_TO_SEC(TIMEDIFF('23:59:59', cc.CHECKIN)) + TIME_TO_SEC(CURRENT_TIME))/3600, 1) END, " +
+                        "   WHEN CURRENT_TIME >= cc.CHECKIN THEN ROUND(TIME_TO_SEC(TIMEDIFF(CURRENT_TIME, cc.CHECKIN))/3600, 1) "
+                        +
+                        "   ELSE ROUND((TIME_TO_SEC(TIMEDIFF('23:59:59', cc.CHECKIN)) + TIME_TO_SEC(CURRENT_TIME))/3600, 1) END, "
+                        +
                         "cc.TRANGTHAI = CASE " +
                         "   WHEN cc.TRANGTHAI = 'Đi muộn' THEN 'Đi muộn' " +
                         "   WHEN CURRENT_TIME < c.GIOTANCA THEN 'Về sớm' ELSE 'Đúng giờ' END " +
@@ -138,20 +143,23 @@ public class AttendanceHeader extends JPanel {
                     }
                 }
             }
-            if (parent != null) parent.refreshData();
+            if (parent != null)
+                parent.refreshData();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Lỗi CSDL: " + e.getMessage());
         }
     }
 
-    // Các hàm fetchTotalDays, fetchStatusCount, fetchTotalHours giữ nguyên logic từ code cũ của bạn
     private String fetchTotalDays() {
         String sql = "SELECT COUNT(*) FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE) AND YEAR(NGAYLAMVIEC) = YEAR(CURRENT_DATE)";
         try (Connection conn = JDBCConection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getString(1);
-        } catch (Exception e) { e.printStackTrace(); }
+            if (rs.next())
+                return rs.getString(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "0";
     }
 
@@ -161,8 +169,11 @@ public class AttendanceHeader extends JPanel {
             ps.setString(1, manv);
             ps.setString(2, status);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getString(1);
-        } catch (Exception e) { e.printStackTrace(); }
+            if (rs.next())
+                return rs.getString(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "0";
     }
 
@@ -172,8 +183,11 @@ public class AttendanceHeader extends JPanel {
         try (Connection conn = JDBCConection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) total = rs.getDouble(1);
-        } catch (Exception e) { e.printStackTrace(); }
+            if (rs.next())
+                total = rs.getDouble(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return String.format("%.1f", total);
     }
 
@@ -188,8 +202,13 @@ public class AttendanceHeader extends JPanel {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btn.setBackground(new Color(255, 255, 255, 100)); }
-            public void mouseExited(MouseEvent e) { btn.setBackground(new Color(255, 255, 255, 60)); }
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(new Color(255, 255, 255, 100));
+            }
+
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(new Color(255, 255, 255, 60));
+            }
         });
 
         btn.addActionListener(e -> handleAttendance(isCheckIn));
