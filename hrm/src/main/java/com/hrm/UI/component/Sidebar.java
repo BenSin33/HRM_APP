@@ -56,7 +56,7 @@ public class Sidebar extends JPanel {
         for(SidebarTab tab : tabsLists){
             JButton menuButton = createMenuButton(tab);
             this.add(menuButton);
-            this.add(Box.createRigidArea(new Dimension(0,0))); // khoảng cách giữa các nút
+            this.add(Box.createRigidArea(new Dimension(0,10))); // khoảng cách giữa các nút
         }
     }
 

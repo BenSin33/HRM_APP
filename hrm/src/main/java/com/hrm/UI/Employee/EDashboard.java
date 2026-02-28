@@ -28,7 +28,7 @@ public class EDashboard extends JFrame {
         contentPanel = new JPanel(cardLayout);
 
         this.setTitle("Employee Dashboard");
-        this.setSize(1200, 750);
+        this.setSize(1270, 750);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
         this.setVisible(true);

@@ -2,18 +2,18 @@ package com.hrm.UI.Employee.ProfileEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-
-import com.hrm.DAO.UserDAO;
-import com.hrm.utils.JDBCConection;
-
 import java.awt.*;
+import com.hrm.DAO.Employee.ProfileEmp;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class ProfileHeader extends JPanel {
+    private ProfileEmp profileDAO = new ProfileEmp();
 
     public ProfileHeader(String manv) {
+        String[] profileData = profileDAO.getProfileHeaderData(manv);
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt
         setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -22,8 +22,7 @@ public class ProfileHeader extends JPanel {
         JPanel welcomePanel = new JPanel(new GridLayout(2, 1));
         welcomePanel.setOpaque(false);
 
-        String fullname = fetchEmployeeName(manv);
-        JLabel lblWelcome = new JLabel("Xin chào, " + fullname + "!");
+        JLabel lblWelcome = new JLabel("Xin chào, " + profileData[0] + "!");
 
         lblWelcome.setFont(new Font("Arial", Font.BOLD, 24));
         lblWelcome.setForeground(new Color(33, 37, 41));
@@ -50,10 +49,10 @@ public class ProfileHeader extends JPanel {
         statsPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         // Thêm 4 thẻ vào panel
-        statsPanel.add(StatCard("Số ngày nghỉ phép", "12", "ngày", new Color(59, 130, 246)));
-        statsPanel.add(StatCard("Lương tháng trước", fetchLastMonthSalary(manv), "triệu", new Color(16, 185, 129)));
-        statsPanel.add(StatCard("Số giờ làm tháng này", fetchTotalHours(manv), "giờ", new Color(168, 85, 247)));
-        statsPanel.add(StatCard("Điểm đánh giá Q4", fetchLatestEvaluationScore(manv), "/100", new Color(245, 158, 11)));
+        statsPanel.add(StatCard("Lương tháng trước", profileData[1], "triệu", new Color(16, 185, 129)));
+        statsPanel.add(StatCard("Số giờ làm tháng này", profileData[2], "giờ", new Color(168, 85, 247)));
+        statsPanel.add(StatCard("Số ngày nghỉ phép tháng này", profileData[4], "ngày", new Color(59, 130, 246)));
+        statsPanel.add(StatCard("Điểm đánh giá Q4", profileData[3], "/100", new Color(245, 158, 11)));
 
         add(welcomePanel, BorderLayout.NORTH);
         add(statsPanel, BorderLayout.CENTER);
@@ -98,88 +97,5 @@ public class ProfileHeader extends JPanel {
         cardPanel.add(leftPanel, BorderLayout.CENTER);
         cardPanel.add(iconPanel, BorderLayout.EAST);
         return cardPanel;
-    }
-
-    private String fetchEmployeeName(String manv) {
-        String name = "Nhân viên"; // Giá trị mặc định
-        String sql = "SELECT HOTEN FROM nhanvien WHERE MANV = ?";
-
-        try (java.sql.Connection conn = JDBCConection.getConnection();
-                java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, manv);
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    name = rs.getString("HOTEN");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return name;
-    }
-
-    private String fetchLastMonthSalary(String manv) {
-        String salary = "0";
-        // Truy vấn lương của tháng liền kề trước đó
-        String sql = "SELECT THUCLINH FROM bangluong " +
-                "WHERE MANV = ? AND THANG = MONTH(CURRENT_DATE - INTERVAL 1 MONTH) " +
-                "AND NAM = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)";
-
-        try (java.sql.Connection conn = JDBCConection.getConnection();
-                java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, manv);
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    double amount = rs.getDouble("THUCLINH");
-                    salary = String.format("%.1f", amount / 1000000); // Chuyển sang đơn vị triệu
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return salary;
-    }
-
-    private String fetchTotalHours(String manv) {
-        double totalHours = 0;
-        String sql = "SELECT SUM(SOGIOLAM) as total FROM chamcong " +
-                "WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE) " +
-                "AND YEAR(NGAYLAMVIEC) = YEAR(CURRENT_DATE)";
-
-        try (java.sql.Connection conn = JDBCConection.getConnection();
-                java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, manv);
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    totalHours = rs.getDouble("total");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        // Trả về số giờ, nếu là 0 thì hiển thị "0"
-        return String.format("%.1f", totalHours);
-    }
-
-    private String fetchLatestEvaluationScore(String manv) {
-        String score = "0";
-        String sql = "SELECT TONGDIEM FROM phieudanhgia WHERE MANV = ? ORDER BY NGAYDANHGIA DESC LIMIT 1";
-
-        try (java.sql.Connection conn = JDBCConection.getConnection();
-                java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, manv);
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    score = rs.getString("TONGDIEM");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return score;
     }
 }
