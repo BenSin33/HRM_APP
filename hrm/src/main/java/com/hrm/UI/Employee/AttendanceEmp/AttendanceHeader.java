@@ -1,10 +1,11 @@
 package com.hrm.UI.Employee.AttendanceEmp;
 
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import com.hrm.utils.JDBCConection;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -12,9 +13,15 @@ import java.util.Locale;
 
 public class AttendanceHeader extends JPanel {
     private String manv;
+    private AttendanceManage parent;
 
-    public AttendanceHeader(String manv) {
+    public AttendanceHeader(String manv, AttendanceManage parent) {
         this.manv = manv;
+        this.parent = parent;
+        initUI();
+    }
+
+    private void initUI() {
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(10, 20, 10, 20));
@@ -36,9 +43,7 @@ public class AttendanceHeader extends JPanel {
 
         LocalDateTime now = LocalDateTime.now();
         String timeStr = now.format(DateTimeFormatter.ofPattern("HH:mm"));
-        String dateStr = now.format(
-    DateTimeFormatter.ofPattern("EEEE, dd 'tháng' M, yyyy", new Locale("vi", "VN"))
-);
+        String dateStr = now.format(DateTimeFormatter.ofPattern("EEEE, dd 'tháng' M, yyyy", new Locale("vi", "VN")));
 
         JLabel lblTime = new JLabel(timeStr, SwingConstants.CENTER);
         lblTime.setFont(new Font("Arial", Font.BOLD, 48));
@@ -52,16 +57,15 @@ public class AttendanceHeader extends JPanel {
         textCenter.add(lblTime);
         textCenter.add(lblNowDate);
 
-        // Nút bấm
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setOpaque(false);
-        btnPanel.add(createActionButton("Đăng ký vào ca (08:00)", true));
-        btnPanel.add(createActionButton("Đăng ký ra ca (17:30)", false));
+        btnPanel.add(createActionButton("Đăng ký vào ca", true));
+        btnPanel.add(createActionButton("Đăng ký ra ca", false));
 
         timeCard.add(textCenter, BorderLayout.CENTER);
         timeCard.add(btnPanel, BorderLayout.SOUTH);
 
-        // --- 3. 4 THẺ THỐNG KÊ (STAT CARDS) ---
+        // --- 3. THỐNG KÊ ---
         JPanel statsPanel = new JPanel(new GridLayout(1, 4, 15, 0));
         statsPanel.setOpaque(false);
         statsPanel.setBorder(new EmptyBorder(20, 0, 10, 0));
@@ -71,7 +75,6 @@ public class AttendanceHeader extends JPanel {
         statsPanel.add(StatCard("Đi muộn", fetchStatusCount("Đi muộn"), "", new Color(234, 179, 8)));
         statsPanel.add(StatCard("Tổng giờ làm", fetchTotalHours(), "giờ", new Color(168, 85, 247)));
 
-        // GOM TẤT CẢ
         JPanel topGroup = new JPanel(new BorderLayout());
         topGroup.setOpaque(false);
         topGroup.add(titlePanel, BorderLayout.NORTH);
@@ -81,39 +84,69 @@ public class AttendanceHeader extends JPanel {
         add(statsPanel, BorderLayout.CENTER);
     }
 
-    // --- XỬ LÝ DATABASE ---
-
     private void handleAttendance(boolean isCheckIn) {
-        // Thông báo giả lập xác nhận khuôn mặt
-        JOptionPane.showMessageDialog(this, "Xác nhận khuôn mặt và vị trí thành công!", "HRM System", JOptionPane.INFORMATION_MESSAGE);
-
-        String sql;
-        if (isCheckIn) {
-            // Kiểm tra xem hôm nay đã check-in chưa để tránh trùng lặp
-            sql = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI) VALUES (?, ?, CURRENT_DATE, CURRENT_TIME, ?)";
-        } else {
-            sql = "UPDATE chamcong SET CHECKOUT = CURRENT_TIME, SOGIOLAM = 8 WHERE MANV = ? AND NGAYLAMVIEC = CURRENT_DATE";
-        }
-
-        try (Connection conn = JDBCConection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
+        try (Connection conn = JDBCConection.getConnection()) {
             if (isCheckIn) {
-                ps.setString(1, "CC" + System.currentTimeMillis() % 10000); // Mã tạm thời
-                ps.setString(2, manv);
-                ps.setString(3, "Đúng giờ");
+                // Kiểm tra đã check-in chưa
+                String checkSql = "SELECT COUNT(*) FROM chamcong WHERE MANV = ? AND NGAYLAMVIEC = CURRENT_DATE";
+                try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
+                    ps.setString(1, manv);
+                    ResultSet rs = ps.executeQuery();
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        JOptionPane.showMessageDialog(this, "Bạn đã điểm danh vào ca hôm nay!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                }
+
+                // Thực hiện Check-in (Sử dụng CASE để xét đi muộn dựa trên bảng calam)
+                String sqlCheckIn = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI, MACALAM) " +
+                        "SELECT ?, ?, CURRENT_DATE, CURRENT_TIME, " +
+                        "CASE WHEN CURRENT_TIME <= c.GIOVAOCA THEN 'Đúng giờ' ELSE 'Đi muộn' END, l.MACALAM " +
+                        "FROM lichlamviec l JOIN calam c ON l.MACALAM = c.MACALAM " +
+                        "WHERE l.MANV = ? AND l.NGAYLAMVIEC = CURRENT_DATE";
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlCheckIn)) {
+                    String maCC = "CC" + System.currentTimeMillis() % 1000000; // Mã duy nhất hơn
+                    ps.setString(1, maCC);
+                    ps.setString(2, manv);
+                    ps.setString(3, manv);
+                    if (ps.executeUpdate() > 0) {
+                        JOptionPane.showMessageDialog(this, "Check-in thành công!");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Bạn không có lịch làm việc hôm nay!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             } else {
-                ps.setString(1, manv);
+                // Thực hiện Check-out (Xử lý logic ca gãy/ca đêm)
+                String sqlCheckOut = "UPDATE chamcong cc " +
+                        "JOIN calam c ON cc.MACALAM = c.MACALAM " +
+                        "SET cc.CHECKOUT = CURRENT_TIME, " +
+                        "cc.SOGIOLAM = CASE " +
+                        "   WHEN CURRENT_TIME >= cc.CHECKIN THEN ROUND(TIME_TO_SEC(TIMEDIFF(CURRENT_TIME, cc.CHECKIN))/3600, 1) " +
+                        "   ELSE ROUND((TIME_TO_SEC(TIMEDIFF('23:59:59', cc.CHECKIN)) + TIME_TO_SEC(CURRENT_TIME))/3600, 1) END, " +
+                        "cc.TRANGTHAI = CASE " +
+                        "   WHEN cc.TRANGTHAI = 'Đi muộn' THEN 'Đi muộn' " +
+                        "   WHEN CURRENT_TIME < c.GIOTANCA THEN 'Về sớm' ELSE 'Đúng giờ' END " +
+                        "WHERE cc.MANV = ? AND cc.NGAYLAMVIEC = CURRENT_DATE AND cc.CHECKOUT IS NULL";
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlCheckOut)) {
+                    ps.setString(1, manv);
+                    if (ps.executeUpdate() > 0) {
+                        JOptionPane.showMessageDialog(this, "Check-out thành công!");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Không tìm thấy lượt Check-in hợp lệ!");
+                    }
+                }
             }
-            ps.executeUpdate();
-            
-            // Refresh giao diện sau khi chấm công
-            revalidate(); repaint();
-        } catch (Exception e) { e.printStackTrace(); }
+            if (parent != null) parent.refreshData();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Lỗi CSDL: " + e.getMessage());
+        }
     }
 
+    // Các hàm fetchTotalDays, fetchStatusCount, fetchTotalHours giữ nguyên logic từ code cũ của bạn
     private String fetchTotalDays() {
-        String sql = "SELECT COUNT(*) FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE)";
+        String sql = "SELECT COUNT(*) FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE) AND YEAR(NGAYLAMVIEC) = YEAR(CURRENT_DATE)";
         try (Connection conn = JDBCConection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
@@ -123,7 +156,7 @@ public class AttendanceHeader extends JPanel {
     }
 
     private String fetchStatusCount(String status) {
-        String sql = "SELECT COUNT(*) FROM chamcong WHERE MANV = ? AND TRANGTHAI = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE)";
+        String sql = "SELECT COUNT(*) FROM chamcong WHERE MANV = ? AND TRANGTHAI = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE) AND YEAR(NGAYLAMVIEC) = YEAR(CURRENT_DATE)";
         try (Connection conn = JDBCConection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ps.setString(2, status);
@@ -135,24 +168,14 @@ public class AttendanceHeader extends JPanel {
 
     private String fetchTotalHours() {
         double total = 0;
-        String sql = "SELECT MACALAM, SOGIOLAM FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE)";
+        String sql = "SELECT SUM(SOGIOLAM) FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE) AND YEAR(NGAYLAMVIEC) = YEAR(CURRENT_DATE)";
         try (Connection conn = JDBCConection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                String maCa = rs.getString("MACALAM");
-                if (maCa != null) {
-                    if (maCa.matches("C[1-4]")) total += 8;
-                    else if (maCa.matches("C[5-7]")) total += 4;
-                } else {
-                    total += rs.getDouble("SOGIOLAM");
-                }
-            }
+            if (rs.next()) total = rs.getDouble(1);
         } catch (Exception e) { e.printStackTrace(); }
-        return String.format("%.0f", total);
+        return String.format("%.1f", total);
     }
-
-    // --- COMPONENT HỖ TRỢ ---
 
     private JButton createActionButton(String text, boolean isCheckIn) {
         JButton btn = new JButton(text);
@@ -163,7 +186,12 @@ public class AttendanceHeader extends JPanel {
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
+
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { btn.setBackground(new Color(255, 255, 255, 100)); }
+            public void mouseExited(MouseEvent e) { btn.setBackground(new Color(255, 255, 255, 60)); }
+        });
+
         btn.addActionListener(e -> handleAttendance(isCheckIn));
         return btn;
     }
@@ -172,13 +200,12 @@ public class AttendanceHeader extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
-            new EmptyBorder(12, 15, 12, 15)
-        ));
+                BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
+                new EmptyBorder(12, 15, 12, 15)));
 
         JLabel lblTitle = new JLabel(title);
         lblTitle.setForeground(Color.GRAY);
-        JLabel lblVal = new JLabel(value + " " + unit);
+        JLabel lblVal = new JLabel((value == null ? "0" : value) + " " + unit);
         lblVal.setFont(new Font("Arial", Font.BOLD, 22));
 
         JPanel left = new JPanel(new GridLayout(2, 1));
@@ -186,21 +213,7 @@ public class AttendanceHeader extends JPanel {
         left.add(lblTitle);
         left.add(lblVal);
 
-        JPanel iconPart = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(iconColor.getRed(), iconColor.getGreen(), iconColor.getBlue(), 40));
-                g2.fillOval(0, 5, 35, 35);
-            }
-        };
-        iconPart.setPreferredSize(new Dimension(35, 45));
-        iconPart.setOpaque(false);
-
         card.add(left, BorderLayout.CENTER);
-        card.add(iconPart, BorderLayout.EAST);
         return card;
     }
 }

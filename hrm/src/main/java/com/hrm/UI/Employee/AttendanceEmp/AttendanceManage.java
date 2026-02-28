@@ -19,7 +19,7 @@ public class AttendanceManage extends JPanel {
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // 1. Khởi tạo phần Header (Bao gồm Tiêu đề, Clock Card và 4 Stat Cards)
-        headerPanel = new AttendanceHeader(manv);
+        headerPanel = new AttendanceHeader(manv,this);
         
         // 2. Khởi tạo phần thân dưới (Lịch sử chấm công dạng Lịch)
         // Chúng ta bọc Calendar vào một ScrollPane để hỗ trợ màn hình nhỏ
@@ -41,7 +41,7 @@ public class AttendanceManage extends JPanel {
     // Phương thức để làm mới toàn bộ dữ liệu khi cần (ví dụ sau khi bấm nút Chấm công)
     public void refreshData() {
         removeAll();
-        headerPanel = new AttendanceHeader(manv);
+        headerPanel = new AttendanceHeader(manv,this);
         calendarPanel = new AttendanceHistory(manv);
         
         add(headerPanel, BorderLayout.NORTH);
