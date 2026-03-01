@@ -30,7 +30,6 @@ public class SalarySummary extends JPanel {
 
     }
 
-
     // Thẻ hiển thị tổng quan với tiêu đề và giá trị
     private static class SummaryCard extends JPanel {
         public SummaryCard(String title, String value, String hexColor, boolean isDark) {
