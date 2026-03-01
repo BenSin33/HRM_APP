@@ -22,7 +22,7 @@ public class HomeManage extends JPanel {
         contentPanel.add(Box.createVerticalStrut(10));
 
         // 2. Thêm phần Hoạt động & Lịch (Phần ở giữa)
-        contentPanel.add(new HomeReport());
+        contentPanel.add(new HomeReport(manv));
 
         // Khoảng cách
         contentPanel.add(Box.createVerticalStrut(10));

@@ -1,26 +1,30 @@
 package com.hrm.UI.Employee.HomeEmp;
 
-
+import com.hrm.DAO.Employee.HomeReportDAO;
+import com.hrm.DTO.Employee.HomeReportDTO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
 public class HomeReport extends JPanel {
+    private HomeReportDAO reportDAO = new HomeReportDAO();
 
-    public HomeReport() {
-        setLayout(new GridLayout(1, 2, 25, 0)); // Chia làm 2 cột, khoảng cách 25px
+    public HomeReport(String manv) {
+        HomeReportDTO data = reportDAO.getReportData(manv);
+        
+        setLayout(new GridLayout(1, 2, 25, 0));
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(0, 20, 20, 20));
 
-        // 1. Panel Hoạt động gần đây
-        add(createActivityPanel());
+        // 1. Panel Hoạt động gần đây (Trái)
+        add(createActivityPanel(data));
 
-        // 2. Panel Lịch sắp tới
-        add(createSchedulePanel());
+        // 2. Panel Lịch sắp tới (Phải)
+        add(createSchedulePanel(data));
     }
 
-    private JPanel createActivityPanel() {
+    private JPanel createActivityPanel(HomeReportDTO data) {
         JPanel panel = createRoundedPanel();
         panel.setLayout(new BorderLayout());
         
@@ -33,22 +37,21 @@ public class HomeReport extends JPanel {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setOpaque(false);
 
-        // Thêm dữ liệu
-        listPanel.add(createActivityItem("Đơn xin nghỉ phép đã được duyệt", "2 giờ trước", new Color(16, 185, 129)));
+        listPanel.add(createActivityItem(data.getActivityLuong(), "Thông tin lương", new Color(16, 185, 129)));
         listPanel.add(Box.createVerticalStrut(15));
-        listPanel.add(createActivityItem("Bảng lương tháng 12 đã được cập nhật", "1 ngày trước", new Color(59, 130, 246)));
+        listPanel.add(createActivityItem(data.getActivityChamCong(), "Chấm công", new Color(59, 130, 246)));
         listPanel.add(Box.createVerticalStrut(15));
-        listPanel.add(createActivityItem("Đã chấm công vào lúc 08:00", "Hôm nay", new Color(59, 130, 246)));
+        listPanel.add(createActivityItem(data.getActivityNghiPhep(), "Nghỉ phép", new Color(245, 158, 11)));
 
         panel.add(listPanel, BorderLayout.CENTER);
         return panel;
     }
 
-    private JPanel createSchedulePanel() {
+    private JPanel createSchedulePanel(HomeReportDTO data) {
         JPanel panel = createRoundedPanel();
         panel.setLayout(new BorderLayout());
 
-        JLabel title = new JLabel("Lịch sắp tới");
+        JLabel title = new JLabel("Lịch & Đánh giá");
         title.setFont(new Font("Segoe UI", Font.BOLD, 18));
         title.setBorder(new EmptyBorder(0, 0, 15, 0));
         panel.add(title, BorderLayout.NORTH);
@@ -57,26 +60,22 @@ public class HomeReport extends JPanel {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setOpaque(false);
 
-        // Thêm các thẻ lịch (Schedule Card)
-        listPanel.add(createScheduleCard("Họp team dự án ABC", "22/1/2025 - 14:00"));
+        listPanel.add(createScheduleCard("Lịch làm việc gần nhất", data.getScheduleLichLam()));
         listPanel.add(Box.createVerticalStrut(10));
-        listPanel.add(createScheduleCard("Đánh giá hiệu suất quý 1", "25/1/2025 - 10:00"));
+        listPanel.add(createScheduleCard("Đánh giá hiệu suất", data.getScheduleDanhGia()));
         listPanel.add(Box.createVerticalStrut(10));
-        listPanel.add(createScheduleCard("Nghỉ phép đã duyệt", "1/2/2025 - Cả ngày"));
+        listPanel.add(createScheduleCard("Cập nhật hệ thống", data.getScheduleCapNhatLich()));
 
         panel.add(listPanel, BorderLayout.CENTER);
         return panel;
     }
 
-    // Item cho phần Hoạt động (Có chấm tròn màu)
-    private JPanel createActivityItem(String text, String time, Color dotColor) {
+    // --- Các hàm vẽ UI bổ trợ  ---
+    private JPanel createActivityItem(String text, String subText, Color dotColor) {
         JPanel p = new JPanel(new BorderLayout(10, 0));
         p.setOpaque(false);
-
-        // Vẽ chấm tròn màu
         JPanel dot = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
+            @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(dotColor);
@@ -84,56 +83,49 @@ public class HomeReport extends JPanel {
                 g2.dispose();
             }
         };
-        dot.setPreferredSize(new Dimension(15, 30));
-        dot.setOpaque(false);
-
-        JPanel content = new JPanel(new GridLayout(2, 1));
-        content.setOpaque(false);
-        JLabel lblMain = new JLabel(text);
-        lblMain.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        JLabel lblTime = new JLabel(time);
-        lblTime.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblTime.setForeground(Color.GRAY);
-
-        content.add(lblMain);
-        content.add(lblTime);
-
-        p.add(dot, BorderLayout.WEST);
-        p.add(content, BorderLayout.CENTER);
+        dot.setPreferredSize(new Dimension(15, 30)); dot.setOpaque(false);
+        JPanel content = new JPanel(new GridLayout(2, 1)); content.setOpaque(false);
+        JLabel lblMain = new JLabel(text); lblMain.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        JLabel lblSub = new JLabel(subText); lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 12)); lblSub.setForeground(Color.GRAY);
+        content.add(lblMain); content.add(lblSub);
+        p.add(dot, BorderLayout.WEST); p.add(content, BorderLayout.CENTER);
         return p;
     }
 
-    // Card con cho phần Lịch sắp tới (Nền xanh nhạt)
     private JPanel createScheduleCard(String title, String time) {
-        JPanel card = new JPanel(new GridLayout(2, 1, 0, 5)) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(240, 247, 255)); // Màu xanh nhạt
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.dispose();
-            }
-        };
-        card.setOpaque(false);
-        card.setBorder(new EmptyBorder(10, 15, 10, 15));
+    // Sử dụng GridLayout 2 hàng để phân tách nội dung và tiêu đề
+    JPanel card = new JPanel(new GridLayout(2, 1, 0, 2)) {
+        @Override protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(new Color(240, 247, 255)); // Màu nền xanh nhạt
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            g2.dispose();
+        }
+    };
+    card.setOpaque(false); 
+    card.setBorder(new EmptyBorder(10, 15, 10, 15));
 
-        JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        JLabel lblTime = new JLabel(time);
-        lblTime.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblTime.setForeground(new Color(100, 116, 139));
+    // 1. Phần thông báo (Dữ liệu từ DB): Cho lên trên, font to và in đậm
+    JLabel lblContent = new JLabel(time); 
+    lblContent.setFont(new Font("Segoe UI", Font.BOLD, 14)); 
+    lblContent.setForeground(new Color(30, 41, 59)); // Màu chữ tối hơn để nổi bật
 
-        card.add(lblTitle);
-        card.add(lblTime);
-        return card;
-    }
+    // 2. Phần tiêu đề (Ví dụ: "Lịch làm việc gần nhất"): Cho xuống dưới, font nhỏ lại
+    JLabel lblSubTitle = new JLabel(title); 
+    lblSubTitle.setFont(new Font("Segoe UI", Font.PLAIN, 11)); 
+    lblSubTitle.setForeground(new Color(100, 116, 139)); // Màu xám nhẹ
 
-    // Hàm bổ trợ tạo Panel nền trắng bo góc
+    // Thêm vào card theo thứ tự mới
+    card.add(lblContent);   // Nội dung quan trọng lên trước
+    card.add(lblSubTitle);  // Tiêu đề giải thích xuống sau
+
+    return card;
+}
+
     private JPanel createRoundedPanel() {
         JPanel p = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
+            @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(Color.WHITE);
@@ -141,8 +133,7 @@ public class HomeReport extends JPanel {
                 g2.dispose();
             }
         };
-        p.setOpaque(false);
-        p.setBorder(new EmptyBorder(20, 20, 20, 20));
+        p.setOpaque(false); p.setBorder(new EmptyBorder(20, 20, 20, 20));
         return p;
     }
 }

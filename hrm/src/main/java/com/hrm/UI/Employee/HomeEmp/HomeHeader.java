@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import com.hrm.DAO.Employee.HomeDAO;
+import com.hrm.DTO.Employee.HomeDTO;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,17 +14,16 @@ public class HomeHeader extends JPanel {
     private HomeDAO HomeDAO = new HomeDAO();
 
     public HomeHeader(String manv) {
-        String[] HomeData = HomeDAO.getHomeHeaderData(manv);
+        HomeDTO data = HomeDAO.getHomeHeaderData(manv);
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt
         setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // 1. Phần lời chào (Welcome Section)
         JPanel welcomePanel = new JPanel(new GridLayout(2, 1));
-        welcomePanel.setOpaque(false);
+        welcomePanel.setOpaque(false); // Đặt panel này trong suốt để hiển thị màu nền của HomeHeader
 
-        JLabel lblWelcome = new JLabel("Xin chào, " + HomeData[0] + "!");
-
+        JLabel lblWelcome = new JLabel("Xin chào, " + data.getHoTen() + "!");
         lblWelcome.setFont(new Font("Arial", Font.BOLD, 24));
         lblWelcome.setForeground(new Color(33, 37, 41));
         LocalDate today = LocalDate.now();
@@ -48,11 +48,14 @@ public class HomeHeader extends JPanel {
         statsPanel.setOpaque(false);
         statsPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
         // Thêm 4 thẻ vào panel
-        statsPanel.add(StatCard("Lương tháng trước", HomeData[1], "triệu", new Color(16, 185, 129)));
-        statsPanel.add(StatCard("Số giờ làm", HomeData[2], "giờ", new Color(168, 85, 247)));
-        statsPanel.add(StatCard("Số ngày nghỉ phép", HomeData[4], "ngày", new Color(59, 130, 246)));
-        statsPanel.add(StatCard("Điểm đánh giá Q4", HomeData[3], "/100", new Color(245, 158, 11)));
-
+        statsPanel.add(StatCard("Lương tháng trước", String.format("%.1f", data.getLuongThangTruoc()), "triệu",
+                new Color(16, 185, 129)));
+        statsPanel.add(
+                StatCard("Số giờ làm", String.format("%.1f", data.getTongGioLam()), "giờ", new Color(168, 85, 247)));
+        statsPanel.add(StatCard("Số ngày nghỉ phép", String.valueOf(data.getSoNgayNghiPhep()), "ngày",
+                new Color(59, 130, 246)));
+        statsPanel.add(
+                StatCard("Điểm đánh giá Q4", String.valueOf(data.getDiemDanhGia()), "/100", new Color(245, 158, 11)));
         add(welcomePanel, BorderLayout.NORTH);
         add(statsPanel, BorderLayout.CENTER);
     }
@@ -91,7 +94,7 @@ public class HomeHeader extends JPanel {
         JPanel iconPanel = new JPanel();
         iconPanel.setPreferredSize(new Dimension(40, 40));
         iconPanel.setBackground(iconColor);
-        // Lưu ý: Trong thực tế bạn nên dùng JLabel kèm ImageIcon vào đây
+        // Dùng JLabel kèm ImageIcon
 
         cardPanel.add(leftPanel, BorderLayout.CENTER);
         cardPanel.add(iconPanel, BorderLayout.EAST);
