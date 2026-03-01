@@ -119,9 +119,18 @@ public class ContractTable extends JPanel {
             }
         });
 
+        JPanel wrap = new JPanel(new BorderLayout());
+        wrap.putClientProperty(FlatClientProperties.STYLE,
+        "arc: 15; background: #ffffff; border: 1,1,1,1,#e5e7eb");
+        wrap.setOpaque(false);
+
         JScrollPane scrollPane = new JScrollPane(contractTable);
-        scrollPane.putClientProperty(FlatClientProperties.STYLE, "arc: 15; border: 0,0,0,0");
-        add(scrollPane, BorderLayout.CENTER);
+        scrollPane.putClientProperty(FlatClientProperties.STYLE, "border: 0,0,0,0");
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setOpaque(false);
+
+        wrap.add(scrollPane);
+        add(wrap, BorderLayout.CENTER);
     }
 
     private void handleEdit(Object contractId) {
