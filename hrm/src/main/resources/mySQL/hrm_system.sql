@@ -1,252 +1,222 @@
-CREATE DATABASE hrm_system CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE hrm_system;
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Feb 27, 2026 at 10:36 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
--- ========================================================
--- I. NHÓM BẢNG DANH MỤC
--- ========================================================
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
-CREATE TABLE `phongban` (
-  `MAPHONGBAN` varchar(10) PRIMARY KEY,
-  `TENPHONGBAN` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `chucvu` (
-  `MACHUCVU` varchar(10) PRIMARY KEY,
-  `TENVITRI` varchar(100) NOT NULL,
-  `PHUCAPCHUCVU` decimal(18,2) DEFAULT 0.00
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
-CREATE TABLE `trinhdo` (
-  `MATRINHDO` varchar(10) PRIMARY KEY,
-  `TRINHDO` varchar(50) NOT NULL,
-  `HESOTRINHDO` decimal(5,2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Database: `hrm_system`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bangluong`
+--
+
+CREATE TABLE `bangluong` (
+  `MALUONG` varchar(10) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `THANG` int(11) DEFAULT NULL,
+  `NAM` int(11) DEFAULT NULL,
+  `LUONGCOBAN_SNAPSHOT` decimal(18,2) DEFAULT NULL,
+  `SONGAYCONG` float DEFAULT 0,
+  `TONG_PHUCAP` decimal(18,2) DEFAULT 0.00,
+  `TONG_KHAUTRU` decimal(18,2) DEFAULT 0.00,
+  `NGAYCHOTLUONG` date DEFAULT NULL,
+  `THUCLINH` decimal(18,2) DEFAULT NULL,
+  `TRANGTHAI` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `bangluong`
+--
+
+INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`) VALUES
+('ML01', 'NV07', 1, 2026, 8000000.00, 26, 0.00, 0.00, NULL, 8500000.00, 'Đã thanh toán');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `calam`
+--
 
 CREATE TABLE `calam` (
-  `MACALAM` varchar(10) PRIMARY KEY,
+  `MACALAM` varchar(10) NOT NULL,
   `TENCALAM` varchar(50) DEFAULT NULL,
   `GIOVAOCA` time DEFAULT NULL,
   `GIOTANCA` time DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `tieuchidanhgia` (
-  `MATIEUCHI` varchar(10) PRIMARY KEY,
-  `TENTIEUCHI` varchar(100) DEFAULT NULL,
-  `DIEM` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Dumping data for table `calam`
+--
 
--- ========================================================
--- II. NHÓM NHÂN SỰ VÀ TÀI KHOẢN
--- ========================================================
+INSERT INTO `calam` (`MACALAM`, `TENCALAM`, `GIOVAOCA`, `GIOTANCA`) VALUES
+('C1', 'Hành chính', '08:00:00', '17:00:00'),
+('C2', 'Ca sáng', '06:00:00', '14:00:00');
 
-CREATE TABLE `nhanvien` (
-  `MANV` varchar(10) PRIMARY KEY,
-  `MAPHONGBAN` varchar(10),
-  `MACHUCVU` varchar(10),
-  `MATRINHDO` varchar(10),
-  `HOTEN` varchar(100) NOT NULL,
-  `GIOITINH` varchar(10) DEFAULT NULL,
-  `DIACHI` varchar(255) DEFAULT NULL,
-  `DIENTHOAI` varchar(15) DEFAULT NULL,
-  `EMAIL` varchar(100) DEFAULT NULL,
-  `NGAYVAOLAM` date DEFAULT NULL,
-  `SONGAYPHEP` int(11) DEFAULT 12,
-  `TRANGTHAI` varchar(50) DEFAULT NULL,
-  CONSTRAINT `fk_nv_pb` FOREIGN KEY (`MAPHONGBAN`) REFERENCES `phongban`(`MAPHONGBAN`),
-  CONSTRAINT `fk_nv_cv` FOREIGN KEY (`MACHUCVU`) REFERENCES `chucvu`(`MACHUCVU`),
-  CONSTRAINT `fk_nv_td` FOREIGN KEY (`MATRINHDO`) REFERENCES `trinhdo`(`MATRINHDO`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- --------------------------------------------------------
 
-CREATE TABLE `role` (
-  `ROLEID` varchar(10) PRIMARY KEY,
-  `ROLENAME` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `taikhoan` (
-  `USERID` varchar(50) PRIMARY KEY,
-  `MANV` varchar(10),
-  `ROLEID` varchar(10),
-  `PASSWORD` varchar(255) NOT NULL,
-  `STATUS` int(11) DEFAULT 1,
-  CONSTRAINT `fk_tk_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`),
-  CONSTRAINT `fk_tk_role` FOREIGN KEY (`ROLEID`) REFERENCES `role`(`ROLEID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ========================================================
--- III. PHÂN QUYỀN LINH ĐỘNG (DỰA TRÊN QUAN HỆ N-N)
--- ========================================================
-
-CREATE TABLE `chucnang` (
-  `MACHUCNANG` varchar(10) PRIMARY KEY,
-  `TENCHUCNANG` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `phanquyen_chitiet` (
-  `ROLEID` varchar(10),
-  `MACHUCNANG` varchar(10),
-  `QUYEN_XEM` boolean DEFAULT false,
-  `QUYEN_THEM` boolean DEFAULT false,
-  `QUYEN_SUA` boolean DEFAULT false,
-  `QUYEN_XOA` boolean DEFAULT false,
-  PRIMARY KEY (`ROLEID`, `MACHUCNANG`),
-  CONSTRAINT `fk_pq_role` FOREIGN KEY (`ROLEID`) REFERENCES `role`(`ROLEID`),
-  CONSTRAINT `fk_pq_cn` FOREIGN KEY (`MACHUCNANG`) REFERENCES `chucnang`(`MACHUCNANG`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ========================================================
--- IV. LƯƠNG CHUYÊN SÂU (SNAPSHOT & BIẾN ĐỘNG)
--- ========================================================
-
-CREATE TABLE `danhmuc_phucap` (
-  `MAPHUCAP` int AUTO_INCREMENT PRIMARY KEY,
-  `TENPHUCAP` varchar(100),
-  `SOTIEN_MACDINH` decimal(18,2)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `danhmuc_khautru` (
-  `MAKHAUTRU` int AUTO_INCREMENT PRIMARY KEY,
-  `TENKHAUTRU` varchar(100),
-  `SOTIEN_MACDINH` decimal(18,2)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `bangluong` (
-  `MALUONG` varchar(10) PRIMARY KEY,
-  `MANV` varchar(10),
-  `THANG` int(11),
-  `NAM` int(11),
-  `LUONGCOBAN_SNAPSHOT` decimal(18,2),
-  `SONGAYCONG` float DEFAULT 0,
-  `TONG_PHUCAP` decimal(18,2) DEFAULT 0,
-  `TONG_KHAUTRU` decimal(18,2) DEFAULT 0,
-  `NGAYCHOTLUONG` date,
-  `THUCLINH` decimal(18,2),
-  `TRANGTHAI` varchar(50),
-  CONSTRAINT `fk_bl_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `chitiet_luong_biendong` (
-  `ID` int AUTO_INCREMENT PRIMARY KEY,
-  `MALUONG` varchar(10),
-  `TENKHOANTIEN` varchar(100),
-  `SOTIEN` decimal(18,2),
-  `LOAI` varchar(10),
-  CONSTRAINT `fk_ct_bl` FOREIGN KEY (`MALUONG`) REFERENCES `bangluong`(`MALUONG`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ========================================================
--- V. CHẤM CÔNG, NGHỈ PHÉP, HỢP ĐỒNG, ĐÁNH GIÁ
--- ========================================================
+--
+-- Table structure for table `chamcong`
+--
 
 CREATE TABLE `chamcong` (
-  `MACHAMCONG` varchar(10) PRIMARY KEY,
-  `MANV` varchar(10),
-  `NGAYLAMVIEC` date,
-  `SOGIOLAM` float,
-  `CHECKIN` time,
-  `CHECKOUT` time,
-  `TRANGTHAI` varchar(50),
-  CONSTRAINT `fk_cc_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `MACHAMCONG` varchar(10) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `NGAYLAMVIEC` date DEFAULT NULL,
+  `SOGIOLAM` float DEFAULT NULL,
+  `CHECKIN` time DEFAULT NULL,
+  `CHECKOUT` time DEFAULT NULL,
+  `TRANGTHAI` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `chamcong`
+--
+
+INSERT INTO `chamcong` (`MACHAMCONG`, `MANV`, `NGAYLAMVIEC`, `SOGIOLAM`, `CHECKIN`, `CHECKOUT`, `TRANGTHAI`) VALUES
+('CC01', 'NV07', '2026-01-27', 8, '08:00:00', '17:00:00', 'Đúng giờ'),
+('CC02', 'NV08', '2026-01-27', 8, '07:55:00', '17:05:00', 'Đúng giờ'),
+('CC03', 'NV09', '2026-01-27', 7.5, '08:30:00', '17:00:00', 'Đi muộn');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chitiet_luong_biendong`
+--
+
+CREATE TABLE `chitiet_luong_biendong` (
+  `ID` int(11) NOT NULL,
+  `MALUONG` varchar(10) DEFAULT NULL,
+  `TENKHOANTIEN` varchar(100) DEFAULT NULL,
+  `SOTIEN` decimal(18,2) DEFAULT NULL,
+  `LOAI` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `chitiet_luong_biendong`
+--
+
+INSERT INTO `chitiet_luong_biendong` (`ID`, `MALUONG`, `TENKHOANTIEN`, `SOTIEN`, `LOAI`) VALUES
+(1, 'ML01', 'Phụ cấp ăn trưa', 1000000.00, 'CONG'),
+(2, 'ML01', 'Bảo hiểm xã hội', 500000.00, 'TRU');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chucnang`
+--
+
+CREATE TABLE `chucnang` (
+  `MACHUCNANG` varchar(10) NOT NULL,
+  `TENCHUCNANG` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `chucnang`
+--
+
+INSERT INTO `chucnang` (`MACHUCNANG`, `TENCHUCNANG`) VALUES
+('CN01', 'Quản lý nhân sự'),
+('CN02', 'Quản lý lương'),
+('CN03', 'Chấm công');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chucvu`
+--
+
+CREATE TABLE `chucvu` (
+  `MACHUCVU` varchar(10) NOT NULL,
+  `TENVITRI` varchar(100) NOT NULL,
+  `PHUCAPCHUCVU` decimal(18,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `chucvu`
+--
+
+INSERT INTO `chucvu` (`MACHUCVU`, `TENVITRI`, `PHUCAPCHUCVU`) VALUES
+('CV01', 'Trưởng phòng', 3000000.00),
+('CV02', 'Nhân viên', 0.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `danhmuc_khautru`
+--
+
+CREATE TABLE `danhmuc_khautru` (
+  `MAKHAUTRU` int(11) NOT NULL,
+  `TENKHAUTRU` varchar(100) DEFAULT NULL,
+  `SOTIEN_MACDINH` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `danhmuc_khautru`
+--
+
+INSERT INTO `danhmuc_khautru` (`MAKHAUTRU`, `TENKHAUTRU`, `SOTIEN_MACDINH`) VALUES
+(1, 'Bảo hiểm xã hội', 500000.00),
+(2, 'Phí công đoàn', 100000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `danhmuc_phucap`
+--
+
+CREATE TABLE `danhmuc_phucap` (
+  `MAPHUCAP` int(11) NOT NULL,
+  `TENPHUCAP` varchar(100) DEFAULT NULL,
+  `SOTIEN_MACDINH` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `danhmuc_phucap`
+--
+
+INSERT INTO `danhmuc_phucap` (`MAPHUCAP`, `TENPHUCAP`, `SOTIEN_MACDINH`) VALUES
+(1, 'Ăn trưa', 1000000.00),
+(2, 'Xăng xe', 500000.00),
+(3, 'Độc hại', 300000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hopdong`
+--
 
 CREATE TABLE `hopdong` (
-  `MAHOPDONG` varchar(10) PRIMARY KEY,
-  `MANV` varchar(10),
-  `LOAIHOPDONG` varchar(100),
-  `NGAYLAMHOPDONG` date,
-  `HANHOPDONG` date,
-  `LUONGCOBAN` decimal(18,2),
-  CONSTRAINT `fk_hd_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `MAHOPDONG` varchar(10) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `LOAIHOPDONG` varchar(100) DEFAULT NULL,
+  `NGAYLAMHOPDONG` date DEFAULT NULL,
+  `HANHOPDONG` date DEFAULT NULL,
+  `LUONGCOBAN` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `nghiphep` (
-  `MANGHIPHEP` varchar(10) PRIMARY KEY,
-  `MANV` varchar(10),
-  `LOAINGHI` varchar(50),
-  `LYDONGHI` varchar(255),
-  `NGAYNGHI` date,
-  `NGAYLAMLAI` date,
-  `NGUOIDUYET` varchar(100),
-  `NGAYDUYET` date,
-  CONSTRAINT `fk_np_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Dumping data for table `hopdong`
+--
 
-CREATE TABLE `lichlamviec` (
-  `MALICH` varchar(10) PRIMARY KEY,
-  `MANV` varchar(10),
-  `MACALAM` varchar(10),
-  `NGAYLAMVIEC` date,
-  `GHICHU` varchar(255),
-  CONSTRAINT `fk_llv_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`),
-  CONSTRAINT `fk_llv_cl` FOREIGN KEY (`MACALAM`) REFERENCES `calam`(`MACALAM`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `phieudanhgia` (
-  `MAPHIEU` varchar(10) PRIMARY KEY,
-  `MANV` varchar(10),
-  `MADOT` varchar(10),
-  `MATIEUCHI` varchar(10),
-  `TONGDIEM` int(11),
-  `NHANXET` varchar(255),
-  `QUYETDINH` varchar(100),
-  `NGAYDANHGIA` date,
-  CONSTRAINT `fk_pdg_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien`(`MANV`),
-  CONSTRAINT `fk_pdg_tc` FOREIGN KEY (`MATIEUCHI`) REFERENCES `tieuchidanhgia`(`MATIEUCHI`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ========================================================
--- VI. DỮ LIỆU MẪU (3 HR, 3 MANAGER, 3 EMPLOYEE)
--- ========================================================
-
--- Danh mục
-INSERT INTO `phongban` VALUES ('PB01', 'Nhân sự'), ('PB02', 'Kỹ thuật'), ('PB03', 'Kinh doanh');
-INSERT INTO `chucvu` VALUES ('CV01', 'Trưởng phòng', 3000000.00), ('CV02', 'Nhân viên', 0.00);
-INSERT INTO `trinhdo` VALUES ('TD01', 'Đại học', 1.0), ('TD02', 'Thạc sĩ', 1.2);
-
--- Nhân viên
-INSERT INTO `nhanvien` (`MANV`, `MAPHONGBAN`, `MACHUCVU`, `MATRINHDO`, `HOTEN`, `TRANGTHAI`) VALUES 
-('NV01', 'PB01', 'CV01', 'TD02', 'Nguyễn HR 1', 'Đang làm việc'),
-('NV02', 'PB01', 'CV02', 'TD01', 'Trần HR 2', 'Đang làm việc'),
-('NV03', 'PB01', 'CV02', 'TD01', 'Lê HR 3', 'Đang làm việc'),
-('NV04', 'PB02', 'CV01', 'TD02', 'Phạm Mgr 1', 'Đang làm việc'),
-('NV05', 'PB02', 'CV01', 'TD01', 'Hoàng Mgr 2', 'Đang làm việc'),
-('NV06', 'PB03', 'CV01', 'TD01', 'Vũ Mgr 3', 'Đang làm việc'),
-('NV07', 'PB02', 'CV02', 'TD01', 'Ngô Staff 1', 'Đang làm việc'),
-('NV08', 'PB03', 'CV02', 'TD01', 'Đỗ Staff 2', 'Đang làm việc'),
-('NV09', 'PB03', 'CV02', 'TD01', 'Đặng Staff 3', 'Đang làm việc');
-
--- Quyền & Chức năng
-INSERT INTO `role` VALUES ('R1', 'Admin'), ('R2', 'Manager'), ('R3', 'Employee');
-INSERT INTO `chucnang` VALUES ('CN01', 'Quản lý nhân sự'), ('CN02', 'Quản lý lương'), ('CN03', 'Chấm công');
-INSERT INTO `phanquyen_chitiet` VALUES 
-('R1', 'CN01', 1, 1, 1, 1), ('R1', 'CN02', 1, 1, 1, 1),
-('R2', 'CN01', 1, 0, 1, 0), ('R3', 'CN03', 1, 1, 0, 0);
-
--- Tài khoản
-INSERT INTO `taikhoan` (`USERID`, `MANV`, `ROLEID`, `PASSWORD`) VALUES 
-('admin1', 'NV01', 'R1', '123'), ('admin2', 'NV02', 'R1', '123'), ('admin3', 'NV03', 'R1', '123'),
-('mgr1', 'NV04', 'R2', '123'), ('mgr2', 'NV05', 'R2', '123'), ('mgr3', 'NV06', 'R2', '123'),
-('emp1', 'NV07', 'R3', '123'), ('emp2', 'NV08', 'R3', '123'), ('emp3', 'NV09', 'R3', '123');
-
--- Lương & Biến động mẫu (NV07)
-INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `THUCLINH`, `TRANGTHAI`) 
-VALUES ('ML01', 'NV07', 1, 2026, 8000000.00, 26, 8500000.00, 'Đã thanh toán');
-
-INSERT INTO `chitiet_luong_biendong` (`MALUONG`, `TENKHOANTIEN`, `SOTIEN`, `LOAI`) VALUES 
-('ML01', 'Phụ cấp ăn trưa', 1000000.00, 'CONG'),
-('ML01', 'Bảo hiểm xã hội', 500000.00, 'TRU');
-
--- ========================================================
--- VI. DỮ LIỆU MẪU ĐẦY ĐỦ CHO TOÀN BỘ HỆ THỐNG
--- ========================================================
-
--- 1. Danh mục bổ sung
-INSERT INTO `calam` VALUES ('C1', 'Hành chính', '08:00:00', '17:00:00'), ('C2', 'Ca sáng', '06:00:00', '14:00:00');
-INSERT INTO `tieuchidanhgia` VALUES ('TC01', 'Năng suất làm việc', 10), ('TC02', 'Thái độ phối hợp', 10), ('TC03', 'Kỹ năng chuyên môn', 10);
-INSERT INTO `danhmuc_phucap` (`TENPHUCAP`, `SOTIEN_MACDINH`) VALUES ('Ăn trưa', 1000000.00), ('Xăng xe', 500000.00), ('Độc hại', 300000.00);
-INSERT INTO `danhmuc_khautru` (`TENKHAUTRU`, `SOTIEN_MACDINH`) VALUES ('Bảo hiểm xã hội', 500000.00), ('Phí công đoàn', 100000.00);
-
--- 2. Hợp đồng lao động (Dành cho 9 nhân viên đã tạo ở phần trước)
-INSERT INTO `hopdong` (`MAHOPDONG`, `MANV`, `LOAIHOPDONG`, `NGAYLAMHOPDONG`, `HANHOPDONG`, `LUONGCOBAN`) VALUES 
+INSERT INTO `hopdong` (`MAHOPDONG`, `MANV`, `LOAIHOPDONG`, `NGAYLAMHOPDONG`, `HANHOPDONG`, `LUONGCOBAN`) VALUES
 ('HD01', 'NV01', 'Vô thời hạn', '2025-01-01', '2099-12-31', 25000000.00),
 ('HD02', 'NV02', '3 năm', '2025-01-05', '2028-01-05', 15000000.00),
 ('HD03', 'NV03', '3 năm', '2025-01-10', '2028-01-10', 12000000.00),
@@ -257,23 +227,475 @@ INSERT INTO `hopdong` (`MAHOPDONG`, `MANV`, `LOAIHOPDONG`, `NGAYLAMHOPDONG`, `HA
 ('HD08', 'NV08', '1 năm', '2025-02-01', '2026-02-01', 9000000.00),
 ('HD09', 'NV09', '1 năm', '2025-02-01', '2026-02-01', 8500000.00);
 
--- 3. Chấm công mẫu (Dữ liệu mẫu cho vài ngày của tháng 1)
-INSERT INTO `chamcong` (`MACHAMCONG`, `MANV`, `NGAYLAMVIEC`, `SOGIOLAM`, `CHECKIN`, `CHECKOUT`, `TRANGTHAI`) VALUES 
-('CC01', 'NV07', '2026-01-27', 8, '08:00:00', '17:00:00', 'Đúng giờ'),
-('CC02', 'NV08', '2026-01-27', 8, '07:55:00', '17:05:00', 'Đúng giờ'),
-('CC03', 'NV09', '2026-01-27', 7.5, '08:30:00', '17:00:00', 'Đi muộn');
+-- --------------------------------------------------------
 
--- 4. Lịch làm việc
-INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`) VALUES 
+--
+-- Table structure for table `lichlamviec`
+--
+
+CREATE TABLE `lichlamviec` (
+  `MALICH` varchar(10) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `MACALAM` varchar(10) DEFAULT NULL,
+  `NGAYLAMVIEC` date DEFAULT NULL,
+  `GHICHU` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lichlamviec`
+--
+
+INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`) VALUES
 ('L01', 'NV07', 'C1', '2026-02-04', 'Làm tại văn phòng'),
 ('L02', 'NV08', 'C1', '2026-02-04', 'Trực kỹ thuật'),
 ('L03', 'NV09', 'C1', '2026-02-04', 'Hỗ trợ khách hàng');
 
--- 5. Nghỉ phép
-INSERT INTO `nghiphep` (`MANGHIPHEP`, `MANV`, `LOAINGHI`, `LYDONGHI`, `NGAYNGHI`, `NGAYLAMLAI`, `NGUOIDUYET`, `NGAYDUYET`) VALUES 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `nghiphep`
+--
+
+CREATE TABLE `nghiphep` (
+  `MANGHIPHEP` varchar(10) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `LOAINGHI` varchar(50) DEFAULT NULL,
+  `LYDONGHI` varchar(255) DEFAULT NULL,
+  `NGAYNGHI` date DEFAULT NULL,
+  `NGAYLAMLAI` date DEFAULT NULL,
+  `NGUOIDUYET` varchar(100) DEFAULT NULL,
+  `NGAYDUYET` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `nghiphep`
+--
+
+INSERT INTO `nghiphep` (`MANGHIPHEP`, `MANV`, `LOAINGHI`, `LYDONGHI`, `NGAYNGHI`, `NGAYLAMLAI`, `NGUOIDUYET`, `NGAYDUYET`) VALUES
 ('NP01', 'NV07', 'Có lương', 'Ốm nhẹ', '2026-01-20', '2026-01-21', 'Nguyễn HR 1', '2026-01-19');
 
--- 6. Đánh giá nhân viên
-INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`, `NHANXET`, `QUYETDINH`, `NGAYDANHGIA`) VALUES 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `nhanvien`
+--
+
+CREATE TABLE `nhanvien` (
+  `MANV` varchar(10) NOT NULL,
+  `MAPHONGBAN` varchar(10) DEFAULT NULL,
+  `MACHUCVU` varchar(10) DEFAULT NULL,
+  `MATRINHDO` varchar(10) DEFAULT NULL,
+  `HOTEN` varchar(100) NOT NULL,
+  `GIOITINH` varchar(10) DEFAULT NULL,
+  `DIACHI` varchar(255) DEFAULT NULL,
+  `DIENTHOAI` varchar(15) DEFAULT NULL,
+  `EMAIL` varchar(100) DEFAULT NULL,
+  `NGAYVAOLAM` date DEFAULT NULL,
+  `SONGAYPHEP` int(11) DEFAULT 12,
+  `TRANGTHAI` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `nhanvien`
+--
+
+INSERT INTO `nhanvien` (`MANV`, `MAPHONGBAN`, `MACHUCVU`, `MATRINHDO`, `HOTEN`, `GIOITINH`, `DIACHI`, `DIENTHOAI`, `EMAIL`, `NGAYVAOLAM`, `SONGAYPHEP`, `TRANGTHAI`) VALUES
+('NV01', 'PB01', 'CV01', 'TD02', 'Nguyễn Hoàng Nam', 'Nam', '123 Lê Lợi, Quận 1, TP.HCM', '0901234567', 'nam.nguyen@company.com', '2022-01-15', 12, 'Đang làm việc'),
+('NV02', 'PB01', 'CV02', 'TD01', 'Trần Thị Thu Thảo', 'Nữ', '456 Nguyễn Huệ, Quận 1, TP.HCM', '0912345678', 'thao.tran@company.com', '2024-02-01', 12, 'Đang làm việc'),
+('NV03', 'PB01', 'CV02', 'TD01', 'Lê Văn Tùng', 'Nam', '789 CMT8, Quận 3, TP.HCM', '0923456789', 'tung.le@company.com', '2024-06-15', 12, 'Đang làm việc'),
+('NV04', 'PB02', 'CV01', 'TD02', 'Phạm Minh Quang', 'Nam', '12 Hòa Bình, Quận Tân Phú, TP.HCM', '0934567890', 'quang.pham@company.com', '2022-03-20', 12, 'Đang làm việc'),
+('NV05', 'PB02', 'CV01', 'TD01', 'Hoàng Bảo Ngọc', 'Nữ', '88 Cộng Hòa, Quận Tân Bình, TP.HCM', '0945678901', 'ngoc.hoang@company.com', '2023-05-10', 12, 'Đang làm việc'),
+('NV06', 'PB03', 'CV01', 'TD01', 'Vũ Anh Tuấn', 'Nam', '202 Võ Văn Kiệt, Quận 5, TP.HCM', '0956789012', 'tuan.vu@company.com', '2023-08-15', 12, 'Đang làm việc'),
+('NV07', 'PB02', 'CV02', 'TD01', 'Ngô Thanh Sơn', 'Nam', '15 Trần Hưng Đạo, Quận 1, TP.HCM', '0967890123', 'son.ngo@company.com', '2025-01-10', 12, 'Đang làm việc'),
+('NV08', 'PB03', 'CV02', 'TD01', 'Đỗ Mỹ Linh', 'Nữ', '33 Phan Xích Long, Quận Phú Nhuận, TP.HCM', '0878901234', 'linh.do@company.com', '2025-01-20', 12, 'Đang làm việc'),
+('NV09', 'PB03', 'CV02', 'TD01', 'Đặng Quốc Huy', 'Nam', '55 Quang Trung, Quận Gò Vấp, TP.HCM', '0989012345', 'huy.dang@company.com', '2025-02-01', 12, 'Đang làm việc');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `phanquyen_chitiet`
+--
+
+CREATE TABLE `phanquyen_chitiet` (
+  `ROLEID` varchar(10) NOT NULL,
+  `MACHUCNANG` varchar(10) NOT NULL,
+  `QUYEN_XEM` tinyint(1) DEFAULT 0,
+  `QUYEN_THEM` tinyint(1) DEFAULT 0,
+  `QUYEN_SUA` tinyint(1) DEFAULT 0,
+  `QUYEN_XOA` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `phanquyen_chitiet`
+--
+
+INSERT INTO `phanquyen_chitiet` (`ROLEID`, `MACHUCNANG`, `QUYEN_XEM`, `QUYEN_THEM`, `QUYEN_SUA`, `QUYEN_XOA`) VALUES
+('R1', 'CN01', 1, 1, 1, 1),
+('R1', 'CN02', 1, 1, 1, 1),
+('R2', 'CN01', 1, 0, 1, 0),
+('R3', 'CN03', 1, 1, 0, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `phieudanhgia`
+--
+
+CREATE TABLE `phieudanhgia` (
+  `MAPHIEU` varchar(10) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `MADOT` varchar(10) DEFAULT NULL,
+  `MATIEUCHI` varchar(10) DEFAULT NULL,
+  `TONGDIEM` int(11) DEFAULT NULL,
+  `NHANXET` varchar(255) DEFAULT NULL,
+  `QUYETDINH` varchar(100) DEFAULT NULL,
+  `NGAYDANHGIA` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `phieudanhgia`
+--
+
+INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`, `NHANXET`, `QUYETDINH`, `NGAYDANHGIA`) VALUES
 ('DG01', 'NV07', 'Q1-2026', 'TC01', 9, 'Nhiệt tình, hoàn thành tốt', 'Giữ nguyên', '2026-01-31'),
 ('DG02', 'NV04', 'Q1-2026', 'TC03', 10, 'Lãnh đạo xuất sắc', 'Khen thưởng', '2026-01-31');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `phongban`
+--
+
+CREATE TABLE `phongban` (
+  `MAPHONGBAN` varchar(10) NOT NULL,
+  `TENPHONGBAN` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `phongban`
+--
+
+INSERT INTO `phongban` (`MAPHONGBAN`, `TENPHONGBAN`) VALUES
+('PB01', 'Nhân sự'),
+('PB02', 'Kỹ thuật'),
+('PB03', 'Kinh doanh');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `role`
+--
+
+CREATE TABLE `role` (
+  `ROLEID` varchar(10) NOT NULL,
+  `ROLENAME` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `role`
+--
+
+INSERT INTO `role` (`ROLEID`, `ROLENAME`) VALUES
+('R1', 'Admin'),
+('R2', 'Manager'),
+('R3', 'Employee');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `taikhoan`
+--
+
+CREATE TABLE `taikhoan` (
+  `USERID` varchar(50) NOT NULL,
+  `MANV` varchar(10) DEFAULT NULL,
+  `ROLEID` varchar(10) DEFAULT NULL,
+  `PASSWORD` varchar(255) NOT NULL,
+  `STATUS` int(11) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `taikhoan`
+--
+
+INSERT INTO `taikhoan` (`USERID`, `MANV`, `ROLEID`, `PASSWORD`, `STATUS`) VALUES
+('admin1', 'NV01', 'R1', '123', 1),
+('admin2', 'NV02', 'R1', '123', 1),
+('admin3', 'NV03', 'R1', '123', 1),
+('emp1', 'NV07', 'R3', '123', 1),
+('emp2', 'NV08', 'R3', '123', 1),
+('emp3', 'NV09', 'R3', '123', 1),
+('mgr1', 'NV04', 'R2', '123', 1),
+('mgr2', 'NV05', 'R2', '123', 1),
+('mgr3', 'NV06', 'R2', '123', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tieuchidanhgia`
+--
+
+CREATE TABLE `tieuchidanhgia` (
+  `MATIEUCHI` varchar(10) NOT NULL,
+  `TENTIEUCHI` varchar(100) DEFAULT NULL,
+  `DIEM` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tieuchidanhgia`
+--
+
+INSERT INTO `tieuchidanhgia` (`MATIEUCHI`, `TENTIEUCHI`, `DIEM`) VALUES
+('TC01', 'Năng suất làm việc', 10),
+('TC02', 'Thái độ phối hợp', 10),
+('TC03', 'Kỹ năng chuyên môn', 10);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `trinhdo`
+--
+
+CREATE TABLE `trinhdo` (
+  `MATRINHDO` varchar(10) NOT NULL,
+  `TRINHDO` varchar(50) NOT NULL,
+  `HESOTRINHDO` decimal(5,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `trinhdo`
+--
+
+INSERT INTO `trinhdo` (`MATRINHDO`, `TRINHDO`, `HESOTRINHDO`) VALUES
+('TD01', 'Đại học', 1.00),
+('TD02', 'Thạc sĩ', 1.20);
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `bangluong`
+--
+ALTER TABLE `bangluong`
+  ADD PRIMARY KEY (`MALUONG`),
+  ADD KEY `fk_bl_nv` (`MANV`);
+
+--
+-- Indexes for table `calam`
+--
+ALTER TABLE `calam`
+  ADD PRIMARY KEY (`MACALAM`);
+
+--
+-- Indexes for table `chamcong`
+--
+ALTER TABLE `chamcong`
+  ADD PRIMARY KEY (`MACHAMCONG`),
+  ADD KEY `fk_cc_nv` (`MANV`);
+
+--
+-- Indexes for table `chitiet_luong_biendong`
+--
+ALTER TABLE `chitiet_luong_biendong`
+  ADD PRIMARY KEY (`ID`),
+  ADD KEY `fk_ct_bl` (`MALUONG`);
+
+--
+-- Indexes for table `chucnang`
+--
+ALTER TABLE `chucnang`
+  ADD PRIMARY KEY (`MACHUCNANG`);
+
+--
+-- Indexes for table `chucvu`
+--
+ALTER TABLE `chucvu`
+  ADD PRIMARY KEY (`MACHUCVU`);
+
+--
+-- Indexes for table `danhmuc_khautru`
+--
+ALTER TABLE `danhmuc_khautru`
+  ADD PRIMARY KEY (`MAKHAUTRU`);
+
+--
+-- Indexes for table `danhmuc_phucap`
+--
+ALTER TABLE `danhmuc_phucap`
+  ADD PRIMARY KEY (`MAPHUCAP`);
+
+--
+-- Indexes for table `hopdong`
+--
+ALTER TABLE `hopdong`
+  ADD PRIMARY KEY (`MAHOPDONG`),
+  ADD KEY `fk_hd_nv` (`MANV`);
+
+--
+-- Indexes for table `lichlamviec`
+--
+ALTER TABLE `lichlamviec`
+  ADD PRIMARY KEY (`MALICH`),
+  ADD KEY `fk_llv_nv` (`MANV`),
+  ADD KEY `fk_llv_cl` (`MACALAM`);
+
+--
+-- Indexes for table `nghiphep`
+--
+ALTER TABLE `nghiphep`
+  ADD PRIMARY KEY (`MANGHIPHEP`),
+  ADD KEY `fk_np_nv` (`MANV`);
+
+--
+-- Indexes for table `nhanvien`
+--
+ALTER TABLE `nhanvien`
+  ADD PRIMARY KEY (`MANV`),
+  ADD KEY `fk_nv_pb` (`MAPHONGBAN`),
+  ADD KEY `fk_nv_cv` (`MACHUCVU`),
+  ADD KEY `fk_nv_td` (`MATRINHDO`);
+
+--
+-- Indexes for table `phanquyen_chitiet`
+--
+ALTER TABLE `phanquyen_chitiet`
+  ADD PRIMARY KEY (`ROLEID`,`MACHUCNANG`),
+  ADD KEY `fk_pq_cn` (`MACHUCNANG`);
+
+--
+-- Indexes for table `phieudanhgia`
+--
+ALTER TABLE `phieudanhgia`
+  ADD PRIMARY KEY (`MAPHIEU`),
+  ADD KEY `fk_pdg_nv` (`MANV`),
+  ADD KEY `fk_pdg_tc` (`MATIEUCHI`);
+
+--
+-- Indexes for table `phongban`
+--
+ALTER TABLE `phongban`
+  ADD PRIMARY KEY (`MAPHONGBAN`);
+
+--
+-- Indexes for table `role`
+--
+ALTER TABLE `role`
+  ADD PRIMARY KEY (`ROLEID`);
+
+--
+-- Indexes for table `taikhoan`
+--
+ALTER TABLE `taikhoan`
+  ADD PRIMARY KEY (`USERID`),
+  ADD KEY `fk_tk_nv` (`MANV`),
+  ADD KEY `fk_tk_role` (`ROLEID`);
+
+--
+-- Indexes for table `tieuchidanhgia`
+--
+ALTER TABLE `tieuchidanhgia`
+  ADD PRIMARY KEY (`MATIEUCHI`);
+
+--
+-- Indexes for table `trinhdo`
+--
+ALTER TABLE `trinhdo`
+  ADD PRIMARY KEY (`MATRINHDO`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `chitiet_luong_biendong`
+--
+ALTER TABLE `chitiet_luong_biendong`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `danhmuc_khautru`
+--
+ALTER TABLE `danhmuc_khautru`
+  MODIFY `MAKHAUTRU` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `danhmuc_phucap`
+--
+ALTER TABLE `danhmuc_phucap`
+  MODIFY `MAPHUCAP` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `bangluong`
+--
+ALTER TABLE `bangluong`
+  ADD CONSTRAINT `fk_bl_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
+
+--
+-- Constraints for table `chamcong`
+--
+ALTER TABLE `chamcong`
+  ADD CONSTRAINT `fk_cc_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
+
+--
+-- Constraints for table `chitiet_luong_biendong`
+--
+ALTER TABLE `chitiet_luong_biendong`
+  ADD CONSTRAINT `fk_ct_bl` FOREIGN KEY (`MALUONG`) REFERENCES `bangluong` (`MALUONG`);
+
+--
+-- Constraints for table `hopdong`
+--
+ALTER TABLE `hopdong`
+  ADD CONSTRAINT `fk_hd_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
+
+--
+-- Constraints for table `lichlamviec`
+--
+ALTER TABLE `lichlamviec`
+  ADD CONSTRAINT `fk_llv_cl` FOREIGN KEY (`MACALAM`) REFERENCES `calam` (`MACALAM`),
+  ADD CONSTRAINT `fk_llv_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
+
+--
+-- Constraints for table `nghiphep`
+--
+ALTER TABLE `nghiphep`
+  ADD CONSTRAINT `fk_np_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
+
+--
+-- Constraints for table `nhanvien`
+--
+ALTER TABLE `nhanvien`
+  ADD CONSTRAINT `fk_nv_cv` FOREIGN KEY (`MACHUCVU`) REFERENCES `chucvu` (`MACHUCVU`),
+  ADD CONSTRAINT `fk_nv_pb` FOREIGN KEY (`MAPHONGBAN`) REFERENCES `phongban` (`MAPHONGBAN`),
+  ADD CONSTRAINT `fk_nv_td` FOREIGN KEY (`MATRINHDO`) REFERENCES `trinhdo` (`MATRINHDO`);
+
+--
+-- Constraints for table `phanquyen_chitiet`
+--
+ALTER TABLE `phanquyen_chitiet`
+  ADD CONSTRAINT `fk_pq_cn` FOREIGN KEY (`MACHUCNANG`) REFERENCES `chucnang` (`MACHUCNANG`),
+  ADD CONSTRAINT `fk_pq_role` FOREIGN KEY (`ROLEID`) REFERENCES `role` (`ROLEID`);
+
+--
+-- Constraints for table `phieudanhgia`
+--
+ALTER TABLE `phieudanhgia`
+  ADD CONSTRAINT `fk_pdg_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`),
+  ADD CONSTRAINT `fk_pdg_tc` FOREIGN KEY (`MATIEUCHI`) REFERENCES `tieuchidanhgia` (`MATIEUCHI`);
+
+--
+-- Constraints for table `taikhoan`
+--
+ALTER TABLE `taikhoan`
+  ADD CONSTRAINT `fk_tk_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`),
+  ADD CONSTRAINT `fk_tk_role` FOREIGN KEY (`ROLEID`) REFERENCES `role` (`ROLEID`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

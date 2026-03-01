@@ -1,6 +1,7 @@
 package com.hrm.utils;
 
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
@@ -10,8 +11,12 @@ public class JDBCConection{
 
         Properties properties = new Properties();
 
-        try (FileInputStream fis = new FileInputStream("db.properties")) {
-            properties.load(fis);
+        try (InputStream input = JDBCConection.class.getClassLoader().getResourceAsStream("db.properties")) {
+            if (input == null) {
+                System.err.println("Lỗi: db.properties không tìm thấy trong classpath!");
+                return null;
+            }
+            properties.load(input);
 
             String url = properties.getProperty("db.url");
             String user = properties.getProperty("db.user");
