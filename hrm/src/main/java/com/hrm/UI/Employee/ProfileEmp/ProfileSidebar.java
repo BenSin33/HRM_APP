@@ -1,30 +1,40 @@
 package com.hrm.UI.Employee.ProfileEmp;
 
+import com.hrm.DTO.Employee.ProfileDTO;
+
 import java.awt.*;
 import javax.swing.*;
-import java.util.Map;
-
 
 public class ProfileSidebar extends JPanel {
-    public ProfileSidebar(Map<String, String> info) {
-        setPreferredSize(new Dimension(280, 0));
+    
+    public ProfileSidebar(ProfileDTO data) {
+        setPreferredSize(new Dimension(300, 0)); // Tăng chiều rộng lên một chút cho thoáng
         setBackground(Color.WHITE);
-        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
+        // Viền phải mảnh ngăn cách với phần Info
+        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(235, 235, 235)));
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         add(Box.createVerticalStrut(40));
 
-        // 1. Vẽ Avatar tròn với chữ cái đầu của tên
-        String firstLetter = info.get("name").substring(0, 1).toUpperCase();
+        // 1. Avatar hình tròn với Gradient
+        String firstLetter = (data.hoTen != null && !data.hoTen.isEmpty()) 
+                             ? data.hoTen.substring(0, 1).toUpperCase() : "?";
+        
         JPanel avatarCircle = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(59, 130, 246)); // Màu xanh chủ đạo
+                
+                // Đổ màu Gradient cho Avatar
+                GradientPaint gp = new GradientPaint(0, 0, new Color(59, 130, 246), 100, 100, new Color(37, 99, 235));
+                g2.setPaint(gp);
                 g2.fillOval(0, 0, 100, 100);
+                
+                // Vẽ chữ cái đầu
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Arial", Font.BOLD, 40));
+                g2.setFont(new Font("Segoe UI", Font.BOLD, 40));
                 FontMetrics fm = g2.getFontMetrics();
                 int x = (100 - fm.stringWidth(firstLetter)) / 2;
                 int y = ((100 - fm.getHeight()) / 2) + fm.getAscent();
@@ -32,62 +42,82 @@ public class ProfileSidebar extends JPanel {
                 g2.dispose();
             }
         };
+        avatarCircle.setPreferredSize(new Dimension(100, 100));
         avatarCircle.setMaximumSize(new Dimension(100, 100));
+        avatarCircle.setOpaque(false);
         avatarCircle.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(avatarCircle);
 
-        add(Box.createVerticalStrut(20));
+        add(Box.createVerticalStrut(15));
 
         // 2. Tên nhân viên
-        JLabel lblName = new JLabel(info.get("name"));
-        lblName.setFont(new Font("Arial", Font.BOLD, 18));
+        JLabel lblName = new JLabel(data.hoTen);
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblName.setForeground(new Color(33, 37, 41));
         lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(lblName);
 
-        // 3. Chức vụ (Senior Developer, v.v.)
-        JLabel lblRole = new JLabel(info.get("role"));
-        lblRole.setFont(new Font("Arial", Font.PLAIN, 14));
+        add(Box.createVerticalStrut(5));
+
+        // 3. Chức vụ
+        JLabel lblRole = new JLabel(data.chucVu);
+        lblRole.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblRole.setForeground(Color.GRAY);
         lblRole.setAlignmentX(Component.CENTER_ALIGNMENT);
         add(lblRole);
 
-        // 4. Mã nhân viên
-        JLabel lblId = new JLabel("Mã NV: " + info.get("id"));
-        lblId.setFont(new Font("Arial", Font.ITALIC, 12));
-        lblId.setForeground(new Color(160, 160, 160));
-        lblId.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(lblId);
-
         add(Box.createVerticalStrut(15));
 
-        // 5. Badge Trạng thái
-        JLabel lblStatus = new JLabel("  " + info.get("status") + "  ");
+        // 4. Status Badge (Nhãn trạng thái)
+        JLabel lblStatus = new JLabel(data.trangThai != null ? data.trangThai : "Đang làm việc");
+        lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblStatus.setForeground(new Color(22, 163, 74)); // Màu xanh lá
+        lblStatus.setBackground(new Color(220, 252, 231)); // Nền xanh nhạt
         lblStatus.setOpaque(true);
-        lblStatus.setBackground(new Color(220, 252, 231)); // Xanh lá nhạt
-        lblStatus.setForeground(new Color(21, 128, 61));    // Xanh lá đậm
-        lblStatus.setFont(new Font("Arial", Font.BOLD, 11));
-        lblStatus.setBorder(BorderFactory.createLineBorder(new Color(187, 247, 208)));
+        lblStatus.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         lblStatus.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Bo góc cho Badge (Dùng mẹo nhỏ hoặc Override paintComponent nếu cần bo tròn mạnh)
         add(lblStatus);
-        
-        // Thêm một vài thông tin phụ cho chuyên nghiệp
+
         add(Box.createVerticalStrut(30));
-        addDetailRow("Email", info.get("email"));
-        addDetailRow("SĐT", info.get("sdt"));
+        
+        // Đường kẻ ngang phân cách
+        JSeparator line = new JSeparator();
+        line.setMaximumSize(new Dimension(220, 1));
+        line.setForeground(new Color(240, 240, 240));
+        add(line);
+
+        add(Box.createVerticalStrut(30));
+
+        // 5. Thông tin nhanh phía dưới
+        add(createSidebarItem("Mã nhân viên", data.maNV));
+        add(Box.createVerticalStrut(15));
+        add(createSidebarItem("Email", data.email));
+        add(Box.createVerticalStrut(15));
+        add(createSidebarItem("Số điện thoại", data.sdt));
 
         add(Box.createVerticalGlue());
     }
 
-    private void addDetailRow(String label, String value) {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        row.setOpaque(false);
-        JLabel lbl = new JLabel(label + ": ");
-        lbl.setForeground(Color.GRAY);
-        lbl.setFont(new Font("Arial", Font.PLAIN, 11));
-        JLabel val = new JLabel(value);
-        val.setFont(new Font("Arial", Font.BOLD, 11));
-        row.add(lbl);
-        row.add(val);
-        add(row);
+    private JPanel createSidebarItem(String label, String value) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(240, 45));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lbl.setForeground(new Color(150, 150, 150));
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel val = new JLabel(value != null ? value : "N/A");
+        val.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        val.setForeground(new Color(50, 50, 50));
+        val.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        panel.add(lbl);
+        panel.add(val);
+        return panel;
     }
 }
