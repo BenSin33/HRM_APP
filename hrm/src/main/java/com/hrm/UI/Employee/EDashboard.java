@@ -8,12 +8,14 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.border.Border;
 
+import com.hrm.UI.Employee.AttendanceEmp.AttendanceManage;
+import com.hrm.UI.Employee.EvaluationEmp.EvaluationManage;
+import com.hrm.UI.Employee.HomeEmp.HomeManage;
+import com.hrm.UI.Employee.LeaveEmp.LeaveManage;
+import com.hrm.UI.Employee.PayrollEmp.PayrollManage;
 import com.hrm.UI.Employee.ProfileEmp.ProfileManage;
-import com.hrm.UI.HR.ContractTab.ContractManagement;
-import com.hrm.UI.HR.SalaryTab.SalaryManagement;
-
+import com.hrm.UI.Employee.ScheduleEmp.ScheduleManage;
 import com.hrm.UI.component.*;
 
 public class EDashboard extends JFrame {
@@ -27,7 +29,7 @@ public class EDashboard extends JFrame {
         contentPanel = new JPanel(cardLayout);
 
         this.setTitle("Employee Dashboard");
-        this.setSize(1200, 750);
+        this.setSize(1270, 750);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
         this.setVisible(true);
@@ -45,13 +47,13 @@ public class EDashboard extends JFrame {
         employeeTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
 
         // Thêm các panel vào contentPanel
-        contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Nhân viên"), "DASHBOARD");
+        contentPanel.add(createDashboardPanel(new HomeManage(manv)), "DASHBOARD");
         contentPanel.add(createDashboardPanel(new ProfileManage(manv)), "PROFILE");
-        contentPanel.add(createDashboardPanel("Chấm công"), "ATTENDANCE");
-        contentPanel.add(createDashboardPanel("Lịch làm việc"), "SCHEDULE");
-        contentPanel.add(createDashboardPanel("Bảng lương"), "PAYROLL");
-        contentPanel.add(createDashboardPanel("Quản lý nghỉ phép"), "LEAVE");
-        contentPanel.add(createDashboardPanel("Đánh giá hiệu suất"), "EVALUATION");
+        contentPanel.add(createDashboardPanel(new AttendanceManage(manv)), "ATTENDANCE");
+        contentPanel.add(createDashboardPanel(new ScheduleManage(manv)), "SCHEDULE");
+        contentPanel.add(createDashboardPanel(new PayrollManage(manv)), "PAYROLL");
+        contentPanel.add(createDashboardPanel(new LeaveManage(manv)), "LEAVE");
+        contentPanel.add(createDashboardPanel(new EvaluationManage(manv)), "EVALUATION");
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, employeeTabs); // tạo sidebar
 
