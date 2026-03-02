@@ -11,7 +11,6 @@ import javax.swing.JPanel;
 import javax.swing.border.Border;
 
 import com.hrm.UI.HR.ContractTab.ContractManagement;
-import com.hrm.UI.HR.PermissionTab.MainPermissionPanel;
 import com.hrm.UI.HR.SalaryTab.SalaryManagement;
 
 import com.hrm.UI.component.*;
@@ -37,17 +36,14 @@ public class HRDashboard extends JFrame {
         List<SidebarTab> HRTabs = new ArrayList<>();
         HRTabs.add(new SidebarTab("Tổng quan", "DASHBOARD"));
         HRTabs.add(new SidebarTab("Quản lý nhân viên", "EMPLOYEE_MANAGEMENT"));
-        HRTabs.add(new SidebarTab("Quản lý hợp đồng", "CONTRACT_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("Quản lý chấm công", "ATTENDANCE_MANAGEMENT"));
         HRTabs.add(new SidebarTab("Quản lý lương", "PAYROLL_MANAGEMENT"));  
-        HRTabs.add(new SidebarTab("Phân Quyền", "PERMISSION_MANAGEMENT"));  
         HRTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
 
         //contentPanel.add(createDashboardPanel("Chào mừng đến với Dashboard Tổng quan"), "DASHBOARD");
         //contentPanel.add(createDashboardPanel(new EmployeeManagePanel()), "EMPLOYEE_MANAGEMENT");
-        contentPanel.add(createDashboardPanel(new ContractManagement()), "CONTRACT_MANAGEMENT");
+        contentPanel.add(createDashboardPanel(new ContractManagement()), "ATTENDANCE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new SalaryManagement()), "PAYROLL_MANAGEMENT");
-        contentPanel.add(createDashboardPanel(new MainPermissionPanel()), "PERMISSION_MANAGEMENT");
-
         //contentPanel.add(createDashboardPanel("Đăng xuất"), "LOGOUT");
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, HRTabs); // tạo sidebar

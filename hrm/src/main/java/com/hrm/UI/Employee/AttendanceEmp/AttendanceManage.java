@@ -1,6 +1,5 @@
 package com.hrm.UI.Employee.AttendanceEmp;
 
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -12,41 +11,57 @@ public class AttendanceManage extends JPanel {
 
     public AttendanceManage(String manv) {
         this.manv = manv;
-        
-        // Thiết lập Layout chính là BorderLayout để các thành phần xếp chồng theo chiều dọc
-        setLayout(new BorderLayout(0, 20));
-        setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt đồng bộ
-        setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // 1. Khởi tạo phần Header (Bao gồm Tiêu đề, Clock Card và 4 Stat Cards)
-        headerPanel = new AttendanceHeader(manv,this);
-        
-        // 2. Khởi tạo phần thân dưới (Lịch sử chấm công dạng Lịch)
-        // Chúng ta bọc Calendar vào một ScrollPane để hỗ trợ màn hình nhỏ
-        calendarPanel = new AttendanceHistory(manv);
-        
-        // Tạo một container cho phần nội dung phía dưới để có khoảng trắng và tiêu đề riêng nếu cần
-        JPanel bodyPanel = new JPanel(new BorderLayout(0, 10));
-        bodyPanel.setOpaque(false);
-        
-        // Thêm thanh tìm kiếm vào phía trên của Lịch
-        bodyPanel.add(calendarPanel.createSearchPanel(), BorderLayout.NORTH);
-        bodyPanel.add(calendarPanel, BorderLayout.CENTER);
-
-        // 3. Ghép các thành phần vào Panel chính
-        add(headerPanel, BorderLayout.NORTH);
-        add(bodyPanel, BorderLayout.CENTER);
+        initUI();
     }
 
-    // Phương thức để làm mới toàn bộ dữ liệu khi cần (ví dụ sau khi bấm nút Chấm công)
-    public void refreshData() {
-        removeAll();
-        headerPanel = new AttendanceHeader(manv,this);
+    private void initUI() {
+        // Thiết lập Layout chính
+        setLayout(new BorderLayout(0, 10));
+        setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt đồng bộ
+        setBorder(new EmptyBorder(15, 20, 15, 20));
+
+        // 1. Khởi tạo phần Header (Chứa Tiêu đề, Đồng hồ, Nút bấm và Thẻ thống kê)
+        headerPanel = new AttendanceHeader(manv, this);
+        
+        // 2. Khởi tạo phần thân dưới (Lịch sử chấm công dạng Lịch)
         calendarPanel = new AttendanceHistory(manv);
         
-        add(headerPanel, BorderLayout.NORTH);
-        add(calendarPanel, BorderLayout.CENTER);
+        // Tạo container cho phần Body để bọc Lịch và Thanh tìm kiếm
+        JPanel bodyPanel = new JPanel(new BorderLayout(0, 15));
+        bodyPanel.setOpaque(false);
         
+        // Tiêu đề phụ cho phần lịch sử
+        JLabel lblHistoryTitle = new JLabel("Lịch sử chấm công chi tiết");
+        lblHistoryTitle.setFont(new Font("Arial", Font.BOLD, 18));
+        lblHistoryTitle.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        // Group Search và Lịch
+        JPanel calendarContainer = new JPanel(new BorderLayout(0, 10));
+        calendarContainer.setOpaque(false);
+        calendarContainer.add(calendarPanel.createSearchPanel(), BorderLayout.NORTH);
+        calendarContainer.add(calendarPanel, BorderLayout.CENTER);
+
+        bodyPanel.add(lblHistoryTitle, BorderLayout.NORTH);
+        bodyPanel.add(calendarContainer, BorderLayout.CENTER);
+
+        // 3. Thêm các thành phần chính vào ScrollPane (đề phòng màn hình nhỏ)
+        JPanel mainContent = new JPanel(new BorderLayout(0, 20));
+        mainContent.setOpaque(false);
+        mainContent.add(headerPanel, BorderLayout.NORTH);
+        mainContent.add(bodyPanel, BorderLayout.CENTER);
+
+        JScrollPane scrollPane = new JScrollPane(mainContent);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getViewport().setBackground(new Color(248, 249, 250));
+
+        add(scrollPane, BorderLayout.CENTER);
+    }
+
+
+    public void refreshData() {
+        removeAll();
+        initUI();
         revalidate();
         repaint();
     }
