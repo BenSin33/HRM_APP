@@ -5,7 +5,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import javax.swing.*;
 
-class ProfileHeader extends JPanel {
+public class ProfileHeader extends JPanel {
     public ProfileHeader() {
         setLayout(new GridLayout(2, 1));
         setBackground(Color.WHITE);

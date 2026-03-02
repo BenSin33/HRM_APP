@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.ProfileEmp;
 import java.awt.*;
 import javax.swing.*;
 
-class ProfileFooter extends JPanel {
+public class ProfileFooter extends JPanel {
     public ProfileFooter() {
         setBackground(new Color(245, 246, 250));
         setBorder(BorderFactory.createEmptyBorder(10, 30, 20, 30));

@@ -55,27 +55,5 @@ public class ProfileManage extends JPanel {
     }
 }
 
-// Gợi ý nhỏ nếu bạn chưa có ProfileHeader:
-class ProfileHeader extends JPanel {
-    public ProfileHeader() {
-        setOpaque(false);
-        setLayout(new FlowLayout(FlowLayout.LEFT, 40, 20));
-        JLabel title = new JLabel("Chi tiết hồ sơ nhân viên");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        title.setForeground(new Color(33, 37, 41));
-        add(title);
-    }
-}
-
-// Gợi ý nhỏ nếu bạn chưa có ProfileFooter:
-class ProfileFooter extends JPanel {
-    public ProfileFooter() {
-        setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(10, 40, 20, 40));
-        setLayout(new BorderLayout());
-        JLabel note = new JLabel("© 2024 HRM System - Thông tin bảo mật nội bộ");
-        note.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        note.setForeground(Color.LIGHT_GRAY);
-        add(note, BorderLayout.WEST);
-    }
-}
+// Lớp ProfileHeader và ProfileFooter đã được tách ra thành các file riêng
+// ProfileHeader.java và ProfileFooter.java

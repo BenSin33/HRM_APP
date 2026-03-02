@@ -2,7 +2,8 @@ package com.hrm.UI;
 
 import javax.swing.*;
 
-import com.hrm.DAO.UserDAO;
+import com.hrm.Service.AuthenticationService;
+import com.hrm.DTO.UserDTO;
 import com.hrm.utils.IconResize;
 
 import java.awt.*;
@@ -11,6 +12,7 @@ import java.net.URL;
 import com.hrm.UI.Employee.EDashboard;
 
 import com.hrm.UI.HR.*;
+//import com.hrm.UI.Manager.ManagerDashboard;
 
 public class LoginUI extends JFrame{
 
@@ -105,18 +107,23 @@ public class LoginUI extends JFrame{
             return;
         }
 
-        UserDAO userDAO = new UserDAO();
-        String[] info = userDAO.authenticate(user, pass);
+        // Sử dụng Service để xác thực
+        AuthenticationService authService = new AuthenticationService();
+        UserDTO userInfo = authService.authenticate(user, pass);
 
-        if(info != null){
-            String manv = info[0];
-            String roleId = info[1];
-            if(roleId.equals("R1")){
+        if(userInfo != null){
+            if(authService.isAdmin(userInfo)){
                 new HRDashboard();
-                JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + manv);
+                JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + userInfo.getManv());
+            } else if(authService.isManager(userInfo)){
+                JOptionPane.showMessageDialog(this, "Xin chào quản lý: " + userInfo.getManv());
+                // TODO: Mở Manager Dashboard
+                // new ManagerDashboard(userInfo.getManv());
+            } else if(authService.isEmployee(userInfo)){
+                new EDashboard(userInfo.getManv());
+                JOptionPane.showMessageDialog(this, "Xin chào nhân viên: " + userInfo.getManv());
             } else {
-                new EDashboard(manv);
-                JOptionPane.showMessageDialog(this, "Xin chào nhân viên: " + manv);
+                JOptionPane.showMessageDialog(this, "Vai trò không được xác định!");
             }
             this.dispose();
         } else {
@@ -126,8 +133,8 @@ public class LoginUI extends JFrame{
     rightPanel.add(btnLogin);
 
     // 5. Thêm vào Frame chính
-    add(leftPanel, BorderLayout.WEST);
-    add(rightPanel, BorderLayout.CENTER);
+    this.add(leftPanel, BorderLayout.WEST);
+    this.add(rightPanel, BorderLayout.CENTER);
 
     this.setVisible(true);
 }
