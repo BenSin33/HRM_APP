@@ -7,17 +7,26 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.util.List;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.DAO.ContractDAO;
+import com.hrm.DTO.ContractDTO;
+import com.hrm.UI.component.CRUDDialog;
 
 public class ContractTable extends JPanel {
     private JTable contractTable;
     private DefaultTableModel tableModel;
     private int hoveredRow = -1;
     private ContractTableRenderer renderer;
+    private ContractDAO contractDAO;
+    private DecimalFormat df = new DecimalFormat("#,###");
 
     public ContractTable() {
         setLayout(new BorderLayout());
         setOpaque(false);
+        contractDAO = new ContractDAO();
         initComponent();
     }
 
@@ -31,25 +40,8 @@ public class ContractTable extends JPanel {
             }
         };
 
-        // Thêm dữ liệu mẫu
-        tableModel.addRow(new Object[]{
-            "HD001", 
-            "Nguyễn Văn A\nNV001 - Senior Developer",
-            "Không xác định", 
-            "15/1/2023\nKhông xác định",
-            "25.000.000 đ", 
-            "Hiệu lực",
-            ""
-        });
-        tableModel.addRow(new Object[]{
-            "HD002",
-            "Trần Thị B\nNV002 - Manager",
-            "Không xác định",
-            "1/6/2022\nKhông xác định",
-            "35.000.000 đ",
-            "Hiệu lực",
-            ""
-        });
+        // Load dữ liệu từ database
+        loadContractData();
 
         // Tạo bảng với override prepareRenderer
         contractTable = new JTable(tableModel) {
@@ -137,7 +129,34 @@ public class ContractTable extends JPanel {
 
     private void handleEdit(Object contractId) {
         System.out.println("Sửa hợp đồng: " + contractId);
-        JOptionPane.showMessageDialog(this, "Sửa hợp đồng: " + contractId);
+        
+        // Tìm hợp đồng từ database
+        ContractDTO contract = contractDAO.getContractByMa(contractId.toString());
+        if (contract == null) {
+            JOptionPane.showMessageDialog(this, "Không tìm thấy hợp đồng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Tạo form edit
+        ContractEditForm editForm = new ContractEditForm();
+        CRUDDialog<ContractDTO> dialog = new CRUDDialog<>(
+            (JFrame) SwingUtilities.getWindowAncestor(this),
+            "Cập nhật hợp đồng",
+            editForm,
+            contract
+        );
+        
+        dialog.setVisible(true);
+        
+        ContractDTO updatedContract = dialog.getResult();
+        if (updatedContract != null) {
+            if (contractDAO.updateContract(updatedContract)) {
+                JOptionPane.showMessageDialog(this, "Cập nhật hợp đồng thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                refreshData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật hợp đồng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void handleDelete(Object contractId) {
@@ -148,10 +167,46 @@ public class ContractTable extends JPanel {
             JOptionPane.YES_NO_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
-            int row = contractTable.getSelectedRow();
-            if (row != -1) {
-                tableModel.removeRow(row);
+            if (contractDAO.deleteContract(contractId.toString())) {
+                int row = contractTable.getSelectedRow();
+                if (row != -1) {
+                    tableModel.removeRow(row);
+                    JOptionPane.showMessageDialog(this, "Xóa hợp đồng thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                }
+                refreshData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi xóa hợp đồng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void loadContractData() {
+        List<ContractDTO> contracts = contractDAO.getAllContracts();
+        
+        for (ContractDTO contract : contracts) {
+            LocalDate today = LocalDate.now();
+            String trangThai = contract.trangThai;
+            
+            String ngayKy = contract.ngayLamHopDong != null ? 
+                contract.ngayLamHopDong.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A";
+            String ngayHetHan = contract.hanHopDong != null ? 
+                contract.hanHopDong.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A";
+            
+            tableModel.addRow(new Object[]{
+                contract.maHopDong,
+                contract.hoTen + "\n" + contract.maNV + " - " + contract.phongBan,
+                contract.loaiHopDong,
+                ngayKy + "\n" + ngayHetHan,
+                df.format(contract.luongCoBan != null ? contract.luongCoBan.doubleValue() : 0) + " đ",
+                trangThai,
+                ""
+            });
+        }
+    }
+
+    // Public method để refresh dữ liệu từ Tab
+    public void refreshData() {
+        tableModel.setRowCount(0);
+        loadContractData();
     }
 }

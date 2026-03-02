@@ -46,7 +46,18 @@ CREATE TABLE `bangluong` (
 --
 
 INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`) VALUES
-('ML01', 'NV07', 1, 2026, 8000000.00, 26, 0.00, 0.00, NULL, 8500000.00, 'Đã thanh toán');
+-- Các dòng lương đã được chốt và thanh toán
+('ML08', 'NV01', 2, 2026, 25000000.00, 22, 2000000.00, 1500000.00, '2026-02-28', 25500000.00, 'Đã thanh toán'),
+('ML09', 'NV02', 2, 2026, 15000000.00, 23, 1000000.00, 800000.00, '2026-02-28', 15200000.00, 'Đã thanh toán'),
+
+-- Các dòng lương đang chờ phê duyệt (Để test Manager/HR Dashboard)
+('ML10', 'NV04', 2, 2026, 20000000.00, 24, 1500000.00, 1000000.00, NULL, 20500000.00, 'Chờ phê duyệt'),
+('ML11', 'NV05', 2, 2026, 18000000.00, 22, 1200000.00, 900000.00, NULL, 18300000.00, 'Chờ phê duyệt'),
+
+-- Các dòng lương mới tính toán, chưa thanh toán
+('ML12', 'NV07', 2, 2026, 8000000.00, 24, 500000.00, 300000.00, NULL, 8200000.00, 'Chưa thanh toán'),
+('ML13', 'NV08', 2, 2026, 9000000.00, 24, 500000.00, 300000.00, NULL, 9200000.00, 'Chưa thanh toán'),
+('ML14', 'NV09', 2, 2026, 8500000.00, 20, 500000.00, 300000.00, NULL, 8700000.00, 'Chưa thanh toán');
 
 -- --------------------------------------------------------
 

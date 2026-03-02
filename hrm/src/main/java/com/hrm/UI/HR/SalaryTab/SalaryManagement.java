@@ -24,9 +24,9 @@ public class SalaryManagement extends JPanel {
         // Phần B: Thống kê (Summary)
         content.add(new SalarySummary(), BorderLayout.NORTH);
         
-        // Phần C: Bảng dữ liệu (Tạm thời là placeholder)
+        // Phần C: Bảng dữ liệu
         SalaryTable salaryTableContent = new SalaryTable();
-        content.add(salaryTableContent);
+        content.add(salaryTableContent, BorderLayout.CENTER);
 
         this.add(content, BorderLayout.CENTER);
     }
