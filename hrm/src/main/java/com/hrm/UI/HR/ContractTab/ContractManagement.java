@@ -28,7 +28,11 @@ public class ContractManagement extends JPanel {
         ContractHeader header = new ContractHeader();
         this.add(header, BorderLayout.NORTH);
 
-        // 2. Filter: Tìm kiếm + Dropdown filter
+        // 2. Center Panel: Filter + Table
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 15));
+        centerPanel.setOpaque(false);
+        
+        // Filter: Tìm kiếm + Dropdown filter
         JPanel filterContainer = new JPanel();
         filterContainer.setLayout(new BorderLayout());
         filterContainer.setOpaque(false);
@@ -36,10 +40,12 @@ public class ContractManagement extends JPanel {
         
         ContractFilter filter = new ContractFilter();
         filterContainer.add(filter, BorderLayout.CENTER);
-        this.add(filterContainer, BorderLayout.CENTER);
+        centerPanel.add(filterContainer, BorderLayout.NORTH);
 
         // 3. Table: Danh sách hợp đồng
         ContractTable table = new ContractTable();
-        this.add(table, BorderLayout.SOUTH);
+        centerPanel.add(table, BorderLayout.CENTER);
+        
+        this.add(centerPanel, BorderLayout.CENTER);
     }
 }

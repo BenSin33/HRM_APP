@@ -28,7 +28,7 @@ public class AccountSummary extends JPanel {
         JPanel card = new JPanel(new BorderLayout(10, 5));
         card.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         card.putClientProperty(FlatClientProperties.STYLE, 
-            "background: #ffffff; outlineWidth: 1; outlineColor: #e0e0e0 ; arc: 10");
+            "background: #ffffff; arc: 10");
 
         // Tiêu đề và change
         JPanel topPanel = new JPanel(new BorderLayout());
