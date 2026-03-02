@@ -1,29 +1,40 @@
 package com.hrm.utils;
 
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
 
-public class JDBCConection{
-    public static Connection getConnection () {
+public class JDBCConection {
 
+    public static Connection getConnection() {
         Properties properties = new Properties();
 
-        try (FileInputStream fis = new FileInputStream("db.properties")) {
-            properties.load(fis);
+        try {
+            InputStream is = JDBCConection.class
+                    .getClassLoader()
+                    .getResourceAsStream("db.properties");
+
+            if (is == null) {
+                System.out.println("❌ Không tìm thấy db.properties");
+                return null;
+            }
+
+            properties.load(is);
 
             String url = properties.getProperty("db.url");
             String user = properties.getProperty("db.user");
             String password = properties.getProperty("db.password");
 
-            Class.forName("com.mysql.cj.jdbc.Driver"); //đăng kí Driver Mysql (XAMPP dùng MariaDB/MySQL)
+            Class.forName("com.mysql.cj.jdbc.Driver");
 
-            return DriverManager.getConnection(url, user, password);
+            Connection conn = DriverManager.getConnection(url, user, password);
+            System.out.println("✅ Kết nối DB thành công");
+            return conn;
+
         } catch (Exception e) {
-            System.out.println("lỗi kết nối database" + e.getMessage());
+            e.printStackTrace();
             return null;
-
         }
     }
 }

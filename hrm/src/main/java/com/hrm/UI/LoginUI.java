@@ -1,13 +1,27 @@
 package com.hrm.UI;
 
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.net.URL;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
 import com.hrm.DAO.UserDAO;
+import com.hrm.UI.HR.HRDashboard;
 import com.hrm.utils.IconResize;
-
-import java.awt.*;
-import java.net.URL;
-import com.hrm.UI.HR.*;
 
 public class LoginUI extends JFrame{
 
