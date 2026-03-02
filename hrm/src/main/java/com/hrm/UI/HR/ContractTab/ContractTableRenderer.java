@@ -1,3 +1,4 @@
+// class này dùng để tạo ra 2 nút sửa và xoá trong hợp đồng.
 package com.hrm.UI.HR.ContractTab;
 
 import java.awt.*;
