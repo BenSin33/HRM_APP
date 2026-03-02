@@ -2,6 +2,8 @@ package com.hrm.UI.HR.ContractTab;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -52,7 +54,7 @@ public class ContractTable extends JPanel {
         // Tạo bảng với override prepareRenderer
         contractTable = new JTable(tableModel) {
             @Override
-            public Component prepareRenderer(javax.swing.table.TableCellRenderer cellRenderer, int row, int column) {
+            public Component prepareRenderer(TableCellRenderer cellRenderer, int row, int column) {
                 Component c = super.prepareRenderer(cellRenderer, row, column);
                 if (column == 6 && cellRenderer instanceof ContractTableRenderer) {
                     ((ContractTableRenderer)cellRenderer).setHovered(row == hoveredRow);
