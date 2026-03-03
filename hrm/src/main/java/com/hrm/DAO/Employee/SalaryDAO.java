@@ -177,4 +177,115 @@ public class SalaryDAO {
         }
         return false;
     }
+
+    // Mở khóa lương
+    public boolean unlockSalaries(int thang, int nam) {
+        String sql = "UPDATE bangluong SET TRANGTHAI = 'Chưa thanh toán', NGAYCHOTLUONG = NULL " +
+                     "WHERE THANG = ? AND NAM = ? AND TRANGTHAI = 'Đã thanh toán'";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, thang);
+            ps.setInt(2, nam);
+            
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Lấy bảng lương theo trạng thái
+    public List<SalaryDTO> getSalariesByMonthYearAndStatus(int thang, int nam, String trangThai) {
+        List<SalaryDTO> list = new ArrayList<>();
+        String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
+                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "FROM bangluong bl " +
+                     "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
+                     "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "WHERE bl.THANG = ? AND bl.NAM = ? AND bl.TRANGTHAI = ? " +
+                     "ORDER BY nv.HOTEN ASC";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, thang);
+            ps.setInt(2, nam);
+            ps.setString(3, trangThai);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SalaryDTO dto = new SalaryDTO();
+                    dto.maLuong = rs.getString("MALUONG");
+                    dto.maNV = rs.getString("MANV");
+                    dto.hoTen = rs.getString("HOTEN");
+                    dto.phongBan = rs.getString("TENPHONGBAN");
+                    dto.thang = rs.getInt("THANG");
+                    dto.nam = rs.getInt("NAM");
+                    dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
+                    dto.soNgayCong = rs.getFloat("SONGAYCONG");
+                    dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
+                    dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
+                    dto.thucLinh = rs.getBigDecimal("THUCLINH");
+                    dto.trangThai = rs.getString("TRANGTHAI");
+                    dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
+                        rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    list.add(dto);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Tìm kiếm bảng lương theo từ khóa
+    public List<SalaryDTO> searchSalaries(int thang, int nam, String keyword) {
+        List<SalaryDTO> list = new ArrayList<>();
+        String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
+                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "FROM bangluong bl " +
+                     "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
+                     "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "WHERE bl.THANG = ? AND bl.NAM = ? AND (bl.MANV LIKE ? OR nv.HOTEN LIKE ? OR pb.TENPHONGBAN LIKE ?) " +
+                     "ORDER BY nv.HOTEN ASC";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            String searchPattern = "%" + keyword + "%";
+            ps.setInt(1, thang);
+            ps.setInt(2, nam);
+            ps.setString(3, searchPattern);
+            ps.setString(4, searchPattern);
+            ps.setString(5, searchPattern);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SalaryDTO dto = new SalaryDTO();
+                    dto.maLuong = rs.getString("MALUONG");
+                    dto.maNV = rs.getString("MANV");
+                    dto.hoTen = rs.getString("HOTEN");
+                    dto.phongBan = rs.getString("TENPHONGBAN");
+                    dto.thang = rs.getInt("THANG");
+                    dto.nam = rs.getInt("NAM");
+                    dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
+                    dto.soNgayCong = rs.getFloat("SONGAYCONG");
+                    dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
+                    dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
+                    dto.thucLinh = rs.getBigDecimal("THUCLINH");
+                    dto.trangThai = rs.getString("TRANGTHAI");
+                    dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
+                        rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    list.add(dto);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

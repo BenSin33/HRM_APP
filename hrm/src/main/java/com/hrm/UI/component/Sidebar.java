@@ -13,68 +13,101 @@ public class Sidebar extends JPanel {
     private CardLayout cardLayout;
     private Color sidebarColor = new Color(102, 0, 204);
     
-    private boolean isCollapsed = false; // Trạng thái thu gọn
+    private boolean isCollapsed = false;
     private final int EXPANDED_WIDTH = 250;
     private final int COLLAPSED_WIDTH = 70;
+    private final int ANIMATION_DURATION = 300;
     
-    private JPanel menuContainer; // Panel chứa các nút để bỏ vào ScrollPane
+    private JPanel menuContainer;
+    private JPanel sidebarPanel;
+    private JScrollPane scrollPane;
 
     public Sidebar(JPanel contentPanel, CardLayout cardLayout, List<SidebarTab> tabsList) {
         this.contentPanel = contentPanel;
         this.cardLayout = cardLayout;
 
-        // Thiết lập layout chính cho Sidebar là BorderLayout để chứa ScrollPane
-        this.setPreferredSize(new Dimension(EXPANDED_WIDTH, 0));
         this.setBackground(sidebarColor);
         this.setLayout(new BorderLayout());
 
-        // 1. Nút điều khiển thu phóng (Toggle Button)
+        // 1. Nút điều khiển thu phóng
         JButton toggleBtn = new JButton("<<");
         toggleBtn.setBackground(new Color(128, 0, 255));
         toggleBtn.setForeground(Color.WHITE);
         toggleBtn.setFocusPainted(false);
         toggleBtn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        toggleBtn.addActionListener(e -> toggleSidebar(toggleBtn));
+        toggleBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        toggleBtn.addActionListener(e -> toggleSidebarSmooth(toggleBtn));
         this.add(toggleBtn, BorderLayout.NORTH);
 
-        // 2. Container chứa Menu (Sử dụng BoxLayout)
+        // 2. Sidebar panel chứa content
+        sidebarPanel = new JPanel(new BorderLayout());
+        sidebarPanel.setBackground(sidebarColor);
+        
+        // 3. Container chứa Menu
         menuContainer = new JPanel();
         menuContainer.setBackground(sidebarColor);
         menuContainer.setLayout(new BoxLayout(menuContainer, BoxLayout.Y_AXIS));
         renderMenu(tabsList);
 
-        // 3. JScrollPane để kéo xuống khi menu dài
-        JScrollPane scrollPane = new JScrollPane(menuContainer);
-        scrollPane.setBorder(null); // Xóa viền
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Cuộn mượt hơn
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // Tắt cuộn ngang
+        // 4. JScrollPane
+        scrollPane = new JScrollPane(menuContainer);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
 
-        this.add(scrollPane, BorderLayout.CENTER);
+        sidebarPanel.add(scrollPane, BorderLayout.CENTER);
+        this.add(sidebarPanel, BorderLayout.CENTER);
+        
+        this.setPreferredSize(new Dimension(EXPANDED_WIDTH, 0));
     }
 
-    private void toggleSidebar(JButton btn) {
+    private void toggleSidebarSmooth(JButton btn) {
         isCollapsed = !isCollapsed;
-        if (isCollapsed) {
-            this.setPreferredSize(new Dimension(COLLAPSED_WIDTH, 0));
-            btn.setText(">>");
-        } else {
-            this.setPreferredSize(new Dimension(EXPANDED_WIDTH, 0));
-            btn.setText("<<");
-        }
+        int targetWidth = isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
+        btn.setText(isCollapsed ? ">>" : "<<");
         
-        // Cập nhật lại giao diện các nút bên trong
+        // Animate width change
+        new Thread(() -> {
+            int currentWidth = isCollapsed ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
+            long startTime = System.currentTimeMillis();
+            
+            while (true) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                if (elapsed >= ANIMATION_DURATION) {
+                    SwingUtilities.invokeLater(() -> {
+                        setPreferredSize(new Dimension(targetWidth, 0));
+                        getParent().revalidate();
+                        getParent().repaint();
+                    });
+                    break;
+                }
+                
+                float progress = (float) elapsed / ANIMATION_DURATION;
+                int newWidth = (int) (currentWidth + (targetWidth - currentWidth) * progress);
+                
+                SwingUtilities.invokeLater(() -> {
+                    setPreferredSize(new Dimension(newWidth, 0));
+                    getParent().revalidate();
+                    getParent().repaint();
+                });
+                
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+        
+        // Update button visibility
         for (Component c : menuContainer.getComponents()) {
             if (c instanceof JButton) {
                 JButton menuBtn = (JButton) c;
-                // Nếu thu gọn thì ẩn chữ, chỉ để lại icon (nếu có) hoặc chữ cái đầu
                 menuBtn.setToolTipText(isCollapsed ? menuBtn.getText() : null);
             }
         }
-
-        this.revalidate();
-        this.repaint();
     }
 
     private void renderMenu(List<SidebarTab> tabsLists) {
