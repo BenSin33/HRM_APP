@@ -227,12 +227,21 @@ public class LeaveTable extends JPanel {
         model.setRowCount(0);
         for (Object[] row : fullData) {
             String status = (String) row[8];
-            boolean show = switch (activeFilter) {
-                case "pending"  -> "Chờ duyệt".equals(status);
-                case "approved" -> "Đã duyệt".equals(status);
-                case "rejected" -> "Từ chối".equals(status);
-                default         -> true;
-            };
+            boolean show;
+            switch (activeFilter) {
+                case "pending":
+                    show = "Chờ duyệt".equals(status);
+                    break;
+                case "approved":
+                    show = "Đã duyệt".equals(status);
+                    break;
+                case "rejected":
+                    show = "Từ chối".equals(status);
+                    break;
+                default:
+                    show = true;
+                    break;
+            }
             if (show) model.addRow(toRow(row));
         }
     }
@@ -325,9 +334,18 @@ public class LeaveTable extends JPanel {
 
             Color bg, fg;
             switch (status) {
-                case "Đã duyệt" -> { bg = APPROVED_BG; fg = APPROVED_FG; }
-                case "Từ chối"  -> { bg = REJECTED_BG; fg = REJECTED_FG; }
-                default          -> { bg = PENDING_BG;  fg = PENDING_FG;  }
+                case "Đã duyệt": 
+                    bg = APPROVED_BG; 
+                    fg = APPROVED_FG; 
+                    break;
+                case "Từ chối":  
+                    bg = REJECTED_BG; 
+                    fg = REJECTED_FG; 
+                    break;
+                default:          
+                    bg = PENDING_BG;  
+                    fg = PENDING_FG;  
+                    break;
             }
 
             JLabel badge = new JLabel(status, SwingConstants.CENTER) {

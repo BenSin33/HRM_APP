@@ -282,11 +282,31 @@ public class AttenDanceDetail extends JPanel {
                 badge.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
 
                 switch (status) {
-                    case "Đúng giờ"  -> { badge.setBackground(OK_BG);      badge.setForeground(OK_FG); }
-                    case "Đi muộn"   -> { badge.setBackground(LATE_BG);    badge.setForeground(LATE_FG); }
-                    case "Vắng mặt"  -> { badge.setBackground(ABSENT_BG);  badge.setForeground(ABSENT_FG); }
-                    case "Nghỉ phép" -> { badge.setBackground(LEAVE_BG);   badge.setForeground(LEAVE_FG); }
-                    default          -> { badge.setBackground(HOLIDAY_BG); badge.setForeground(HOLIDAY_FG); }
+                    case "Đúng giờ": { 
+                        badge.setBackground(OK_BG);      
+                        badge.setForeground(OK_FG); 
+                        break;
+                    }
+                    case "Đi muộn": { 
+                        badge.setBackground(LATE_BG);    
+                        badge.setForeground(LATE_FG); 
+                        break;
+                    }
+                    case "Vắng mặt": { 
+                        badge.setBackground(ABSENT_BG);  
+                        badge.setForeground(ABSENT_FG); 
+                        break;
+                    }
+                    case "Nghỉ phép": { 
+                        badge.setBackground(LEAVE_BG);   
+                        badge.setForeground(LEAVE_FG); 
+                        break;
+                    }
+                    default: { 
+                        badge.setBackground(HOLIDAY_BG); 
+                        badge.setForeground(HOLIDAY_FG); 
+                        break;
+                    }
                 }
                 cell.add(badge);
                 return cell;

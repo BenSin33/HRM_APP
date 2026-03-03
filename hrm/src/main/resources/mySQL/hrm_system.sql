@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 27, 2026 at 10:36 PM
+-- Generation Time: Mar 03, 2026 at 09:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,18 +46,8 @@ CREATE TABLE `bangluong` (
 --
 
 INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`) VALUES
--- Các dòng lương đã được chốt và thanh toán
-('ML08', 'NV01', 2, 2026, 25000000.00, 22, 2000000.00, 1500000.00, '2026-02-28', 25500000.00, 'Đã thanh toán'),
-('ML09', 'NV02', 2, 2026, 15000000.00, 23, 1000000.00, 800000.00, '2026-02-28', 15200000.00, 'Đã thanh toán'),
-
--- Các dòng lương đang chờ phê duyệt (Để test Manager/HR Dashboard)
-('ML10', 'NV04', 2, 2026, 20000000.00, 24, 1500000.00, 1000000.00, NULL, 20500000.00, 'Chờ phê duyệt'),
-('ML11', 'NV05', 2, 2026, 18000000.00, 22, 1200000.00, 900000.00, NULL, 18300000.00, 'Chờ phê duyệt'),
-
--- Các dòng lương mới tính toán, chưa thanh toán
-('ML12', 'NV07', 2, 2026, 8000000.00, 24, 500000.00, 300000.00, NULL, 8200000.00, 'Chưa thanh toán'),
-('ML13', 'NV08', 2, 2026, 9000000.00, 24, 500000.00, 300000.00, NULL, 9200000.00, 'Chưa thanh toán'),
-('ML14', 'NV09', 2, 2026, 8500000.00, 20, 500000.00, 300000.00, NULL, 8700000.00, 'Chưa thanh toán');
+('ML01', 'NV07', 1, 2026, 8000000.00, 26, 1800000.00, 600000.00, '2026-01-10', 9200000.00, 'Đã thanh toán'),
+('ML02', 'NV07', 2, 2026, 8000000.00, 24, 1680000.00, 600000.00, '2026-02-10', 9080000.00, 'Đã thanh toán');
 
 -- --------------------------------------------------------
 
@@ -78,7 +68,12 @@ CREATE TABLE `calam` (
 
 INSERT INTO `calam` (`MACALAM`, `TENCALAM`, `GIOVAOCA`, `GIOTANCA`) VALUES
 ('C1', 'Hành chính', '08:00:00', '17:00:00'),
-('C2', 'Ca sáng', '06:00:00', '14:00:00');
+('C2', 'Ca sáng', '06:00:00', '14:00:00'),
+('C3', 'Ca chiều', '14:00:00', '22:00:00'),
+('C4', 'Ca đêm', '22:00:00', '06:00:00'),
+('C5', 'Ca gãy sáng', '08:00:00', '12:00:00'),
+('C6', 'Ca gãy chiều', '17:00:00', '21:00:00'),
+('C7', 'Ca tăng cường', '18:00:00', '22:00:00');
 
 -- --------------------------------------------------------
 
@@ -93,17 +88,24 @@ CREATE TABLE `chamcong` (
   `SOGIOLAM` float DEFAULT NULL,
   `CHECKIN` time DEFAULT NULL,
   `CHECKOUT` time DEFAULT NULL,
-  `TRANGTHAI` varchar(50) DEFAULT NULL
+  `TRANGTHAI` varchar(50) DEFAULT NULL,
+  `MACALAM` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `chamcong`
 --
 
-INSERT INTO `chamcong` (`MACHAMCONG`, `MANV`, `NGAYLAMVIEC`, `SOGIOLAM`, `CHECKIN`, `CHECKOUT`, `TRANGTHAI`) VALUES
-('CC01', 'NV07', '2026-01-27', 8, '08:00:00', '17:00:00', 'Đúng giờ'),
-('CC02', 'NV08', '2026-01-27', 8, '07:55:00', '17:05:00', 'Đúng giờ'),
-('CC03', 'NV09', '2026-01-27', 7.5, '08:30:00', '17:00:00', 'Đi muộn');
+INSERT INTO `chamcong` (`MACHAMCONG`, `MANV`, `NGAYLAMVIEC`, `SOGIOLAM`, `CHECKIN`, `CHECKOUT`, `TRANGTHAI`, `MACALAM`) VALUES
+('CC01', 'NV07', '2026-02-25', 8, '08:00:00', '17:00:00', 'Đúng giờ', 'C1'),
+('CC02', 'NV08', '2026-01-27', 8, '07:55:00', '17:05:00', 'Đúng giờ', 'C1'),
+('CC03', 'NV09', '2026-01-27', 7.5, '08:30:00', '17:00:00', 'Đi muộn', 'C1'),
+('CC04', 'NV01', '2026-01-20', 8, '08:00:00', '17:00:00', 'Đúng giờ', 'C1'),
+('CC05', 'NV03', '2026-02-25', 6.75, '09:15:00', '17:00:00', 'Đi muộn', 'C1'),
+('CC06', 'NV04', '2026-02-26', 8, '14:00:00', '22:00:00', 'Đúng giờ', 'C3'),
+('CC07', 'NV07', '2026-02-26', 7, '22:00:00', '05:00:00', 'Về sớm', 'C4'),
+('CC08', 'NV07', '2026-02-27', 7.5, '14:30:00', '22:00:00', 'Đi muộn', 'C3'),
+('CC10001', 'NV07', '2026-03-03', 0, '14:04:27', '14:04:29', 'Đúng giờ', NULL);
 
 -- --------------------------------------------------------
 
@@ -164,8 +166,10 @@ CREATE TABLE `chucvu` (
 --
 
 INSERT INTO `chucvu` (`MACHUCVU`, `TENVITRI`, `PHUCAPCHUCVU`) VALUES
-('CV01', 'Trưởng phòng', 3000000.00),
-('CV02', 'Nhân viên', 0.00);
+('CV01', 'Giám đốc', 15000000.00),
+('CV02', 'Trưởng phòng', 3000000.00),
+('CV03', 'Trưởng nhóm', 2000000.00),
+('CV04', 'Nhân viên', 0.00);
 
 -- --------------------------------------------------------
 
@@ -259,7 +263,22 @@ CREATE TABLE `lichlamviec` (
 INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`) VALUES
 ('L01', 'NV07', 'C1', '2026-02-04', 'Làm tại văn phòng'),
 ('L02', 'NV08', 'C1', '2026-02-04', 'Trực kỹ thuật'),
-('L03', 'NV09', 'C1', '2026-02-04', 'Hỗ trợ khách hàng');
+('L03', 'NV09', 'C1', '2026-02-04', 'Hỗ trợ khách hàng'),
+('L04', 'NV01', 'C1', '2026-01-20', 'Làm việc hành chính'),
+('L05', 'NV02', 'C1', '2026-01-20', NULL),
+('L06', 'NV03', 'C1', '2026-02-25', 'Làm việc hành chính'),
+('L07', 'NV04', 'C3', '2026-02-26', 'Trực ca chiều'),
+('L08', 'NV05', 'C4', '2026-02-26', 'Trực ca tối'),
+('L09', 'NV06', 'C3', '2026-02-27', 'Trực ca chiều'),
+('L10', 'NV07', 'C1', '2026-02-27', 'Làm tại văn phòng'),
+('L11', 'NV08', 'C2', '2026-02-28', NULL),
+('L12', 'NV09', 'C5', '2026-02-28', NULL),
+('L13', 'NV07', 'C1', '2026-03-02', 'Làm việc hành chính và hỗ trợ sửa máy tính'),
+('L14', 'NV07', 'C7', '2026-03-03', 'Làm tại văn phòng'),
+('L15', 'NV07', 'C1', '2026-03-04', NULL),
+('L16', 'NV07', 'C1', '2026-03-05', 'Làm tại văn phòng'),
+('L17', 'NV07', 'C4', '2026-03-06', 'Làm tại văn phòng'),
+('L18', 'NV07', 'C5', '2026-03-07', 'Làm tại văn phòng');
 
 -- --------------------------------------------------------
 
@@ -283,7 +302,9 @@ CREATE TABLE `nghiphep` (
 --
 
 INSERT INTO `nghiphep` (`MANGHIPHEP`, `MANV`, `LOAINGHI`, `LYDONGHI`, `NGAYNGHI`, `NGAYLAMLAI`, `NGUOIDUYET`, `NGAYDUYET`) VALUES
-('NP01', 'NV07', 'Có lương', 'Ốm nhẹ', '2026-01-20', '2026-01-21', 'Nguyễn HR 1', '2026-01-19');
+('NP01', 'NV07', 'Có lương', 'Ốm nhẹ', '2026-02-20', '2026-02-21', 'Hoàng Bảo Ngọc', '2026-01-19'),
+('NP02', 'NV02', 'Không lương', 'Việc gia đình', '2026-01-20', '2026-01-21', 'Nguyễn Hoàng Nam', '2026-01-18'),
+('NP03', 'NV09', 'Có lương', 'Đi khám bệnh', '2026-02-28', '2026-03-01', 'Phạm Minh Quang', '2026-02-27');
 
 -- --------------------------------------------------------
 
@@ -311,15 +332,15 @@ CREATE TABLE `nhanvien` (
 --
 
 INSERT INTO `nhanvien` (`MANV`, `MAPHONGBAN`, `MACHUCVU`, `MATRINHDO`, `HOTEN`, `GIOITINH`, `DIACHI`, `DIENTHOAI`, `EMAIL`, `NGAYVAOLAM`, `SONGAYPHEP`, `TRANGTHAI`) VALUES
-('NV01', 'PB01', 'CV01', 'TD02', 'Nguyễn Hoàng Nam', 'Nam', '123 Lê Lợi, Quận 1, TP.HCM', '0901234567', 'nam.nguyen@company.com', '2022-01-15', 12, 'Đang làm việc'),
-('NV02', 'PB01', 'CV02', 'TD01', 'Trần Thị Thu Thảo', 'Nữ', '456 Nguyễn Huệ, Quận 1, TP.HCM', '0912345678', 'thao.tran@company.com', '2024-02-01', 12, 'Đang làm việc'),
-('NV03', 'PB01', 'CV02', 'TD01', 'Lê Văn Tùng', 'Nam', '789 CMT8, Quận 3, TP.HCM', '0923456789', 'tung.le@company.com', '2024-06-15', 12, 'Đang làm việc'),
-('NV04', 'PB02', 'CV01', 'TD02', 'Phạm Minh Quang', 'Nam', '12 Hòa Bình, Quận Tân Phú, TP.HCM', '0934567890', 'quang.pham@company.com', '2022-03-20', 12, 'Đang làm việc'),
-('NV05', 'PB02', 'CV01', 'TD01', 'Hoàng Bảo Ngọc', 'Nữ', '88 Cộng Hòa, Quận Tân Bình, TP.HCM', '0945678901', 'ngoc.hoang@company.com', '2023-05-10', 12, 'Đang làm việc'),
-('NV06', 'PB03', 'CV01', 'TD01', 'Vũ Anh Tuấn', 'Nam', '202 Võ Văn Kiệt, Quận 5, TP.HCM', '0956789012', 'tuan.vu@company.com', '2023-08-15', 12, 'Đang làm việc'),
-('NV07', 'PB02', 'CV02', 'TD01', 'Ngô Thanh Sơn', 'Nam', '15 Trần Hưng Đạo, Quận 1, TP.HCM', '0967890123', 'son.ngo@company.com', '2025-01-10', 12, 'Đang làm việc'),
-('NV08', 'PB03', 'CV02', 'TD01', 'Đỗ Mỹ Linh', 'Nữ', '33 Phan Xích Long, Quận Phú Nhuận, TP.HCM', '0878901234', 'linh.do@company.com', '2025-01-20', 12, 'Đang làm việc'),
-('NV09', 'PB03', 'CV02', 'TD01', 'Đặng Quốc Huy', 'Nam', '55 Quang Trung, Quận Gò Vấp, TP.HCM', '0989012345', 'huy.dang@company.com', '2025-02-01', 12, 'Đang làm việc');
+('NV01', 'PB01', 'CV01', 'TD03', 'Nguyễn Hoàng Nam', 'Nam', '123 Lê Lợi, Quận 1, TP.HCM', '0901234567', 'nam.nguyen@company.com', '2018-01-15', 12, 'Đang làm việc'),
+('NV02', 'PB01', 'CV02', 'TD03', 'Trần Thị Thu Thảo', 'Nữ', '456 Nguyễn Huệ, Quận 1, TP.HCM', '0912345678', 'thao.tran@company.com', '2024-02-01', 12, 'Đang làm việc'),
+('NV03', 'PB01', 'CV02', 'TD02', 'Lê Văn Tùng', 'Nam', '789 CMT8, Quận 3, TP.HCM', '0923456789', 'tung.le@company.com', '2024-06-15', 12, 'Đang làm việc'),
+('NV04', 'PB02', 'CV02', 'TD02', 'Phạm Minh Quang', 'Nam', '12 Hòa Bình, Quận Tân Phú, TP.HCM', '0934567890', 'quang.pham@company.com', '2022-03-20', 12, 'Đang làm việc'),
+('NV05', 'PB02', 'CV03', 'TD02', 'Hoàng Bảo Ngọc', 'Nữ', '88 Cộng Hòa, Quận Tân Bình, TP.HCM', '0945678901', 'ngoc.hoang@company.com', '2023-05-10', 12, 'Đang làm việc'),
+('NV06', 'PB03', 'CV03', 'TD02', 'Vũ Anh Tuấn', 'Nam', '202 Võ Văn Kiệt, Quận 5, TP.HCM', '0956789012', 'tuan.vu@company.com', '2023-08-15', 12, 'Đang làm việc'),
+('NV07', 'PB02', 'CV04', 'TD01', 'Ngô Thanh Sơn', 'Nam', '15 Trần Hưng Đạo, Quận 1, TP.HCM', '0967890123', 'son.ngo@company.com', '2025-01-10', 12, 'Đang làm việc'),
+('NV08', 'PB03', 'CV04', 'TD02', 'Đỗ Mỹ Linh', 'Nữ', '33 Phan Xích Long, Quận Phú Nhuận, TP.HCM', '0878901234', 'linh.do@company.com', '2025-01-20', 12, 'Đang làm việc'),
+('NV09', 'PB03', 'CV04', 'TD02', 'Đặng Quốc Huy', 'Nam', '55 Quang Trung, Quận Gò Vấp, TP.HCM', '0989012345', 'huy.dang@company.com', '2025-02-01', 12, 'Đang làm việc');
 
 -- --------------------------------------------------------
 
@@ -368,8 +389,8 @@ CREATE TABLE `phieudanhgia` (
 --
 
 INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`, `NHANXET`, `QUYETDINH`, `NGAYDANHGIA`) VALUES
-('DG01', 'NV07', 'Q1-2026', 'TC01', 9, 'Nhiệt tình, hoàn thành tốt', 'Giữ nguyên', '2026-01-31'),
-('DG02', 'NV04', 'Q1-2026', 'TC03', 10, 'Lãnh đạo xuất sắc', 'Khen thưởng', '2026-01-31');
+('DG01', 'NV07', 'Q1-2026', 'TC01', 90, 'Nhiệt tình, hoàn thành tốt', 'Giữ nguyên', '2026-01-31'),
+('DG02', 'NV04', 'Q1-2026', 'TC03', 100, 'Lãnh đạo xuất sắc', 'Khen thưởng', '2026-01-31');
 
 -- --------------------------------------------------------
 
@@ -389,7 +410,9 @@ CREATE TABLE `phongban` (
 INSERT INTO `phongban` (`MAPHONGBAN`, `TENPHONGBAN`) VALUES
 ('PB01', 'Nhân sự'),
 ('PB02', 'Kỹ thuật'),
-('PB03', 'Kinh doanh');
+('PB03', 'Kinh doanh'),
+('PB04', 'Kế toán'),
+('PB05', 'Marketing');
 
 -- --------------------------------------------------------
 
@@ -459,7 +482,14 @@ CREATE TABLE `tieuchidanhgia` (
 INSERT INTO `tieuchidanhgia` (`MATIEUCHI`, `TENTIEUCHI`, `DIEM`) VALUES
 ('TC01', 'Năng suất làm việc', 10),
 ('TC02', 'Thái độ phối hợp', 10),
-('TC03', 'Kỹ năng chuyên môn', 10);
+('TC03', 'Kỹ năng chuyên môn', 10),
+('TC04', 'Kỹ năng làm việc nhóm', 10),
+('TC05', 'Sự sáng tạo trong công việc', 10),
+('TC06', 'Kỷ luật và giờ giấc', 10),
+('TC07', 'Khả năng giải quyết vấn đề', 10),
+('TC08', 'Mức độ hoàn thành KPI', 10),
+('TC09', 'Kỹ năng giao tiếp', 10),
+('TC10', 'Tinh thần cầu tiến', 10);
 
 -- --------------------------------------------------------
 
@@ -478,8 +508,10 @@ CREATE TABLE `trinhdo` (
 --
 
 INSERT INTO `trinhdo` (`MATRINHDO`, `TRINHDO`, `HESOTRINHDO`) VALUES
-('TD01', 'Đại học', 1.00),
-('TD02', 'Thạc sĩ', 1.20);
+('TD01', 'Cao đẳng', 0.90),
+('TD02', 'Đại học', 1.00),
+('TD03', 'Thạc sĩ', 1.50),
+('TD04', 'Tiến sĩ', 2.00);
 
 --
 -- Indexes for dumped tables

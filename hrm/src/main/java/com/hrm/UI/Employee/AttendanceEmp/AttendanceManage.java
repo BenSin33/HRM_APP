@@ -7,7 +7,8 @@ import java.awt.*;
 public class AttendanceManage extends JPanel {
     private String manv;
     private AttendanceHeader headerPanel;
-    private AttendanceHistory calendarPanel;
+    private AttendanceMonth monthPanel;
+    private AttendanceSearch searchPanel;
 
     public AttendanceManage(String manv) {
         this.manv = manv;
@@ -23,26 +24,22 @@ public class AttendanceManage extends JPanel {
         // 1. Khởi tạo phần Header (Chứa Tiêu đề, Đồng hồ, Nút bấm và Thẻ thống kê)
         headerPanel = new AttendanceHeader(manv, this);
         
-        // 2. Khởi tạo phần thân dưới (Lịch sử chấm công dạng Lịch)
-        calendarPanel = new AttendanceHistory(manv);
-        
-        // Tạo container cho phần Body để bọc Lịch và Thanh tìm kiếm
-        JPanel bodyPanel = new JPanel(new BorderLayout(0, 15));
+        // 2. Khởi tạo phần thân dưới (Lịch tháng và tìm kiếm lịch sử)
+        monthPanel = new AttendanceMonth(manv);
+        searchPanel = new AttendanceSearch(manv);
+
+        JPanel bodyPanel = new JPanel();
+        bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
         bodyPanel.setOpaque(false);
-        
-        // Tiêu đề phụ cho phần lịch sử
+
         JLabel lblHistoryTitle = new JLabel("Lịch sử chấm công chi tiết");
         lblHistoryTitle.setFont(new Font("Arial", Font.BOLD, 18));
         lblHistoryTitle.setBorder(new EmptyBorder(10, 0, 0, 0));
 
-        // Group Search và Lịch
-        JPanel calendarContainer = new JPanel(new BorderLayout(0, 10));
-        calendarContainer.setOpaque(false);
-        calendarContainer.add(calendarPanel.createSearchPanel(), BorderLayout.NORTH);
-        calendarContainer.add(calendarPanel, BorderLayout.CENTER);
-
-        bodyPanel.add(lblHistoryTitle, BorderLayout.NORTH);
-        bodyPanel.add(calendarContainer, BorderLayout.CENTER);
+        bodyPanel.add(monthPanel);
+        bodyPanel.add(Box.createVerticalStrut(10));
+        bodyPanel.add(lblHistoryTitle);
+        bodyPanel.add(searchPanel);
 
         // 3. Thêm các thành phần chính vào ScrollPane (đề phòng màn hình nhỏ)
         JPanel mainContent = new JPanel(new BorderLayout(0, 20));

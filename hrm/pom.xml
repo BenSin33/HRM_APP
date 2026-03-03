@@ -13,7 +13,8 @@
     <name>HRM System</name>
 
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -61,13 +62,14 @@
         </resources>
 
         <plugins>
-            <!-- Compile Java 21 -->
+            <!-- Compile Java 1.8 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
+                <version>3.11.0</version>
                 <configuration>
-                    <release>21</release>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
 
@@ -76,6 +78,9 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.hrm.App</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
