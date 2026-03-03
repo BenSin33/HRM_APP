@@ -25,7 +25,7 @@ public class ProfileDAO {
                 dto.hoTen = rs.getString("HOTEN");
                 dto.email = rs.getString("EMAIL");
                 dto.sdt = rs.getString("DIENTHOAI");
-                dto.ngaySinh = rs.getString("NGAYVAOLAM"); // Giả định hoặc thêm cột NGAYSINH
+                dto.ngaySinh = rs.getString("NGAYVAOLAM");
                 dto.gioiTinh = rs.getString("GIOITINH");
                 dto.trinhDo = rs.getString("TRINHDO");
                 dto.diaChi = rs.getString("DIACHI");

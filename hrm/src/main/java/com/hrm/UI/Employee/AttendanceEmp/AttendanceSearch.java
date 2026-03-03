@@ -6,6 +6,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import com.hrm.DAO.Employee.AttendanceDAO;
 import com.hrm.DTO.Employee.AttendanceDTO;
 
@@ -102,15 +103,20 @@ public class AttendanceSearch extends JPanel {
         JLabel lblTrangThai = new JLabel("Trạng thái: ");
         lblTrangThai.setFont(new Font("Arial", Font.BOLD, 18));
         row2.add(lblTrangThai);
-        String[] statuses = { "Tất cả", "Đúng giờ", "Đi muộn", "Về sớm" };
+        String[] statuses = { "Tất cả", "Đúng giờ", "Đi muộn/Về sớm" };
         JComboBox<String> cbStatus = new JComboBox<>(statuses);
         cbStatus.setFont(new Font("Arial", Font.PLAIN, 16));
         row2.add(cbStatus);
         JLabel lblCaLam = new JLabel("  Ca làm: ");
         lblCaLam.setFont(new Font("Arial", Font.BOLD, 18));
         row2.add(lblCaLam);
-        String[] shifts = { "Tất cả", "C1", "C2", "C3" };
-        JComboBox<String> cbShift = new JComboBox<>(shifts);
+        AttendanceDAO shiftDao = new AttendanceDAO();
+        LinkedHashMap<String, String> shiftDisplayMap = shiftDao.getShiftDisplayMap();
+        JComboBox<String> cbShift = new JComboBox<>();
+        cbShift.addItem("Tất cả");
+        for (String display : shiftDisplayMap.values()) {
+            cbShift.addItem(display);
+        }
         cbShift.setFont(new Font("Arial", Font.PLAIN, 16));
         row2.add(cbShift);
         JButton btnSearchStatus = new JButton("Tìm kiếm");
@@ -149,13 +155,23 @@ public class AttendanceSearch extends JPanel {
         });
         btnSearchStatus.addActionListener(e -> {
             AttendanceDAO dao = new AttendanceDAO();
+            String selectedShiftDisplay = cbShift.getSelectedItem().toString();
+            String selectedShiftCode = "Tất cả";
+            if (!"Tất cả".equals(selectedShiftDisplay)) {
+                for (java.util.Map.Entry<String, String> entry : shiftDisplayMap.entrySet()) {
+                    if (entry.getValue().equals(selectedShiftDisplay)) {
+                        selectedShiftCode = entry.getKey();
+                        break;
+                    }
+                }
+            }
             ArrayList<AttendanceDTO> results = dao.searchAttendance(
                     manv,
-                    0,
-                    0,
-                    0,
+                    null,
+                    null,
+                    null,
                     cbStatus.getSelectedItem().toString(),
-                    cbShift.getSelectedItem().toString());
+                    selectedShiftCode);
             tableModel.setRowCount(0);
             if (results.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Không tìm thấy dữ liệu phù hợp!");

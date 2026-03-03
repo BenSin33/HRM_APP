@@ -13,10 +13,6 @@ public class AttendanceDTO {
     private double soGioLam;
     private String maCaLam;
 
-    // Constructors
-    public AttendanceDTO() {}
-
-    // Getters and Setters
     public String getMaChamCong() { return maChamCong; }
     public void setMaChamCong(String maChamCong) { this.maChamCong = maChamCong; }
 

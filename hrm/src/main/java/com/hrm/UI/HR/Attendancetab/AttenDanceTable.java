@@ -87,7 +87,7 @@ public class AttenDanceTable extends JPanel {
                 }
             }
             @Override public void focusLost(FocusEvent e) {
-                if (searchField.getText().isBlank()) {
+                if (searchField.getText().isEmpty()) {
                     searchField.setText(placeholder); searchField.setForeground(GRAY500);
                 }
             }

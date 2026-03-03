@@ -23,8 +23,11 @@ public class LeaveManage extends JPanel {
         setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt đồng bộ thiết kế
 
         // 1. Khởi tạo các thành phần con
-        header = new LeaveHeader();
-        history = new LeaveHistory();
+        header = new LeaveHeader(manv);
+        history = new LeaveHistory(manv, this::refreshLeaveHistory);
+        
+        // Kết nối sự kiện cho nút tạo đơn mới
+        header.addCreateLeaveListener(e -> openLeaveDialog());
 
         // 2. Tạo một Panel chứa nội dung chính để có thể cuộn
         JPanel container = new JPanel();
@@ -44,7 +47,36 @@ public class LeaveManage extends JPanel {
         add(header, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
     }
-
+    
+    private void openLeaveDialog() {
+        LeaveRequestDialog dialog = new LeaveRequestDialog(SwingUtilities.getWindowAncestor(this), manv);
+        dialog.setVisible(true);
+        
+        // Refresh lịch sử sau khi gửi đơn
+        if (dialog.isSubmitted()) {
+            refreshLeaveHistory();
+        }
+    }
+    
+    private void refreshLeaveHistory() {
+        // Tải lại dữ liệu từ database
+        history = new LeaveHistory(manv, this::refreshLeaveHistory);
+        
+        // Xóa các thành phần cũ và thêm lại
+        removeAll();
+        
+        JScrollPane scrollPane = new JScrollPane(history);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getViewport().setBackground(new Color(248, 249, 250));
+        
+        add(header, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        
+        revalidate();
+        repaint();
+    }
+    
     /**
      * Phương thức làm mới dữ liệu (gọi sau khi tạo đơn mới thành công)
      */
@@ -53,8 +85,8 @@ public class LeaveManage extends JPanel {
         removeAll();
         
         // Khởi tạo lại các thành phần với dữ liệu mới từ DB
-        header = new LeaveHeader();
-        history = new LeaveHistory();
+        header = new LeaveHeader(manv);
+        history = new LeaveHistory(manv);
         
         // Thiết lập lại giao diện
         initUI();

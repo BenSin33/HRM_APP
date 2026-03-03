@@ -220,10 +220,15 @@ public class EvaluationTable extends JPanel {
             Object[] arr = (Object[]) v;
             int score = (Integer) arr[0];
 
-            Color scoreColor = switch (arr[1].toString()) {
-                case "Kém" -> new Color(239, 68, 68);
-                default    -> PURPLE;
-            };
+            Color scoreColor;
+            switch (arr[1].toString()) {
+                case "Kém":
+                    scoreColor = new Color(239, 68, 68);
+                    break;
+                default:
+                    scoreColor = PURPLE;
+                    break;
+            }
 
             // Cell ngoài: GridBagLayout để căn giữa hoàn toàn
             JPanel cell = new JPanel(new GridBagLayout());
@@ -265,10 +270,22 @@ public class EvaluationTable extends JPanel {
 
             Color bg, fg;
             switch (rank) {
-                case "Xuất sắc"   -> { bg = XS_BG;  fg = XS_FG;  }
-                case "Tốt"        -> { bg = TOT_BG; fg = TOT_FG; }
-                case "Trung bình" -> { bg = TB_BG;  fg = TB_FG;  }
-                default            -> { bg = KEM_BG; fg = KEM_FG; }
+                case "Xuất sắc":   
+                    bg = XS_BG;  
+                    fg = XS_FG;  
+                    break;
+                case "Tốt":        
+                    bg = TOT_BG; 
+                    fg = TOT_FG; 
+                    break;
+                case "Trung bình": 
+                    bg = TB_BG;  
+                    fg = TB_FG;  
+                    break;
+                default:            
+                    bg = KEM_BG; 
+                    fg = KEM_FG; 
+                    break;
             }
 
             JLabel badge = new JLabel(rank, SwingConstants.CENTER) {

@@ -11,12 +11,13 @@ import java.util.Locale;
 import java.util.Map;
 
 public class AttendanceHeader extends JPanel {
-        // Tham chiếu nút check-in để enable lại sau khi check-out
-        private JButton btnCheckIn;
     private String manv;
     private AttendanceManage parent;
     private AttendanceDAO attendanceDAO = new AttendanceDAO();
     private JPanel statsPanel;
+    private JLabel lblTime;
+    private JLabel lblNowDate;
+    private Timer clockTimer;
 
     public AttendanceHeader(String manv, AttendanceManage parent) {
         this.manv = manv;
@@ -44,15 +45,11 @@ public class AttendanceHeader extends JPanel {
         timeCard.setBackground(new Color(59, 130, 246));
         timeCard.setBorder(new EmptyBorder(25, 20, 25, 20));
 
-        LocalDateTime now = LocalDateTime.now();
-        String timeStr = now.format(DateTimeFormatter.ofPattern("HH:mm"));
-        String dateStr = now.format(DateTimeFormatter.ofPattern("EEEE, dd 'tháng' M, yyyy", new Locale("vi", "VN")));
-
-        JLabel lblTime = new JLabel(timeStr, SwingConstants.CENTER);
+        lblTime = new JLabel("", SwingConstants.CENTER);
         lblTime.setFont(new Font("Arial", Font.BOLD, 48));
         lblTime.setForeground(Color.WHITE);
 
-        JLabel lblNowDate = new JLabel("Hôm nay " + dateStr, SwingConstants.CENTER);
+        lblNowDate = new JLabel("", SwingConstants.CENTER);
         lblNowDate.setForeground(new Color(219, 234, 254));
 
         JPanel textCenter = new JPanel(new GridLayout(2, 1));
@@ -79,8 +76,35 @@ public class AttendanceHeader extends JPanel {
         topGroup.add(titlePanel, BorderLayout.NORTH);
         topGroup.add(timeCard, BorderLayout.CENTER);
 
+        updateDateTime();
+        startClock();
+
         add(topGroup, BorderLayout.NORTH);
         add(statsPanel, BorderLayout.CENTER);
+    }
+
+    private void updateDateTime() {
+        LocalDateTime now = LocalDateTime.now();
+        String timeStr = now.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+        String dateStr = now.format(DateTimeFormatter.ofPattern("EEEE, dd 'tháng' M, yyyy", new Locale("vi", "VN")));
+        lblTime.setText(timeStr);
+        lblNowDate.setText("Hôm nay " + dateStr);
+    }
+
+    private void startClock() {
+        if (clockTimer != null && clockTimer.isRunning()) {
+            clockTimer.stop();
+        }
+        clockTimer = new Timer(1000, e -> updateDateTime());
+        clockTimer.start();
+    }
+
+    @Override
+    public void removeNotify() {
+        if (clockTimer != null) {
+            clockTimer.stop();
+        }
+        super.removeNotify();
     }
 
     private void refreshStats() {
@@ -88,7 +112,7 @@ public class AttendanceHeader extends JPanel {
         Map<String, String> stats = attendanceDAO.getMonthlyStats(manv);
         statsPanel.add(createStatCard("Tổng ngày làm", stats.getOrDefault("totalDays", "0"), "", new Color(59, 130, 246)));
         statsPanel.add(createStatCard("Đúng giờ", stats.getOrDefault("onTime", "0"), "", new Color(34, 197, 94)));
-        statsPanel.add(createStatCard("Đi muộn", stats.getOrDefault("late", "0"), "", new Color(234, 179, 8)));
+        statsPanel.add(createStatCard("Đi muộn/Về sớm", stats.getOrDefault("late", "0"), "", new Color(234, 179, 8)));
         statsPanel.add(createStatCard("Tổng giờ làm", stats.getOrDefault("totalHours", "0.0"), "h", new Color(168, 85, 247)));
         statsPanel.revalidate();
         statsPanel.repaint();
@@ -103,21 +127,12 @@ public class AttendanceHeader extends JPanel {
                 }
                 if (attendanceDAO.insertCheckIn(manv)) {
                     JOptionPane.showMessageDialog(this, "Check-in thành công!");
-                    if (btnCheckIn != null) {
-                        btnCheckIn.setEnabled(false);
-                        btnCheckIn.setToolTipText("Bạn đã check-in hôm nay");
-                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Không có lịch làm việc cho hôm nay!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 if (attendanceDAO.updateCheckOut(manv)) {
                     JOptionPane.showMessageDialog(this, "Check-out thành công!");
-                    // Enable lại nút check-in sau khi check-out
-                    if (btnCheckIn != null) {
-                        btnCheckIn.setEnabled(true);
-                        btnCheckIn.setToolTipText(null);
-                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Không tìm thấy lượt Check-in hợp lệ!");
                 }
@@ -139,19 +154,6 @@ public class AttendanceHeader extends JPanel {
         btn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.addActionListener(e -> handleAttendance(isCheckIn));
-        // Nếu là nút check-in, kiểm tra trạng thái và disable nếu đã check-in hôm nay
-        if (isCheckIn) {
-            try {
-                if (attendanceDAO.checkAlreadyCheckedIn(manv)) {
-                    btn.setEnabled(false);
-                    btn.setToolTipText("Bạn đã check-in hôm nay");
-                }
-            } catch (Exception ex) {
-                // Nếu lỗi DB, vẫn cho phép bấm
-            }
-            // Lưu lại tham chiếu nút check-in
-            this.btnCheckIn = btn;
-        }
         return btn;
     }
 

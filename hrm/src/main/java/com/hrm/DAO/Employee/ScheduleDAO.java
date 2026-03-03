@@ -54,4 +54,30 @@ public class ScheduleDAO {
         }
         return schedules;
     }
+
+    public ScheduleDTO getScheduleByEmployeeAndDate(String manv, java.time.LocalDate date) {
+        String sql = "SELECT l.NGAYLAMVIEC, l.MACALAM, c.TENCALAM, c.GIOVAOCA, c.GIOTANCA, l.GHICHU " +
+                "FROM lichlamviec l " +
+                "LEFT JOIN calam c ON l.MACALAM = c.MACALAM " +
+                "WHERE l.MANV = ? AND l.NGAYLAMVIEC = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, manv);
+            ps.setDate(2, java.sql.Date.valueOf(date));
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                ScheduleDTO schedule = new ScheduleDTO();
+                schedule.setDate(rs.getDate("NGAYLAMVIEC"));
+                schedule.setShift(rs.getString("MACALAM"));
+                schedule.setShiftName(rs.getString("TENCALAM"));
+                schedule.setStartTime(rs.getString("GIOVAOCA"));
+                schedule.setEndTime(rs.getString("GIOTANCA"));
+                schedule.setDescription(rs.getString("GHICHU"));
+                return schedule;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
