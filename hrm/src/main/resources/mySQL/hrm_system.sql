@@ -261,7 +261,13 @@ INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`)
 ('L02', 'NV08', 'C1', '2026-02-04', 'Trực kỹ thuật'),
 ('L03', 'NV09', 'C1', '2026-02-04', 'Hỗ trợ khách hàng');
 
--- --------------------------------------------------------
+-- Lịch làm việc cho NV07 từ thứ 3 đến thứ 7 tháng 3/2026
+INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`) VALUES
+('L04', 'NV07', 'C1', '2026-03-03', 'Làm tại văn phòng'),
+('L05', 'NV07', 'C1', '2026-03-04', 'Làm tại văn phòng'),
+('L06', 'NV07', 'C1', '2026-03-05', 'Làm tại văn phòng'),
+('L07', 'NV07', 'C1', '2026-03-06', 'Làm tại văn phòng'),
+('L08', 'NV07', 'C1', '2026-03-07', 'Làm tại văn phòng');
 
 --
 -- Table structure for table `nghiphep`

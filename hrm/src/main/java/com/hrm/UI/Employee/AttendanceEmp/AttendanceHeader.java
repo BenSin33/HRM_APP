@@ -11,6 +11,8 @@ import java.util.Locale;
 import java.util.Map;
 
 public class AttendanceHeader extends JPanel {
+        // Tham chiếu nút check-in để enable lại sau khi check-out
+        private JButton btnCheckIn;
     private String manv;
     private AttendanceManage parent;
     private AttendanceDAO attendanceDAO = new AttendanceDAO();
@@ -101,12 +103,21 @@ public class AttendanceHeader extends JPanel {
                 }
                 if (attendanceDAO.insertCheckIn(manv)) {
                     JOptionPane.showMessageDialog(this, "Check-in thành công!");
+                    if (btnCheckIn != null) {
+                        btnCheckIn.setEnabled(false);
+                        btnCheckIn.setToolTipText("Bạn đã check-in hôm nay");
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Không có lịch làm việc cho hôm nay!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 if (attendanceDAO.updateCheckOut(manv)) {
                     JOptionPane.showMessageDialog(this, "Check-out thành công!");
+                    // Enable lại nút check-in sau khi check-out
+                    if (btnCheckIn != null) {
+                        btnCheckIn.setEnabled(true);
+                        btnCheckIn.setToolTipText(null);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Không tìm thấy lượt Check-in hợp lệ!");
                 }
@@ -128,6 +139,19 @@ public class AttendanceHeader extends JPanel {
         btn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.addActionListener(e -> handleAttendance(isCheckIn));
+        // Nếu là nút check-in, kiểm tra trạng thái và disable nếu đã check-in hôm nay
+        if (isCheckIn) {
+            try {
+                if (attendanceDAO.checkAlreadyCheckedIn(manv)) {
+                    btn.setEnabled(false);
+                    btn.setToolTipText("Bạn đã check-in hôm nay");
+                }
+            } catch (Exception ex) {
+                // Nếu lỗi DB, vẫn cho phép bấm
+            }
+            // Lưu lại tham chiếu nút check-in
+            this.btnCheckIn = btn;
+        }
         return btn;
     }
 

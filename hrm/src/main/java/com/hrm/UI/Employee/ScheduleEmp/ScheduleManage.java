@@ -7,28 +7,60 @@ import java.awt.*;
  * Lớp quản lý chính cho tab Lịch làm việc của nhân viên.
  * Kết hợp Header (Tiêu đề/Điều hướng), Center (Lịch 7 ngày) và Footer (Chú thích).
  */
+import java.time.LocalDate;
+import java.time.temporal.WeekFields;
+import java.util.Locale;
+
 public class ScheduleManage extends JPanel {
     private String manv;
     private ScheduleHeader header;
     private ScheduleCenter center;
     private ScheduleFooter footer;
+    private LocalDate weekStart; // ngày đầu tuần đang xem
 
     public ScheduleManage(String manv) {
         this.manv = manv;
-        
-        // Thiết lập layout chính là BorderLayout để các thành phần khít với nhau
+        // Xác định ngày đầu tuần hiện tại
+        LocalDate now = LocalDate.now();
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        weekStart = now.with(weekFields.dayOfWeek(), 1); // Thứ 2 đầu tuần
+
         setLayout(new BorderLayout(0, 0));
-        setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt đồng bộ toàn hệ thống
+        setBackground(new Color(248, 249, 250));
 
-        // 1. Khởi tạo các thành phần con
-        header = new ScheduleHeader();
-        center = new ScheduleCenter();
+        header = new ScheduleHeader(weekStart);
+        center = new ScheduleCenter(weekStart, manv, this::goToPrevWeek, this::goToNextWeek);
         footer = new ScheduleFooter();
+        add(header, BorderLayout.NORTH);
+        add(center, BorderLayout.CENTER);
+        add(footer, BorderLayout.SOUTH);
+    }
 
-        // 2. Thêm các thành phần vào Panel chính theo vị trí
-        add(header, BorderLayout.NORTH);  // Phần tiêu đề và chọn tuần
-        add(center, BorderLayout.CENTER); // Phần nội dung chính hiển thị 7 cột lịch
-        add(footer, BorderLayout.SOUTH);  // Phần chú thích các loại ca làm việc bên dưới
+    // Chuyển sang tuần trước
+    private void goToPrevWeek() {
+        weekStart = weekStart.minusWeeks(1);
+        reloadWeek();
+    }
+
+    // Chuyển sang tuần sau
+    private void goToNextWeek() {
+        weekStart = weekStart.plusWeeks(1);
+        reloadWeek();
+    }
+
+    // Tải lại UI theo tuần mới
+    private void reloadWeek() {
+        remove(header);
+        remove(center);
+        remove(footer);
+        header = new ScheduleHeader(weekStart);
+        center = new ScheduleCenter(weekStart, manv, this::goToPrevWeek, this::goToNextWeek);
+        footer = new ScheduleFooter();
+        add(header, BorderLayout.NORTH);
+        add(center, BorderLayout.CENTER);
+        add(footer, BorderLayout.SOUTH);
+        revalidate();
+        repaint();
     }
 
     /**
@@ -36,19 +68,13 @@ public class ScheduleManage extends JPanel {
      * Hữu ích khi người dùng chuyển tuần hoặc dữ liệu từ DB thay đổi.
      */
     public void refreshSchedule() {
-        // Xóa các component cũ
         removeAll();
-        
-        // Khởi tạo lại với dữ liệu mới (Nếu sau này bạn truyền Date vào)
-        header = new ScheduleHeader();
-        center = new ScheduleCenter();
+        header = new ScheduleHeader(weekStart);
+        center = new ScheduleCenter(weekStart, manv, this::goToPrevWeek, this::goToNextWeek);
         footer = new ScheduleFooter();
-        
         add(header, BorderLayout.NORTH);
         add(center, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);
-        
-        // Vẽ lại giao diện
         revalidate();
         repaint();
     }
