@@ -3,10 +3,13 @@ package com.hrm.UI.Employee.AttendanceEmp;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Map;
 import com.hrm.DAO.Employee.AttendanceDAO;
+import com.hrm.DTO.Employee.AttendanceDTO;
 
 public class AttendanceMonth extends JPanel {
     private String manv;
@@ -101,15 +104,16 @@ public class AttendanceMonth extends JPanel {
         for (int day = 1; day <= daysInMonth; day++) {
             JPanel daySquare = new JPanel(new BorderLayout());
             daySquare.setPreferredSize(new Dimension(60, 60));
+            daySquare.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             JLabel lblDay = new JLabel(String.valueOf(day), SwingConstants.CENTER);
             lblDay.setFont(new Font("Arial", Font.BOLD, 22));
             daySquare.add(lblDay, BorderLayout.CENTER);
 
             String status = attendanceData.getOrDefault(day, "NGHI");
-            if (status.equals("Đúng giờ")) {
+            if ("1".equals(status) || "Đúng giờ".equals(status)) {
                 daySquare.setBackground(new Color(220, 252, 231)); // xanh lá nhạt
                 lblDay.setForeground(new Color(22, 101, 52)); // xanh lá đậm
-            } else if (status.equals("Đi muộn") || status.equals("Về sớm")) {
+            } else if ("0".equals(status) || "Đi muộn".equals(status) || "Về sớm".equals(status) || "Đi muộn/Về sớm".equals(status)) {
                 daySquare.setBackground(new Color(255, 247, 237)); // cam nhạt
                 lblDay.setForeground(new Color(154, 52, 18)); // cam đậm
             } else {
@@ -118,10 +122,48 @@ public class AttendanceMonth extends JPanel {
             }
 
             daySquare.setBorder(new LineBorder(new Color(200, 200, 200), 2));
+            final int selectedDay = day;
+            daySquare.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    showAttendanceDetailForDay(selectedDay);
+                }
+            });
             daysPanel.add(daySquare);
         }
         daysPanel.revalidate();
         daysPanel.repaint();
+    }
+
+    private void showAttendanceDetailForDay(int day) {
+        AttendanceDTO detail = attendanceDAO.getAttendanceDetail(manv, day, currentMonth.getMonthValue(), currentMonth.getYear());
+        String dateText = String.format("%02d/%02d/%d", day, currentMonth.getMonthValue(), currentMonth.getYear());
+
+        if (detail == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Ngày " + dateText + " chưa có dữ liệu chấm công.",
+                    "Chi tiết chấm công",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        String caLam = detail.getMaCaLam() != null ? detail.getMaCaLam() : "-";
+        String checkIn = detail.getCheckIn() != null ? detail.getCheckIn().toString().substring(0, 5) : "-";
+        String checkOut = detail.getCheckOut() != null ? detail.getCheckOut().toString().substring(0, 5) : "-";
+        String soGioLam = detail.getSoGioLam() > 0 ? String.format("%.1f giờ", detail.getSoGioLam()) : "-";
+        String trangThai = detail.getTrangThai() != null ? detail.getTrangThai() : "-";
+
+        String message = "Ngày: " + dateText
+                + "\nCa làm: " + caLam
+                + "\nGiờ vào: " + checkIn
+                + "\nGiờ ra: " + checkOut
+                + "\nSố giờ làm: " + soGioLam
+                + "\nTrạng thái: " + trangThai;
+
+        JOptionPane.showMessageDialog(this,
+                message,
+                "Chi tiết chấm công",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     // Tạo chú thích màu
