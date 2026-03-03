@@ -1,5 +1,6 @@
 package com.hrm.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.hrm.DAO.Employee.SalaryDAO;
 import com.hrm.DTO.Employee.SalaryDTO;
@@ -29,5 +30,49 @@ public class SalaryService {
 
     public boolean lockSalaries(int thang, int nam) {
         return salaryDAO.lockSalaries(thang, nam);
+    }
+
+    public boolean unlockSalaries(int thang, int nam) {
+        return salaryDAO.unlockSalaries(thang, nam);
+    }
+
+    public List<SalaryDTO> getSalariesByMonthYearAndStatus(int thang, int nam, String trangThai) {
+        return salaryDAO.getSalariesByMonthYearAndStatus(thang, nam, trangThai);
+    }
+
+    public List<SalaryDTO> searchSalaries(int thang, int nam, String keyword) {
+        return salaryDAO.searchSalaries(thang, nam, keyword);
+    }
+
+    public SalaryStatistics getSalaryStatistics(int thang, int nam) {
+        List<SalaryDTO> salaries = getSalariesByMonthYear(thang, nam);
+        
+        BigDecimal totalSalary = BigDecimal.ZERO;
+        BigDecimal averageSalary = BigDecimal.ZERO;
+        int employeeCount = salaries.size();
+
+        for (SalaryDTO salary : salaries) {
+            if (salary.thucLinh != null) {
+                totalSalary = totalSalary.add(salary.thucLinh);
+            }
+        }
+
+        if (employeeCount > 0) {
+            averageSalary = totalSalary.divide(new BigDecimal(employeeCount), BigDecimal.ROUND_HALF_UP);
+        }
+
+        return new SalaryStatistics(totalSalary, averageSalary, employeeCount);
+    }
+
+    public static class SalaryStatistics {
+        public BigDecimal totalSalary;
+        public BigDecimal averageSalary;
+        public int employeeCount;
+
+        public SalaryStatistics(BigDecimal totalSalary, BigDecimal averageSalary, int employeeCount) {
+            this.totalSalary = totalSalary;
+            this.averageSalary = averageSalary;
+            this.employeeCount = employeeCount;
+        }
     }
 }
