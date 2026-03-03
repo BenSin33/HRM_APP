@@ -8,8 +8,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class AttendanceDAO {
-    // Biến static để sinh mã chấm công tự động trong phiên làm việc
-    private static int autoIncrementCC = 10000;
+    private static int autoIncrementCC = 7;
 
     // Kiểm tra xem hôm nay đã check-in chưa
     public boolean checkAlreadyCheckedIn(String manv) throws SQLException {
@@ -24,7 +23,6 @@ public class AttendanceDAO {
 
     // Thực hiện Check-in
     public boolean insertCheckIn(String manv) throws SQLException {
-        // Sinh mã chấm công dạng CC + số tăng tự động trong phiên
         String maChamCong = "CC" + (++autoIncrementCC);
         String sql = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI) " +
                 "SELECT ?, ?, CURRENT_DATE, CURRENT_TIME, " +

@@ -84,7 +84,8 @@ public class SalarySummary extends JPanel {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof YearMonth ym) { // Pattern Matching của Java 21
+                if (value instanceof YearMonth) {
+                    YearMonth ym = (YearMonth) value;
                     setText("Tháng " + ym.getMonthValue() + "/" + ym.getYear());
                 }
                 return this;
