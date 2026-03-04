@@ -38,4 +38,108 @@ public class SalaryDTO {
         this.trangThai = trangThai;
         this.ngayChot = ngayChot;
     }
+
+    public String getMaLuong() {
+        return maLuong;
+    }
+
+    public void setMaLuong(String maLuong) {
+        this.maLuong = maLuong;
+    }
+
+    public String getMaNV() {
+        return maNV;
+    }
+
+    public void setMaNV(String maNV) {
+        this.maNV = maNV;
+    }
+
+    public String getHoTen() {
+        return hoTen;
+    }
+
+    public void setHoTen(String hoTen) {
+        this.hoTen = hoTen;
+    }
+
+    public String getPhongBan() {
+        return phongBan;
+    }
+
+    public void setPhongBan(String phongBan) {
+        this.phongBan = phongBan;
+    }
+
+    public int getThang() {
+        return thang;
+    }
+
+    public void setThang(int thang) {
+        this.thang = thang;
+    }
+
+    public int getNam() {
+        return nam;
+    }
+
+    public void setNam(int nam) {
+        this.nam = nam;
+    }
+
+    public BigDecimal getLuongCoBan() {
+        return luongCoBan;
+    }
+
+    public void setLuongCoBan(BigDecimal luongCoBan) {
+        this.luongCoBan = luongCoBan;
+    }
+
+    public float getSoNgayCong() {
+        return soNgayCong;
+    }
+
+    public void setSoNgayCong(float soNgayCong) {
+        this.soNgayCong = soNgayCong;
+    }
+
+    public BigDecimal getTongPhucap() {
+        return tongPhucap;
+    }
+
+    public void setTongPhucap(BigDecimal tongPhucap) {
+        this.tongPhucap = tongPhucap;
+    }
+
+    public BigDecimal getTongKhauTru() {
+        return tongKhauTru;
+    }
+
+    public void setTongKhauTru(BigDecimal tongKhauTru) {
+        this.tongKhauTru = tongKhauTru;
+    }
+
+    public BigDecimal getThucLinh() {
+        return thucLinh;
+    }
+
+    public void setThucLinh(BigDecimal thucLinh) {
+        this.thucLinh = thucLinh;
+    }
+
+    public String getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
+    }
+
+    public LocalDate getNgayChot() {
+        return ngayChot;
+    }
+
+    public void setNgayChot(LocalDate ngayChot) {
+        this.ngayChot = ngayChot;
+    }
 }
