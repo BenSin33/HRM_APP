@@ -5,7 +5,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class EvaluationSummary extends JPanel {
-    public EvaluationSummary(int score, String rank) {
+    public EvaluationSummary(int score, String rank, String period) {
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(15, 25, 10, 25));
@@ -14,16 +14,21 @@ public class EvaluationSummary extends JPanel {
         blueCard.setBackground(new Color(59, 130, 246));
         blueCard.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        JLabel lblTitle = new JLabel("Đánh giá mới nhất (Kỳ Q4 2024)");
+        String displayPeriod = (period == null || period.isBlank()) ? "-" : period;
+        JLabel lblTitle = new JLabel("Đánh giá mới nhất (Kỳ " + displayPeriod + ")");
         lblTitle.setForeground(new Color(219, 234, 254));
-        
+
         JLabel lblScore = new JLabel(score + " điểm - " + rank);
         lblScore.setFont(new Font("Segoe UI", Font.BOLD, 36));
         lblScore.setForeground(Color.WHITE);
 
         blueCard.add(lblTitle, BorderLayout.NORTH);
         blueCard.add(lblScore, BorderLayout.CENTER);
-        
+
         add(blueCard, BorderLayout.CENTER);
+    }
+
+    public EvaluationSummary(int score, String rank) {
+        this(score, rank, "-");
     }
 }
