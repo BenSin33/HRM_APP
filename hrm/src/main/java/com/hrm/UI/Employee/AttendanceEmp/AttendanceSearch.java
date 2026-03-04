@@ -168,7 +168,7 @@ public class AttendanceSearch extends JPanel {
             ArrayList<AttendanceDTO> results = dao.searchAttendance(
                     manv,
                     null,
-                    null,
+                    null, 
                     null,
                     cbStatus.getSelectedItem().toString(),
                     selectedShiftCode);

@@ -4,6 +4,7 @@ package com.hrm.UI.Employee.HomeEmp;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.geom.RoundRectangle2D;
 
 public class HomeFooter extends JPanel {
@@ -28,15 +29,15 @@ public class HomeFooter extends JPanel {
         JPanel actionsGrid = new JPanel(new GridLayout(1, 4, 20, 0));
         actionsGrid.setOpaque(false);
 
-        actionsGrid.add(createActionBtn("Chấm công", new Color(59, 130, 246), "Ghi nhận giờ vào/ra", "ATTENDANCE"));
-        actionsGrid.add(createActionBtn("Xin nghỉ phép", new Color(37, 99, 235), "Xin nghỉ phép", "LEAVE"));
-        actionsGrid.add(createActionBtn("Bảng lương", new Color(31, 41, 55), "Xem bảng lương", "PAYROLL"));
-        actionsGrid.add(createActionBtn("Đánh giá", new Color(79, 70, 229), "Đánh giá hiệu suất", "EVALUATION"));
+        actionsGrid.add(createActionBtn("Chấm công", new Color(59, 130, 246), "Ghi nhận giờ vào/ra", "ATTENDANCE", createActionIcon("attendance", new Color(59, 130, 246), 26)));
+        actionsGrid.add(createActionBtn("Xin nghỉ phép", new Color(37, 99, 235), "Xin nghỉ phép", "LEAVE", createActionIcon("leave", new Color(37, 99, 235), 26)));
+        actionsGrid.add(createActionBtn("Bảng lương", new Color(31, 41, 55), "Xem bảng lương", "PAYROLL", createActionIcon("payroll", new Color(31, 41, 55), 26)));
+        actionsGrid.add(createActionBtn("Đánh giá", new Color(79, 70, 229), "Đánh giá hiệu suất", "EVALUATION", createActionIcon("evaluation", new Color(79, 70, 229), 26)));
 
         add(actionsGrid, BorderLayout.CENTER);
     }
 
-    private JPanel createActionBtn(String label, Color iconColor, String noteString, String cardName) {
+    private JPanel createActionBtn(String label, Color iconColor, String noteString, String cardName, ImageIcon icon) {
         // Tạo panel đại diện cho nút bấm
         JPanel btn = new JPanel(new BorderLayout(0, 10)) {
             @Override
@@ -55,26 +56,16 @@ public class HomeFooter extends JPanel {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setBorder(new EmptyBorder(20, 10, 20, 10));
 
-        // Icon giả định (Có thể thay bằng JLabel chứa ImageIcon)
-        JPanel iconPlaceholder = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(iconColor);
-                g2.fillRoundRect(getWidth()/2 - 12, getHeight()/2 - 12, 24, 24, 8, 8);
-                g2.dispose();
-            }
-        };
-        iconPlaceholder.setOpaque(false);
-        iconPlaceholder.setPreferredSize(new Dimension(40, 40));
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        iconLabel.setPreferredSize(new Dimension(40, 40));
 
         // Nhãn text
         JLabel lblName = new JLabel(label, SwingConstants.CENTER);
         lblName.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblName.setForeground(new Color(55, 65, 81));
 
-        btn.add(iconPlaceholder, BorderLayout.NORTH);
+        btn.add(iconLabel, BorderLayout.NORTH);
         btn.add(lblName, BorderLayout.CENTER);
 
         // Thêm nhãn mô tả
@@ -99,5 +90,49 @@ public class HomeFooter extends JPanel {
         });
 
         return btn;
+    }
+
+    private ImageIcon createActionIcon(String type, Color color, int size) {
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(color);
+        g2d.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        switch (type) {
+            case "attendance":
+                g2d.drawOval(3, 3, size - 6, size - 6);
+                g2d.drawLine(size / 2, size / 2, size / 2, 7);
+                g2d.drawLine(size / 2, size / 2, size - 8, size / 2 + 3);
+                break;
+            case "leave":
+                g2d.drawRoundRect(4, 5, size - 8, size - 8, 4, 4);
+                g2d.drawLine(7, 3, 7, 8);
+                g2d.drawLine(size - 8, 3, size - 8, 8);
+                break;
+            case "payroll":
+                g2d.drawRoundRect(3, 7, size - 6, size - 12, 4, 4);
+                g2d.drawLine(6, size / 2, size - 6, size / 2);
+                break;
+            case "evaluation":
+                Polygon star = new Polygon();
+                int cx = size / 2;
+                int cy = size / 2;
+                int outer = size / 2 - 2;
+                int inner = outer / 2;
+                for (int i = 0; i < 10; i++) {
+                    double angle = Math.toRadians(-90 + i * 36);
+                    int r = (i % 2 == 0) ? outer : inner;
+                    star.addPoint(cx + (int) (Math.cos(angle) * r), cy + (int) (Math.sin(angle) * r));
+                }
+                g2d.drawPolygon(star);
+                break;
+            default:
+                g2d.fillOval(4, 4, size - 8, size - 8);
+                break;
+        }
+
+        g2d.dispose();
+        return new ImageIcon(image);
     }
 }

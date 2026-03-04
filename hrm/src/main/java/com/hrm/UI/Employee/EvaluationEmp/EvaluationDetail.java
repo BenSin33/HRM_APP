@@ -5,21 +5,20 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class EvaluationDetail extends JPanel {
-    public EvaluationDetail() {
+    public EvaluationDetail(String detailContent) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(Color.WHITE);
         setBorder(new EmptyBorder(20, 25, 20, 25));
 
-        add(createSection("Chi tiết đánh giá", 
-            "Hoàn thành xuất sắc các dự án, làm việc chủ động và có tinh thần trách nhiệm cao. " +
-            "Đóng góp tích cực cho team."));
-        
-        add(Box.createVerticalStrut(20));
-        
-        add(createSection("Gợi ý cải thiện hiệu suất", 
-            "• Tham gia tích cực vào các dự án mới\n" +
-            "• Học hỏi và nâng cao kỹ năng chuyên môn thường xuyên\n" +
-            "• Hỗ trợ đồng nghiệp và xây dựng tinh thần teamwork"));
+        String detail = (detailContent == null || detailContent.isBlank())
+                ? "Chưa có nhận xét chi tiết cho kỳ đánh giá gần nhất."
+                : detailContent;
+
+        add(createSection("Chi tiết đánh giá", detail));
+    }
+
+    public EvaluationDetail() {
+        this("Hoàn thành xuất sắc các dự án, làm việc chủ động và có tinh thần trách nhiệm cao. Đóng góp tích cực cho team.");
     }
 
     private JPanel createSection(String title, String content) {
@@ -29,6 +28,7 @@ public class EvaluationDetail extends JPanel {
         lblT.setFont(new Font("Segoe UI", Font.BOLD, 16));
         
         JTextArea txt = new JTextArea(content);
+        txt.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txt.setLineWrap(true);
         txt.setWrapStyleWord(true);
         txt.setEditable(false);
