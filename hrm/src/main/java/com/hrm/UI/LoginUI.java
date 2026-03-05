@@ -13,6 +13,7 @@ import com.hrm.UI.Employee.EDashboard;
 
 import com.hrm.UI.HR.*;
 //import com.hrm.UI.Manager.ManagerDashboard;
+import com.hrm.UI.Manager.ManagerDashboard;
 
 public class LoginUI extends JFrame{
 
@@ -116,9 +117,8 @@ public class LoginUI extends JFrame{
                 new HRDashboard();
                 JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + userInfo.getManv());
             } else if(authService.isManager(userInfo)){
+                new ManagerDashboard();
                 JOptionPane.showMessageDialog(this, "Xin chào quản lý: " + userInfo.getManv());
-                // TODO: Mở Manager Dashboard
-                // new ManagerDashboard(userInfo.getManv());
             } else if(authService.isEmployee(userInfo)){
                 new EDashboard(userInfo.getManv());
                 JOptionPane.showMessageDialog(this, "Xin chào nhân viên: " + userInfo.getManv());
