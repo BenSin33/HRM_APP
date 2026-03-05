@@ -12,6 +12,8 @@ public class Sidebar extends JPanel {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private Color sidebarColor = new Color(102, 0, 204);
+    private Color tabNormalColor = new Color(153, 51, 255);
+    private Color tabActiveColor = new Color(100, 0, 200);
     
     private boolean isCollapsed = false;
     private final int EXPANDED_WIDTH = 250;
@@ -21,10 +23,15 @@ public class Sidebar extends JPanel {
     private JPanel menuContainer;
     private JPanel sidebarPanel;
     private JScrollPane scrollPane;
+    private JLabel currentSelectedTab = null;
+    private JLabel currentHoveredTab = null;
+    private JLabel firstMenuTab = null;
+    private List<SidebarTab> tabsList;
 
     public Sidebar(JPanel contentPanel, CardLayout cardLayout, List<SidebarTab> tabsList) {
         this.contentPanel = contentPanel;
         this.cardLayout = cardLayout;
+        this.tabsList = tabsList;
 
         this.setBackground(sidebarColor);
         this.setLayout(new BorderLayout());
@@ -61,6 +68,9 @@ public class Sidebar extends JPanel {
         this.add(sidebarPanel, BorderLayout.CENTER);
         
         this.setPreferredSize(new Dimension(EXPANDED_WIDTH, 0));
+        
+        // Tự động chọn tab đầu tiên (Tổng quan) khi mới đăng nhập
+        selectFirstTab();
     }
 
     private void toggleSidebarSmooth(JButton btn) {
@@ -103,9 +113,9 @@ public class Sidebar extends JPanel {
         
         // Update button visibility
         for (Component c : menuContainer.getComponents()) {
-            if (c instanceof JButton) {
-                JButton menuBtn = (JButton) c;
-                menuBtn.setToolTipText(isCollapsed ? menuBtn.getText() : null);
+            if (c instanceof JLabel && !(c instanceof JLabel)) {
+                JLabel menuLabel = (JLabel) c;
+                menuLabel.setToolTipText(isCollapsed ? menuLabel.getText() : null);
             }
         }
     }
@@ -126,33 +136,104 @@ public class Sidebar extends JPanel {
         }
 
         // Render các nút
-        for (SidebarTab tab : tabsLists) {
-            JButton menuButton = createMenuButton(tab);
-            menuContainer.add(menuButton);
-            menuContainer.add(Box.createRigidArea(new Dimension(0, 10)));
+        for (int i = 0; i < tabsLists.size(); i++) {
+            SidebarTab tab = tabsLists.get(i);
+            JLabel menuLabel = createMenuLabel(tab);
+            menuContainer.add(menuLabel);
+            
+            // Thêm đường ngăn cách giữa các tab (trừ tab cuối)
+            if (i < tabsLists.size() - 1) {
+                JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
+                separator.setMaximumSize(new Dimension(EXPANDED_WIDTH - 20, 1));
+                separator.setForeground(Color.WHITE);
+                menuContainer.add(separator);
+            }
+            
+            // Lưu tab đầu tiên (không phải LOGOUT)
+            if (i == 0 && firstMenuTab == null && !"LOGOUT".equals(tab.getCardName())) {
+                firstMenuTab = menuLabel;
+            }
         }
     }
 
-    private JButton createMenuButton(SidebarTab tab) {
-        JButton button = new JButton(tab.getTitle());
-        button.setAlignmentX(CENTER_ALIGNMENT);
-        button.setMaximumSize(new Dimension(220, 45));
-        button.setFocusPainted(false);
-        button.setBackground(new Color(153, 51, 255));
-        button.setForeground(Color.WHITE);
+    private JLabel createMenuLabel(SidebarTab tab) {
+        JLabel label = new JLabel(tab.getTitle());
+        label.setAlignmentX(CENTER_ALIGNMENT);
+        label.setMaximumSize(new Dimension(EXPANDED_WIDTH - 10, 45));
+        label.setPreferredSize(new Dimension(EXPANDED_WIDTH - 10, 45));
+        label.setOpaque(false);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setVerticalAlignment(SwingConstants.CENTER);
+        label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        label.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        button.addActionListener(e -> {
-            if ("LOGOUT".equals(tab.getCardName())) {
-                java.awt.Window window = SwingUtilities.getWindowAncestor(this);
-                if (window != null) {
-                    window.dispose();
-                    new LoginUI().setVisible(true);
+        label.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if ("LOGOUT".equals(tab.getCardName())) {
+                    java.awt.Window window = SwingUtilities.getWindowAncestor(Sidebar.this);
+                    if (window != null) {
+                        window.dispose();
+                        new LoginUI().setVisible(true);
+                    }
+                } else {
+                    cardLayout.show(contentPanel, tab.getCardName());
+                    selectTab(label);
                 }
-            } else {
-                cardLayout.show(contentPanel, tab.getCardName());
+            }
+
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (label != currentSelectedTab) {
+                    // Clear previous hovered tab if exists
+                    if (currentHoveredTab != null && currentHoveredTab != currentSelectedTab) {
+                        currentHoveredTab.setOpaque(false);
+                        currentHoveredTab.repaint();
+                    }
+                    // Apply hover effect to current tab
+                    label.setOpaque(true);
+                    label.setBackground(new Color(180, 100, 255));
+                    label.repaint();
+                    currentHoveredTab = label;
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (label != currentSelectedTab && label == currentHoveredTab) {
+                    label.setOpaque(false);
+                    label.setBackground(sidebarColor);
+                    label.repaint();
+                    currentHoveredTab = null;
+                }
             }
         });
 
-        return button;
+        return label;
+    }
+
+    private void selectTab(JLabel label) {
+        // Reset all other tabs to initial state (no background)
+        for (Component c : menuContainer.getComponents()) {
+            if (c instanceof JLabel && c != label) {
+                JLabel otherLabel = (JLabel) c;
+                otherLabel.setOpaque(false);
+                otherLabel.repaint();
+            }
+        }
+        currentSelectedTab = label;
+        currentHoveredTab = null;  // Clear hovered tab when selecting a new tab
+        label.setOpaque(true);
+        label.setBackground(new Color(180, 100, 255));
+        label.repaint();
+    }
+
+    private void selectFirstTab() {
+        if (firstMenuTab != null && !tabsList.isEmpty()) {
+            selectTab(firstMenuTab);
+            cardLayout.show(contentPanel, tabsList.get(0).getCardName());
+        }
     }
 }

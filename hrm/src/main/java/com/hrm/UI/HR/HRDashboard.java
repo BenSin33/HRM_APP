@@ -39,21 +39,19 @@ public class HRDashboard extends JFrame {
 
         // cấu hình sidebar và nội dung
         List<SidebarTab> HRTabs = new ArrayList<>();
-        HRTabs.add(new SidebarTab("Tổng quan", "DASHBOARD"));
-        HRTabs.add(new SidebarTab("Quản lý nhân viên", "EMPLOYEE_MANAGEMENT"));
-        HRTabs.add(new SidebarTab("Quản lý phòng ban", "DEPARTMENT_MANAGEMENT"));
-        HRTabs.add(new SidebarTab("Quản lý chấm công", "ATTENDANCE_MANAGEMENT"));
-        HRTabs.add(new SidebarTab("Quản lý nghỉ phép", "LEAVE_MANAGEMENT"));
-        HRTabs.add(new SidebarTab("Quản lý đánh giá", "EVALUATION_MANAGEMENT"));
-        HRTabs.add(new SidebarTab("Quản lý lương", "PAYROLL_MANAGEMENT"));  
-        HRTabs.add(new SidebarTab("Phân Quyền", "PERMISSION_MANAGEMENT"));  
-        HRTabs.add(new SidebarTab("Quản lý hợp đồng", "CONTRACT_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("TỔNG QUAN", "DASHBOARD"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ NHÂN VIÊN", "EMPLOYEE_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ PHÒNG BAN", "DEPARTMENT_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ CHẤM CÔNG", "ATTENDANCE_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ NGHỈ PHÉP", "LEAVE_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ ĐÁNH GIÁ", "EVALUATION_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ LƯƠNG", "PAYROLL_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("PHÂN QUYỀN", "PERMISSION_MANAGEMENT"));
+        HRTabs.add(new SidebarTab("QUẢN LÝ HỢP ĐỒNG", "CONTRACT_MANAGEMENT"));
 
-        HRTabs.add(new SidebarTab("Quản lý tài khoản", "ACCOUNT_MANAGEMENT"));  
+        HRTabs.add(new SidebarTab("QUẢN LÝ TÀI KHOẢN", "ACCOUNT_MANAGEMENT"));
 
-        HRTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
-
-        contentPanel.add(createDashboardPanel(new DashboardOverview()), "DASHBOARD");
+        HRTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
         contentPanel.add(createDashboardPanel(new EmployeeManagementPanel()), "EMPLOYEE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new DepartmentManagementPanel()), "DEPARTMENT_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new ContractManagement()), "CONTRACT_MANAGEMENT");

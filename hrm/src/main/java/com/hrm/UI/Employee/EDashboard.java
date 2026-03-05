@@ -37,14 +37,14 @@ public class EDashboard extends JFrame {
 
         // cấu hình sidebar và nội dung
         List<SidebarTab> employeeTabs = new ArrayList<>();
-        employeeTabs.add(new SidebarTab("Tổng quan", "DASHBOARD"));
-        employeeTabs.add(new SidebarTab("Hồ sơ cá nhân", "PROFILE"));
-        employeeTabs.add(new SidebarTab("Chấm công", "ATTENDANCE"));
-        employeeTabs.add(new SidebarTab("Lịch làm việc", "SCHEDULE"));
-        employeeTabs.add(new SidebarTab("Bảng lương", "PAYROLL"));
-        employeeTabs.add(new SidebarTab("Nghỉ phép", "LEAVE"));
-        employeeTabs.add(new SidebarTab("Đánh giá", "EVALUATION"));
-        employeeTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
+        employeeTabs.add(new SidebarTab("TỔNG QUAN", "DASHBOARD"));
+        employeeTabs.add(new SidebarTab("HỒ SƠ CÁ NHÂN", "PROFILE"));
+        employeeTabs.add(new SidebarTab("CHẤM CÔNG", "ATTENDANCE"));
+        employeeTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE"));
+        employeeTabs.add(new SidebarTab("BẢNG LƯƠNG", "PAYROLL"));
+        employeeTabs.add(new SidebarTab("NGHỈ PHÉP", "LEAVE"));
+        employeeTabs.add(new SidebarTab("ĐÁNH GIÁ", "EVALUATION"));
+        employeeTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
 
         // Truyền cardLayout và contentPanel cho HomeManage
         contentPanel.add(createDashboardPanel(new HomeManage(manv, cardLayout, contentPanel)), "DASHBOARD");
