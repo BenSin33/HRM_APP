@@ -14,11 +14,12 @@ import com.hrm.UI.HR.ContractTab.ContractManagement;
 import com.hrm.UI.HR.Department.DepartmentManagementPanel;
 import com.hrm.UI.HR.EmployeeTab.EmployeeManagementPanel;
 import com.hrm.UI.HR.Evaluationtab.EvaluationManagement;
-import com.hrm.UI.HR.PermissionTab.MainPermissionPanel;
-import com.hrm.UI.HR.SalaryTab.SalaryManagement;
 import com.hrm.UI.HR.Leavetab.LeaveManagement;
 import com.hrm.UI.HR.Overview.DashboardOverview;
-import com.hrm.UI.component.*;
+import com.hrm.UI.HR.PermissionTab.MainPermissionPanel;
+import com.hrm.UI.HR.SalaryTab.SalaryManagement;
+import com.hrm.UI.component.Sidebar;
+import com.hrm.UI.component.SidebarTab;
 
 public class HRDashboard extends JFrame {
     
@@ -52,6 +53,9 @@ public class HRDashboard extends JFrame {
         HRTabs.add(new SidebarTab("QUẢN LÝ TÀI KHOẢN", "ACCOUNT_MANAGEMENT"));
 
         HRTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
+        // register dashboard/overview panel first so the default tab can display
+        contentPanel.add(new DashboardOverview(), "DASHBOARD");
+
         contentPanel.add(createDashboardPanel(new EmployeeManagementPanel()), "EMPLOYEE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new DepartmentManagementPanel()), "DEPARTMENT_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new ContractManagement()), "CONTRACT_MANAGEMENT");
@@ -71,9 +75,9 @@ public class HRDashboard extends JFrame {
     }
 
     private JPanel createDashboardPanel(JPanel panel) {
-        this.add(panel, BorderLayout.CENTER);
+        // do not add panels directly to the frame here; container panels are
+        // managed by the CardLayout on contentPanel instead.
         return panel;
-        
     }
     
 }
