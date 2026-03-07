@@ -6,6 +6,9 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -14,16 +17,20 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+
+import com.hrm.DAO.HR.DepartmentDAO;
+import com.hrm.DTO.HR.DepartmentDTO;
 
 public class DepartmentManagementPanel extends JPanel {
 
     private JPanel cardsContainer;
     private JTextField searchField;
+    private DepartmentDAO departmentDAO = new DepartmentDAO();
 
     public DepartmentManagementPanel() {
         setLayout(new BorderLayout());
@@ -72,10 +79,26 @@ public class DepartmentManagementPanel extends JPanel {
         JPanel stats = new JPanel(new GridLayout(1, 4, 18, 0));
         stats.setOpaque(false);
 
-        stats.add(createStatCard("Tổng phòng ban", "6", new Color(180, 81, 255)));
-        stats.add(createStatCard("Tổng nhân viên", "39", new Color(80, 140, 255)));
-        stats.add(createStatCard("TB NV/Phòng ban", "7", new Color(56, 180, 130)));
-        stats.add(createStatCard("PB lớn nhất", "12 NV", new Color(120, 120, 255)));
+        // Calculate values from database (dùng chung DepartmentDAO để vừa đồng bộ, vừa tránh lỗi kết nối khác nguồn)
+        List<DepartmentDTO> departments = departmentDAO.getAll();
+        int totalDepartments = departments.size();
+
+        int totalEmployees = 0;
+        int maxEmployees = 0;
+        for (DepartmentDTO dept : departments) {
+            int empCount = departmentDAO.countEmployees(dept.getMaPhongBan());
+            totalEmployees += empCount;
+            if (empCount > maxEmployees) {
+                maxEmployees = empCount;
+            }
+        }
+
+        int avgEmployees = totalDepartments > 0 ? totalEmployees / totalDepartments : 0;
+
+        stats.add(createStatCard("Tổng phòng ban", String.valueOf(totalDepartments), new Color(180, 81, 255)));
+        stats.add(createStatCard("Tổng nhân viên", String.valueOf(totalEmployees), new Color(80, 140, 255)));
+        stats.add(createStatCard("TB NV/Phòng ban", String.valueOf(avgEmployees), new Color(56, 180, 130)));
+        stats.add(createStatCard("PB lớn nhất", maxEmployees + " NV", new Color(120, 120, 255)));
 
         return stats;
     }
@@ -119,7 +142,8 @@ public class DepartmentManagementPanel extends JPanel {
         wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.X_AXIS));
 
         // Ô tìm kiếm lớn bo tròn
-        searchField = new JTextField("Tìm kiếm theo tên phòng ban, mã, trưởng phòng...");
+        final String SEARCH_PLACEHOLDER = "Tìm kiếm theo tên phòng ban, mã, trưởng phòng...";
+        searchField = new JTextField(SEARCH_PLACEHOLDER);
         searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         searchField.setBackground(Color.WHITE);
         searchField.setBorder(BorderFactory.createCompoundBorder(
@@ -129,21 +153,50 @@ public class DepartmentManagementPanel extends JPanel {
         searchField.setPreferredSize(new Dimension(500, 42));
         searchField.setMaximumSize(new Dimension(Short.MAX_VALUE, 42));
 
+        // Placeholder: khi nhấp vào thì xóa text gợi ý, hiện ô trắng để nhập
+        searchField.setForeground(new Color(150, 150, 150));
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (SEARCH_PLACEHOLDER.equals(searchField.getText())) {
+                    searchField.setText("");
+                    searchField.setForeground(new Color(33, 37, 41));
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().trim().isEmpty()) {
+                    searchField.setText(SEARCH_PLACEHOLDER);
+                    searchField.setForeground(new Color(150, 150, 150));
+                }
+            }
+        });
+
         // Lọc danh sách phòng ban theo nội dung tìm kiếm
         searchField.getDocument().addDocumentListener(new DocumentListener() {
+            private void update() {
+                String text = searchField.getText();
+                if (SEARCH_PLACEHOLDER.equals(text)) {
+                    filterDepartments("");
+                } else {
+                    filterDepartments(text);
+                }
+            }
+
             @Override
             public void insertUpdate(DocumentEvent e) {
-                filterDepartments(searchField.getText());
+                update();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                filterDepartments(searchField.getText());
+                update();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                filterDepartments(searchField.getText());
+                update();
             }
         });
 

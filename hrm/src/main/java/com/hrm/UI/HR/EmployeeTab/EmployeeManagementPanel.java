@@ -6,11 +6,13 @@ import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultCellEditor;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -20,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ImageIcon;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -36,13 +39,31 @@ public class EmployeeManagementPanel extends JPanel {
     private String currentKeyword = "";
     private String currentDept = "Tất cả phòng ban";
 
+    private Icon viewIcon;
+    private Icon editIcon;
+    private Icon deleteIcon;
+
     public EmployeeManagementPanel() {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
         setBorder(new EmptyBorder(20, 20, 20, 20));
 
+        viewIcon = loadIcon("/icons/view_button.png");
+        editIcon = loadIcon("/icons/edit_button.png");
+        deleteIcon = loadIcon("/icons/delete_button.png");
+
         add(createHeader(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
+    }
+
+    private Icon loadIcon(String path) {
+        java.net.URL url = getClass().getResource(path);
+        if (url == null) {
+            return null;
+        }
+        ImageIcon icon = new ImageIcon(url);
+        Image img = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
     }
 
     // ================= HEADER =================
@@ -230,8 +251,12 @@ public class EmployeeManagementPanel extends JPanel {
             setLayout(new FlowLayout(FlowLayout.CENTER, 10, 0));
         }
 
-        private JButton makeIconButton(String text) {
-            JButton b = new JButton(text);
+        private JButton makeIconButton(Icon icon, String fallbackText) {
+            JButton b = new JButton(fallbackText);
+            if (icon != null) {
+                b.setIcon(icon);
+                b.setText("");
+            }
             b.setMargin(new java.awt.Insets(0, 0, 0, 0));
             b.setPreferredSize(new java.awt.Dimension(28, 28));
             b.setFocusPainted(false);
@@ -245,9 +270,9 @@ public class EmployeeManagementPanel extends JPanel {
                                                        boolean isSelected, boolean hasFocus,
                                                        int row, int column) {
             removeAll();
-            add(makeIconButton("👁️"));
-            add(makeIconButton("✏️"));
-            add(makeIconButton("🗑️"));
+            add(makeIconButton(viewIcon, "V"));
+            add(makeIconButton(editIcon, "E"));
+            add(makeIconButton(deleteIcon, "D"));
             setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
             return this;
         }
@@ -263,9 +288,9 @@ public class EmployeeManagementPanel extends JPanel {
             super(checkBox);
             panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
 
-            viewBtn = createEditorButton("👁️");
-            editBtn = createEditorButton("✏️");
-            deleteBtn = createEditorButton("🗑️");
+            viewBtn = createEditorButton(viewIcon, "V");
+            editBtn = createEditorButton(editIcon, "E");
+            deleteBtn = createEditorButton(deleteIcon, "D");
 
             viewBtn.addActionListener(e -> {
                 fireEditingStopped();
@@ -292,8 +317,12 @@ public class EmployeeManagementPanel extends JPanel {
             panel.add(deleteBtn);
         }
 
-        private JButton createEditorButton(String text) {
-            JButton b = new JButton(text);
+        private JButton createEditorButton(Icon icon, String fallbackText) {
+            JButton b = new JButton(fallbackText);
+            if (icon != null) {
+                b.setIcon(icon);
+                b.setText("");
+            }
             b.setMargin(new java.awt.Insets(0, 0, 0, 0));
             b.setPreferredSize(new java.awt.Dimension(28, 28));
             b.setFocusPainted(false);
