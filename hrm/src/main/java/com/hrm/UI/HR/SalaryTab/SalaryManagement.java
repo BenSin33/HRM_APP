@@ -49,6 +49,9 @@ public class SalaryManagement extends JPanel {
         YearMonth selectedMonth = summary.getSelectedMonth();
         if (selectedMonth != null) {
             salaryTable.loadSalaryDataByMonth(selectedMonth.getMonthValue(), selectedMonth.getYear());
+        } else {
+            // Nếu chọn "Xem tất cả"
+            salaryTable.loadAllSalaryData();
         }
     }
 
@@ -65,7 +68,7 @@ public class SalaryManagement extends JPanel {
             JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            if (salaryService.lockSalaries(selectedMonth.getMonthValue(), selectedMonth.getYear())) {
+            if (salaryService.lockSalariesByMonth(selectedMonth.getMonthValue(), selectedMonth.getYear())) {
                 JOptionPane.showMessageDialog(this, "Đã khóa bảng lương thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 salaryTable.refreshData();
             } else {
@@ -87,7 +90,7 @@ public class SalaryManagement extends JPanel {
             JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            if (salaryService.unlockSalaries(selectedMonth.getMonthValue(), selectedMonth.getYear())) {
+            if (salaryService.unlockSalariesByMonth(selectedMonth.getMonthValue(), selectedMonth.getYear())) {
                 JOptionPane.showMessageDialog(this, "Đã mở khóa bảng lương thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 salaryTable.refreshData();
             } else {

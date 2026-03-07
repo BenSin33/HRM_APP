@@ -45,6 +45,36 @@ public class AuthenticationService {
     }
 
     /**
+     * Xác thực người dùng với mã nhân viên (MANV) và password
+     * @param manv Mã nhân viên
+     * @param password Mật khẩu
+     * @return UserDTO nếu xác thực thành công, null nếu thất bại
+     */
+    public UserDTO authenticateByMaNV(String manv, String password) {
+        if (manv == null || manv.trim().isEmpty() || 
+            password == null || password.trim().isEmpty()) {
+            System.err.println("Lỗi: Mã nhân viên hoặc password không được để trống!");
+            return null;
+        }
+
+        try {
+            String[] info = userDAO.authenticateByMaNV(manv, password);
+            
+            if (info != null && info.length == 2) {
+                String maNV = info[0];
+                String roleId = info[1];
+                return new UserDTO(maNV, roleId, maNV);
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi trong quá trình xác thực: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
      * Kiểm tra xem người dùng có phải admin (HR) hay không
      * @param user UserDTO của người dùng
      * @return true nếu là admin, false nếu không

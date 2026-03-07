@@ -1,6 +1,7 @@
 package com.hrm.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import com.hrm.DAO.Employee.SalaryDAO;
 import com.hrm.DTO.Employee.SalaryDTO;
@@ -28,12 +29,12 @@ public class SalaryService {
         return salaryDAO.updateSalary(salary);
     }
 
-    public boolean lockSalaries(int thang, int nam) {
-        return salaryDAO.lockSalaries(thang, nam);
+    public boolean lockSalariesByMonth(int thang, int nam) {
+        return salaryDAO.lockSalariesByMonth(thang, nam);
     }
 
-    public boolean unlockSalaries(int thang, int nam) {
-        return salaryDAO.unlockSalaries(thang, nam);
+    public boolean unlockSalariesByMonth(int thang, int nam) {
+        return salaryDAO.unlockSalariesByMonth(thang, nam);
     }
 
     public List<SalaryDTO> getSalariesByMonthYearAndStatus(int thang, int nam, String trangThai) {
@@ -58,7 +59,7 @@ public class SalaryService {
         }
 
         if (employeeCount > 0) {
-            averageSalary = totalSalary.divide(new BigDecimal(employeeCount), BigDecimal.ROUND_HALF_UP);
+            averageSalary = totalSalary.divide(new BigDecimal(employeeCount), RoundingMode.HALF_UP);
         }
 
         return new SalaryStatistics(totalSalary, averageSalary, employeeCount);

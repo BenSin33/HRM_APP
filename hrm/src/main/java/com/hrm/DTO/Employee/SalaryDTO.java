@@ -17,6 +17,7 @@ public class SalaryDTO {
     public BigDecimal thucLinh;
     public String trangThai;
     public LocalDate ngayChot;
+    public String tinhTrangThanToan;
 
     public SalaryDTO() {}
 
@@ -141,5 +142,13 @@ public class SalaryDTO {
 
     public void setNgayChot(LocalDate ngayChot) {
         this.ngayChot = ngayChot;
+    }
+
+    public String getTinhTrangThanToan() {
+        return tinhTrangThanToan;
+    }
+
+    public void setTinhTrangThanToan(String tinhTrangThanToan) {
+        this.tinhTrangThanToan = tinhTrangThanToan;
     }
 }

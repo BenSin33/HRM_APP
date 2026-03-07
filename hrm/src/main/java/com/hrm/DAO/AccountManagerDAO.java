@@ -46,6 +46,42 @@ public class AccountManagerDAO {
         return list;
     }
 
+    // Lấy tài khoản theo mã nhân viên
+    public AccountManagerDTO getAccountByMaNV(String maNV) {
+        String sql = "SELECT tk.USERID, tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
+                     "tk.STATUS, nv.EMAIL, nv.DIENTHOAI " +
+                     "FROM taikhoan tk " +
+                     "JOIN nhanvien nv ON tk.MANV = nv.MANV " +
+                     "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN role r ON tk.ROLEID = r.ROLEID " +
+                     "WHERE tk.MANV = ?";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, maNV);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new AccountManagerDTO(
+                        rs.getString("USERID"),
+                        rs.getString("MANV"),
+                        rs.getString("HOTEN"),
+                        rs.getString("TENPHONGBAN"),
+                        rs.getString("ROLEID"),
+                        rs.getString("ROLENAME"),
+                        rs.getInt("STATUS"),
+                        rs.getString("EMAIL"),
+                        rs.getString("DIENTHOAI")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // Lấy tài khoản theo userId
     public AccountManagerDTO getAccountByUserId(String userId) {
         String sql = "SELECT tk.USERID, tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +

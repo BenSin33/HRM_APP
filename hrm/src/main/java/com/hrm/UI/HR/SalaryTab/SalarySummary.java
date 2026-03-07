@@ -7,6 +7,7 @@ import java.awt.GridLayout;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.YearMonth;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -17,6 +18,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.DTO.Employee.SalaryDTO;
 import com.hrm.Service.SalaryService;
 import com.hrm.Service.SalaryService.SalaryStatistics;
 
@@ -56,18 +58,40 @@ public class SalarySummary extends JPanel {
 
     private void updateStatistics() {
         YearMonth selected = (YearMonth) cbMonth.getSelectedItem();
+        
         if (selected == null) {
-            selected = YearMonth.now();
+            // Nếu chọn "Xem tất cả" - hiển thị tổng thể
+            List<SalaryDTO> allSalaries = salaryService.getAllSalaries();
+            
+            BigDecimal totalSalary = BigDecimal.ZERO;
+            BigDecimal totalAverage = BigDecimal.ZERO;
+            int employeeCount = 0;
+            
+            // Tính toán từ tất cả dữ liệu
+            for (SalaryDTO salary : allSalaries) {
+                if (salary.thucLinh != null) {
+                    totalSalary = totalSalary.add(salary.thucLinh);
+                }
+            }
+            
+            if (!allSalaries.isEmpty()) {
+                employeeCount = allSalaries.size();
+                totalAverage = totalSalary.divide(new BigDecimal(employeeCount), java.math.RoundingMode.HALF_UP);
+            }
+            
+            lblTotalSalary.setText(df.format(totalSalary.doubleValue()) + " đ");
+            lblEmployeeCount.setText(String.valueOf(employeeCount));
+            lblAverageSalary.setText(df.format(totalAverage.doubleValue()) + " đ");
+        } else {
+            int thang = selected.getMonthValue();
+            int nam = selected.getYear();
+            
+            SalaryStatistics stats = salaryService.getSalaryStatistics(thang, nam);
+            
+            lblTotalSalary.setText(df.format(stats.totalSalary.doubleValue()) + " đ");
+            lblEmployeeCount.setText(String.valueOf(stats.employeeCount));
+            lblAverageSalary.setText(df.format(stats.averageSalary.doubleValue()) + " đ");
         }
-        
-        int thang = selected.getMonthValue();
-        int nam = selected.getYear();
-        
-        SalaryStatistics stats = salaryService.getSalaryStatistics(thang, nam);
-        
-        lblTotalSalary.setText(df.format(stats.totalSalary.doubleValue()) + " đ");
-        lblEmployeeCount.setText(String.valueOf(stats.employeeCount));
-        lblAverageSalary.setText(df.format(stats.averageSalary.doubleValue()) + " đ");
     }
 
     public YearMonth getSelectedMonth() {
@@ -107,6 +131,9 @@ public class SalarySummary extends JPanel {
 
             DefaultComboBoxModel<YearMonth> model = new DefaultComboBoxModel<>();
             
+            // Thêm tùy chọn "Xem tất cả"
+            model.addElement(null);
+            
             YearMonth currentMonth = YearMonth.now();
             
             for (int i = 0; i < 12; i++) {
@@ -120,7 +147,9 @@ public class SalarySummary extends JPanel {
                 @Override
                 public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                     super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                    if (value instanceof YearMonth) {
+                    if (value == null) {
+                        setText("Xem tất cả");
+                    } else if (value instanceof YearMonth) {
                         YearMonth ym = (YearMonth) value;
                         setText("Tháng " + ym.getMonthValue() + "/" + ym.getYear());
                     }

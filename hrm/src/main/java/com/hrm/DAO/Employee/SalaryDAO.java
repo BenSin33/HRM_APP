@@ -16,7 +16,7 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
@@ -39,9 +39,11 @@ public class SalaryDAO {
                 dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                 dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                 dto.thucLinh = rs.getBigDecimal("THUCLINH");
-                dto.trangThai = rs.getString("TRANGTHAI");
+                // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+                dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
                 dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                     rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                 list.add(dto);
             }
         } catch (SQLException e) {
@@ -55,7 +57,7 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
@@ -82,9 +84,11 @@ public class SalaryDAO {
                     dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
-                    dto.trangThai = rs.getString("TRANGTHAI");
+                    // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+                    dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                     list.add(dto);
                 }
             }
@@ -98,7 +102,7 @@ public class SalaryDAO {
     public SalaryDTO getSalaryByMaNV(String maNV, int thang, int nam) {
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
@@ -125,9 +129,11 @@ public class SalaryDAO {
                     dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
-                    dto.trangThai = rs.getString("TRANGTHAI");
+                    // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+                    dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                     return dto;
                 }
             }
@@ -160,10 +166,39 @@ public class SalaryDAO {
         return false;
     }
 
-    // Khóa lương (thay đổi trạng thái)
-    public boolean lockSalaries(int thang, int nam) {
-        String sql = "UPDATE bangluong SET TRANGTHAI = 'Đã thanh toán', NGAYCHOTLUONG = CURDATE() " +
-                     "WHERE THANG = ? AND NAM = ? AND TRANGTHAI IN ('Chờ phê duyệt', 'Chưa thanh toán')";
+    // Khóa lương (thay đổi TRANGTHAI từ 0 thành 1)
+    public boolean lockSalary(String maLuong) {
+        String sql = "UPDATE bangluong SET TRANGTHAI = 1, NGAYCHOTLUONG = CURDATE() WHERE MALUONG = ?";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, maLuong);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Mở khóa lương (thay đổi TRANGTHAI từ 1 thành 0)
+    public boolean unlockSalary(String maLuong) {
+        String sql = "UPDATE bangluong SET TRANGTHAI = 0, NGAYCHOTLUONG = NULL WHERE MALUONG = ?";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, maLuong);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Khóa tất cả lương theo tháng/năm
+    public boolean lockSalariesByMonth(int thang, int nam) {
+        String sql = "UPDATE bangluong SET TRANGTHAI = 1, NGAYCHOTLUONG = CURDATE() WHERE THANG = ? AND NAM = ? AND TRANGTHAI = 0";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -178,10 +213,9 @@ public class SalaryDAO {
         return false;
     }
 
-    // Mở khóa lương
-    public boolean unlockSalaries(int thang, int nam) {
-        String sql = "UPDATE bangluong SET TRANGTHAI = 'Chưa thanh toán', NGAYCHOTLUONG = NULL " +
-                     "WHERE THANG = ? AND NAM = ? AND TRANGTHAI = 'Đã thanh toán'";
+    // Mở khóa tất cả lương theo tháng/năm
+    public boolean unlockSalariesByMonth(int thang, int nam) {
+        String sql = "UPDATE bangluong SET TRANGTHAI = 0, NGAYCHOTLUONG = NULL WHERE THANG = ? AND NAM = ? AND TRANGTHAI = 1";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -201,7 +235,7 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
@@ -229,9 +263,11 @@ public class SalaryDAO {
                     dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
-                    dto.trangThai = rs.getString("TRANGTHAI");
+                    // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+                    dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                     list.add(dto);
                 }
             }
@@ -246,7 +282,7 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
@@ -277,9 +313,11 @@ public class SalaryDAO {
                     dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
-                    dto.trangThai = rs.getString("TRANGTHAI");
+                    // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+                    dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                     list.add(dto);
                 }
             }

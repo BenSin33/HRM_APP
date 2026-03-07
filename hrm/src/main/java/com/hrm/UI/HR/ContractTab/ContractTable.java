@@ -22,12 +22,17 @@ public class ContractTable extends JPanel {
     private ContractTableRenderer renderer;
     private ContractDAO contractDAO;
     private DecimalFormat df = new DecimalFormat("#,###");
+    private ContractManagement parentPanel;
 
     public ContractTable() {
         setLayout(new BorderLayout());
         setOpaque(false);
         contractDAO = new ContractDAO();
         initComponent();
+    }
+
+    public void setParentPanel(ContractManagement parentPanel) {
+        this.parentPanel = parentPanel;
     }
 
     private void initComponent() {
@@ -152,7 +157,11 @@ public class ContractTable extends JPanel {
         if (updatedContract != null) {
             if (contractDAO.updateContract(updatedContract)) {
                 JOptionPane.showMessageDialog(this, "Cập nhật hợp đồng thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                refreshData();
+                if (parentPanel != null) {
+                    parentPanel.refreshData();
+                } else {
+                    refreshData();
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật hợp đồng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
@@ -171,9 +180,13 @@ public class ContractTable extends JPanel {
                 int row = contractTable.getSelectedRow();
                 if (row != -1) {
                     tableModel.removeRow(row);
-                    JOptionPane.showMessageDialog(this, "Xóa hợp đồng thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 }
-                refreshData();
+                JOptionPane.showMessageDialog(this, "Xóa hợp đồng thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                if (parentPanel != null) {
+                    parentPanel.refreshData();
+                } else {
+                    refreshData();
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Lỗi khi xóa hợp đồng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
