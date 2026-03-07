@@ -39,6 +39,10 @@ public class AccountManagerService {
         return accountDAO.changePassword(userId, newPassword);
     }
 
+    public boolean changePasswordByManv(String manv, String newPassword) {
+        return accountDAO.changePasswordByManv(manv, newPassword);
+    }
+
     public boolean setAccountStatus(String userId, int status) {
         return accountDAO.setAccountStatus(userId, status);
     }

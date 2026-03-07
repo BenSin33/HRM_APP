@@ -1,5 +1,6 @@
 package com.hrm.UI.Employee.HomeEmp;
 
+import com.hrm.Service.AccountManagerService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -9,12 +10,16 @@ import java.awt.geom.RoundRectangle2D;
 
 public class HomeFooter extends JPanel {
 
+    private String manv;
     private CardLayout cardLayout;
     private JPanel cardContainer;
+    private AccountManagerService accountManagerService;
 
-    public HomeFooter(CardLayout cardLayout, JPanel cardContainer) {
+    public HomeFooter(String manv, CardLayout cardLayout, JPanel cardContainer) {
+        this.manv = manv;
         this.cardLayout = cardLayout;
         this.cardContainer = cardContainer;
+        this.accountManagerService = new AccountManagerService();
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(0, 20, 20, 20));
@@ -35,6 +40,72 @@ public class HomeFooter extends JPanel {
         actionsGrid.add(createActionBtn("Đánh giá", new Color(79, 70, 229), "Đánh giá hiệu suất", "EVALUATION", createActionIcon("evaluation", new Color(79, 70, 229), 26)));
 
         add(actionsGrid, BorderLayout.CENTER);
+
+        JPanel passwordPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 15));
+        passwordPanel.setOpaque(false);
+
+        JButton btnChangePassword = new JButton("Đổi mật khẩu");
+        btnChangePassword.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnChangePassword.setFocusPainted(false);
+        btnChangePassword.setBackground(new Color(59, 130, 246));
+        btnChangePassword.setForeground(Color.WHITE);
+        btnChangePassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnChangePassword.addActionListener(e -> openChangePasswordDialog());
+
+        passwordPanel.add(btnChangePassword);
+        add(passwordPanel, BorderLayout.SOUTH);
+    }
+
+    private void openChangePasswordDialog() {
+        JPanel panel = new JPanel(new GridLayout(2, 2, 8, 8));
+
+        JLabel lblNewPass = new JLabel("Mật khẩu mới:");
+        JPasswordField txtNewPass = new JPasswordField();
+
+        JLabel lblConfirmPass = new JLabel("Xác nhận mật khẩu:");
+        JPasswordField txtConfirmPass = new JPasswordField();
+
+        panel.add(lblNewPass);
+        panel.add(txtNewPass);
+        panel.add(lblConfirmPass);
+        panel.add(txtConfirmPass);
+
+        int option = JOptionPane.showConfirmDialog(
+                this,
+                panel,
+                "Đổi mật khẩu",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (option != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        String newPassword = new String(txtNewPass.getPassword()).trim();
+        String confirmPassword = new String(txtConfirmPass.getPassword()).trim();
+
+        if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin mật khẩu.");
+            return;
+        }
+
+        if (newPassword.length() < 6) {
+            JOptionPane.showMessageDialog(this, "Mật khẩu mới phải có ít nhất 6 ký tự.");
+            return;
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(this, "Mật khẩu xác nhận không khớp.");
+            return;
+        }
+
+        boolean changed = accountManagerService.changePasswordByManv(manv, newPassword);
+        if (changed) {
+            JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Đổi mật khẩu thất bại. Vui lòng thử lại.");
+        }
     }
 
     private JPanel createActionBtn(String label, Color iconColor, String noteString, String cardName, ImageIcon icon) {

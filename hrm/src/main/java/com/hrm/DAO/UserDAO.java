@@ -9,7 +9,7 @@ import com.hrm.utils.JDBCConection;
 public class UserDAO {
 
     public String [] authenticate (String username, String password){
-        String sql = "SELECT MANV, ROLEID FROM TAIKHOAN WHERE USERID = ? AND PASSWORD = ? AND STATUS = 1";
+        String sql = "SELECT MANV, ROLEID FROM TAIKHOAN WHERE MANV = ? AND PASSWORD = ? AND STATUS = 1";
 
         try (Connection conn = JDBCConection.getConnection()) {
             if (conn == null) {

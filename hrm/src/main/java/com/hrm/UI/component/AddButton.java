@@ -8,7 +8,6 @@ import javax.swing.JPanel;
 public class AddButton extends JButton{
     public AddButton(String title, JPanel formPanel, Runnable onSuccess) {
         super("Thêm mới");
-
         putClientProperty("JButton.buttonType", "roundRect");
         this.setBackground(new java.awt.Color(102, 0, 204)); // Màu tím đặc trưng
         this.setForeground(java.awt.Color.WHITE);
@@ -30,11 +29,6 @@ public class AddButton extends JButton{
                 onSuccess.run();
 
         })
-        
-        
-        
-        
-        
         */
     }
 }

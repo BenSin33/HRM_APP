@@ -227,6 +227,22 @@ public class AccountManagerDAO {
         return false;
     }
 
+    public boolean changePasswordByManv(String manv, String newPassword) {
+        String sql = "UPDATE taikhoan SET PASSWORD = ? WHERE MANV = ?";
+
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, newPassword);
+            ps.setString(2, manv);
+
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // Kích hoạt/Vô hiệu hóa tài khoản
     public boolean setAccountStatus(String userId, int status) {
         String sql = "UPDATE taikhoan SET STATUS = ? WHERE USERID = ?";

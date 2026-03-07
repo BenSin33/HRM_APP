@@ -17,8 +17,8 @@ public class HomeManage extends JPanel {
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(new HomeReport(manv));
         contentPanel.add(Box.createVerticalStrut(10));
-        // Truyền cardLayout và cardContainer cho HomeFooter
-        contentPanel.add(new HomeFooter(cardLayout, cardContainer));
+        // Truyền mã nhân viên, cardLayout và cardContainer cho HomeFooter
+        contentPanel.add(new HomeFooter(manv, cardLayout, cardContainer));
         contentPanel.add(Box.createVerticalGlue());
 
         JScrollPane scrollPane = new JScrollPane(contentPanel);
