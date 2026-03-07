@@ -4,141 +4,150 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import com.hrm.DAO.Employee.LeaveDAO;
 import java.awt.*;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
 public class LeaveEditDialog extends JDialog {
-    private JComboBox<String> cmbLeaveType;
-    private JSpinner spnStartDate;
-    private JSpinner spnEndDate;
+    private JComboBox<String> cbLeaveType;
     private JTextArea taReason;
-    private boolean isSubmitted = false;
+    private JSpinner spStartDate;
+    private JSpinner spEndDate;
+    private boolean submitted = false;
     private Map<String, Object> leaveData;
-
-    public LeaveEditDialog(Window parentWindow, Map<String, Object> leaveData) {
-        super(JOptionPane.getFrameForComponent((Component) parentWindow), "Chỉnh sửa đơn nghỉ phép", ModalityType.APPLICATION_MODAL);
-        
+    
+    public LeaveEditDialog(Window owner, Map<String, Object> leaveData) {
+        super(owner, "CHỈNH SỬA ĐƠN NGHỈ PHÉP", ModalityType.APPLICATION_MODAL);
         this.leaveData = leaveData;
-        initComponents();
-        setLocationRelativeTo(parentWindow);
-    }
-
-    private void initComponents() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(500, 500);
-        setResizable(false);
-
-        JPanel pnlContent = new JPanel(new GridBagLayout());
-        pnlContent.setBorder(new EmptyBorder(10, 10, 10, 10));
-        pnlContent.setBackground(Color.WHITE);
-
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setSize(500, 400);
+        setLocationRelativeTo(owner);
+        
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        mainPanel.setBackground(new Color(248, 249, 250));
+        
+        // Form panel
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(new Color(248, 249, 250));
         GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 0, 10, 15);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(10, 0, 10, 0);
-
+        
         // Loại nghỉ phép
-        JLabel lblLeaveType = new JLabel("Loại nghỉ phép:");
-        lblLeaveType.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        gbc.gridx = 0;
         gbc.gridy = 0;
-        pnlContent.add(lblLeaveType, gbc);
-
-        cmbLeaveType = new JComboBox<>(new String[]{"Có lương", "Không lương"});
-        cmbLeaveType.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        cmbLeaveType.setPreferredSize(new Dimension(0, 35));
-        gbc.gridy = 1;
-        pnlContent.add(cmbLeaveType, gbc);
-        gbc.gridy++;
-
+        gbc.weightx = 0.3;
+        JLabel lblType = new JLabel("Loại nghỉ phép:");
+        lblType.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        formPanel.add(lblType, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        cbLeaveType = new JComboBox<>(new String[]{"Có lương", "Không lương"});
+        cbLeaveType.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        cbLeaveType.setPreferredSize(new Dimension(0, 35));
+        formPanel.add(cbLeaveType, gbc);
+        
         // Ngày bắt đầu
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.3;
         JLabel lblStartDate = new JLabel("Ngày bắt đầu:");
-        lblStartDate.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        gbc.gridy++;
-        pnlContent.add(lblStartDate, gbc);
-
-        spnStartDate = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor editorStart = new JSpinner.DateEditor(spnStartDate, "dd/MM/yyyy");
-        spnStartDate.setEditor(editorStart);
-        spnStartDate.setPreferredSize(new Dimension(0, 35));
-        gbc.gridy++;
-        pnlContent.add(spnStartDate, gbc);
-        gbc.gridy++;
-
+        lblStartDate.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        formPanel.add(lblStartDate, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        spStartDate = new JSpinner(new javax.swing.SpinnerDateModel());
+        JSpinner.DateEditor deStart = new JSpinner.DateEditor(spStartDate, "dd/MM/yyyy");
+        spStartDate.setEditor(deStart);
+        spStartDate.setPreferredSize(new Dimension(0, 35));
+        formPanel.add(spStartDate, gbc);
+        
         // Ngày kết thúc
-        JLabel lblEndDate = new JLabel("Ngày kết thúc:");
-        lblEndDate.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        gbc.gridy++;
-        pnlContent.add(lblEndDate, gbc);
-
-        spnEndDate = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor editorEnd = new JSpinner.DateEditor(spnEndDate, "dd/MM/yyyy");
-        spnEndDate.setEditor(editorEnd);
-        spnEndDate.setPreferredSize(new Dimension(0, 35));
-        gbc.gridy++;
-        pnlContent.add(spnEndDate, gbc);
-        gbc.gridy++;
-
-        // Lý do
-        JLabel lblReason = new JLabel("Lý do:");
-        lblReason.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        gbc.gridy++;
-        pnlContent.add(lblReason, gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.3;
+        JLabel lblEndDate = new JLabel("Ngày làm lại:");
+        lblEndDate.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        formPanel.add(lblEndDate, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        spEndDate = new JSpinner(new javax.swing.SpinnerDateModel());
+        JSpinner.DateEditor deEnd = new JSpinner.DateEditor(spEndDate, "dd/MM/yyyy");
+        spEndDate.setEditor(deEnd);
+        spEndDate.setPreferredSize(new Dimension(0, 35));
+        formPanel.add(spEndDate, gbc);
+        
+        // Lý do nghỉ
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0.3;
+        gbc.anchor = GridBagConstraints.NORTH;
+        JLabel lblReason = new JLabel("Lý do nghỉ:");
+        lblReason.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        formPanel.add(lblReason, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
         taReason = new JTextArea(4, 20);
         taReason.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         taReason.setLineWrap(true);
         taReason.setWrapStyleWord(true);
-        taReason.setMargin(new Insets(10, 10, 10, 10));
-        JScrollPane scrollPane = new JScrollPane(taReason);
-        scrollPane.setPreferredSize(new Dimension(0, 100));
-        gbc.gridy++;
-        pnlContent.add(scrollPane, gbc);
-        gbc.gridy++;
-
-        // Nút Cập nhật & Hủy
-        JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        pnlButtons.setOpaque(false);
-
+        JScrollPane spReason = new JScrollPane(taReason);
+        formPanel.add(spReason, gbc);
+        
+        mainPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // Buttons panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(new Color(248, 249, 250));
+        
         JButton btnUpdate = new JButton("Cập nhật");
-        btnUpdate.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnUpdate.setPreferredSize(new Dimension(100, 40));
-        btnUpdate.setBackground(new Color(34, 197, 94));
+        btnUpdate.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnUpdate.setPreferredSize(new Dimension(100, 35));
+        btnUpdate.setBackground(new Color(59, 130, 246));
         btnUpdate.setForeground(Color.WHITE);
         btnUpdate.addActionListener(e -> updateLeaveRequest());
-        pnlButtons.add(btnUpdate);
-
+        
         JButton btnCancel = new JButton("Hủy");
         btnCancel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        btnCancel.setPreferredSize(new Dimension(100, 40));
+        btnCancel.setPreferredSize(new Dimension(100, 35));
         btnCancel.addActionListener(e -> dispose());
-        pnlButtons.add(btnCancel);
-
-        gbc.gridy++;
-        pnlContent.add(pnlButtons, gbc);
-
-        getContentPane().add(pnlContent);
         
-        // Pre-populate data
+        buttonPanel.add(btnUpdate);
+        buttonPanel.add(btnCancel);
+        
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        setContentPane(mainPanel);
+        
+        // Populate data
         populateData();
     }
-
+    
     private void populateData() {
         String loainghi = (String) leaveData.get("loainghi");
         if (loainghi != null) {
-            cmbLeaveType.setSelectedItem(loainghi);
+            cbLeaveType.setSelectedItem(loainghi);
         }
 
         java.sql.Date dbNgaynghi = (java.sql.Date) leaveData.get("ngaynghi");
         if (dbNgaynghi != null) {
-            spnStartDate.setValue(new java.util.Date(dbNgaynghi.getTime()));
+            spStartDate.setValue(new java.util.Date(dbNgaynghi.getTime()));
         } else {
-            spnStartDate.setValue(new java.util.Date());
+            spStartDate.setValue(new java.util.Date());
         }
 
         java.sql.Date dbNgaylamlai = (java.sql.Date) leaveData.get("ngaylamlai");
         if (dbNgaylamlai != null) {
-            spnEndDate.setValue(new java.util.Date(dbNgaylamlai.getTime()));
+            spEndDate.setValue(new java.util.Date(dbNgaylamlai.getTime()));
         } else {
-            spnEndDate.setValue(new java.util.Date());
+            spEndDate.setValue(new java.util.Date());
         }
 
         String lydonghi = (String) leaveData.get("lydonghi");
@@ -148,21 +157,22 @@ public class LeaveEditDialog extends JDialog {
     }
 
     private void updateLeaveRequest() {
-        String selectedType = (String) cmbLeaveType.getSelectedItem();
-        java.util.Date startDate = (java.util.Date) spnStartDate.getValue();
-        java.util.Date endDate = (java.util.Date) spnEndDate.getValue();
-        String reason = taReason.getText().trim();
-
-        // Validation
-        if (reason.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập lý do!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        String loaiNghi = (String) cbLeaveType.getSelectedItem();
+        String lyDo = taReason.getText().trim();
+        
+        if (lyDo.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập lý do nghỉ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
-        java.time.LocalDate startLocal = new java.sql.Date(startDate.getTime()).toLocalDate();
-        java.time.LocalDate endLocal = new java.sql.Date(endDate.getTime()).toLocalDate();
-
-        if (startLocal.isAfter(endLocal)) {
+        
+        // Chuyển đổi date từ spinner
+        java.util.Date startDateUtil = (java.util.Date) spStartDate.getValue();
+        java.util.Date endDateUtil = (java.util.Date) spEndDate.getValue();
+        LocalDate startDate = startDateUtil.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        LocalDate endDate = endDateUtil.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        
+        // Kiểm tra ngày bắt đầu không được sau ngày kết thúc
+        if (startDate.isAfter(endDate)) {
             JOptionPane.showMessageDialog(this, "Ngày bắt đầu không được sau ngày kết thúc!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -170,15 +180,15 @@ public class LeaveEditDialog extends JDialog {
         // Update trong database
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("manghiphep", leaveData.get("manghiphep"));
-        updateData.put("loainghi", selectedType);
-        updateData.put("lydonghi", reason);
-        updateData.put("ngaynghi", startLocal);
-        updateData.put("ngaylamlai", endLocal);
+        updateData.put("loainghi", loaiNghi);
+        updateData.put("lydonghi", lyDo);
+        updateData.put("ngaynghi", startDate);
+        updateData.put("ngaylamlai", endDate);
 
         LeaveDAO dao = new LeaveDAO();
         if (dao.updateLeaveRequest(updateData)) {
             JOptionPane.showMessageDialog(this, "Cập nhật đơn nghỉ thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            isSubmitted = true;
+            submitted = true;
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Cập nhật đơn nghỉ thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -186,6 +196,6 @@ public class LeaveEditDialog extends JDialog {
     }
 
     public boolean isSubmitted() {
-        return isSubmitted;
+        return submitted;
     }
 }
