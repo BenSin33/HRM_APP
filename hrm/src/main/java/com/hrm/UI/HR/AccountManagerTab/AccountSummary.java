@@ -1,27 +1,54 @@
 package com.hrm.UI.HR.AccountManagerTab;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.DAO.AccountManagerDAO;
+import com.hrm.DTO.AccountManagerDTO;
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class AccountSummary extends JPanel {
+    private AccountManagerDAO accountDAO;
     
     public AccountSummary() {
         setLayout(new GridLayout(1, 4, 15, 0));
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        accountDAO = new AccountManagerDAO();
+        loadStats();
+    }
 
+    private void loadStats() {
+        List<AccountManagerDTO> accounts = accountDAO.getAllAccounts();
+        
+        int totalAccounts = accounts.size();
+        int activeAccounts = 0;
+        int disabledAccounts = 0;
+        int adminAccounts = 0;
+        
+        for (AccountManagerDTO account : accounts) {
+            if (account.status == 1) {
+                activeAccounts++;
+            } else {
+                disabledAccounts++;
+            }
+            if ("Admin".equals(account.roleName)) {
+                adminAccounts++;
+            }
+        }
+        
         // Thẻ thống kê 1: Tổng số tài khoản
-        add(createStatCard("Tổng số tài khoản", "156", "+5", "#4CAF50"));
+        add(createStatCard("Tổng số tài khoản", String.valueOf(totalAccounts), "+0", "#4CAF50"));
 
         // Thẻ thống kê 2: Tài khoản hoạt động
-        add(createStatCard("Tài khoản hoạt động", "142", "+3", "#2196F3"));
+        add(createStatCard("Tài khoản hoạt động", String.valueOf(activeAccounts), "+0", "#2196F3"));
 
         // Thẻ thống kê 3: Tài khoản bị vô hiệu hóa
-        add(createStatCard("Bị vô hiệu hóa", "8", "-2", "#FF9800"));
+        add(createStatCard("Bị vô hiệu hóa", String.valueOf(disabledAccounts), "+0", "#FF9800"));
 
-        // Thẻ thống kê 4: Tài khoản mới tháng này
-        add(createStatCard("Tài khoản mới", "12", "+2", "#9C27B0"));
+        // Thẻ thống kê 4: Tài khoản Admin
+        add(createStatCard("Tài khoản Admin", String.valueOf(adminAccounts), "+0", "#9C27B0"));
     }
 
     private JPanel createStatCard(String title, String value, String change, String color) {
@@ -56,3 +83,4 @@ public class AccountSummary extends JPanel {
         return card;
     }
 }
+

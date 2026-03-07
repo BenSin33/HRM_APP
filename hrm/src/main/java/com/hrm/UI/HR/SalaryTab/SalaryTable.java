@@ -1,12 +1,9 @@
 package com.hrm.UI.HR.SalaryTab;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,21 +11,16 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.Employee.SalaryDAO;
 import com.hrm.DTO.Employee.SalaryDTO;
 import com.hrm.Service.SalaryService;
-import com.hrm.UI.component.TableActionCellEditor;
-import com.hrm.UI.component.TableActionCellRenderer;
 import com.hrm.UI.component.CRUDDialog;
 
 public class SalaryTable extends JPanel {
     private JTable salaryTable;
     private DefaultTableModel tableModel;
-    private int hoveredRow = -1;
-    private TableActionCellRenderer renderer;
     private SalaryDAO salaryDAO;
     private SalaryService salaryService;
     private DecimalFormat df = new DecimalFormat("#,###");
@@ -51,8 +43,12 @@ public class SalaryTable extends JPanel {
         JPanel searchPanel = createSearchPanel();
         add(searchPanel, BorderLayout.NORTH);
         
-        // Bảng dữ liệu
-        String[] columnNames = {"Mã NV", "Họ và tên", "Phòng ban", "Lương cơ bản", "Thưởng", "Khấu trừ", "Thực lĩnh", "Trạng thái", "Thao tác"};
+        // Bảng dữ liệu với đầy đủ cột từ database
+        String[] columnNames = {
+            "Mã lương", "Mã NV", "Họ tên", "Tháng", "Năm", 
+            "Lương cơ bản", "Số ngày công", "Tổng phụ cấp", "Tổng khấu trừ", 
+            "Ngày chốt", "Thực lĩnh", "Trạng thái", "Tình trạng TT", "Thao tác"
+        };
 
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -63,65 +59,43 @@ public class SalaryTable extends JPanel {
 
         loadSalaryData();
 
-        salaryTable = new JTable(tableModel) {
-            @Override
-            public Component prepareRenderer(javax.swing.table.TableCellRenderer cellRenderer, int row, int column) {
-                Component c = super.prepareRenderer(cellRenderer, row, column);
-                if (column == 8 && cellRenderer instanceof TableActionCellRenderer) {
-                    ((TableActionCellRenderer)cellRenderer).setHovered(row == hoveredRow);
-                }
-                return c;
-            }
-        };
-        salaryTable.setRowHeight(50);
-
-        renderer = new TableActionCellRenderer();
-        salaryTable.getColumnModel().getColumn(8).setCellRenderer(renderer);
+        salaryTable = new JTable(tableModel);
+        salaryTable.setRowHeight(40);
+        salaryTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         
-        salaryTable.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                int row = salaryTable.rowAtPoint(e.getPoint());
-                int col = salaryTable.columnAtPoint(e.getPoint());
-                
-                if (row != -1 && col == 8) {
-                    if (hoveredRow != row) {
-                        hoveredRow = row;
-                        salaryTable.repaint();
-                    }
-                } else {
-                    if (hoveredRow != -1) {
-                        hoveredRow = -1;
-                        salaryTable.repaint();
-                    }
-                }
-            }
-        });
+        // Thiết lập độ rộng cột
+        salaryTable.getColumnModel().getColumn(0).setPreferredWidth(80);  // Mã lương
+        salaryTable.getColumnModel().getColumn(1).setPreferredWidth(70);  // Mã NV
+        salaryTable.getColumnModel().getColumn(2).setPreferredWidth(120); // Họ tên
+        salaryTable.getColumnModel().getColumn(3).setPreferredWidth(60);  // Tháng
+        salaryTable.getColumnModel().getColumn(4).setPreferredWidth(60);  // Năm
+        salaryTable.getColumnModel().getColumn(5).setPreferredWidth(100); // Lương cơ bản
+        salaryTable.getColumnModel().getColumn(6).setPreferredWidth(80);  // Số ngày công
+        salaryTable.getColumnModel().getColumn(7).setPreferredWidth(100); // Tổng phụ cấp
+        salaryTable.getColumnModel().getColumn(8).setPreferredWidth(100); // Tổng khấu trừ
+        salaryTable.getColumnModel().getColumn(9).setPreferredWidth(90);  // Ngày chốt
+        salaryTable.getColumnModel().getColumn(10).setPreferredWidth(100);// Thực lĩnh
+        salaryTable.getColumnModel().getColumn(11).setPreferredWidth(80); // Trạng thái
+        salaryTable.getColumnModel().getColumn(12).setPreferredWidth(100);// Tình trạng TT
+        salaryTable.getColumnModel().getColumn(13).setPreferredWidth(100);// Thao tác
         
+        // Xử lý click vào cột Thao tác
         salaryTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int row = salaryTable.rowAtPoint(e.getPoint());
                 int col = salaryTable.columnAtPoint(e.getPoint());
                 
-                if (row != -1 && col == 8) {
-                    Object employeeId = tableModel.getValueAt(row, 0);
+                if (row != -1 && col == 13) { // Cột Thao tác
                     Rectangle cellRect = salaryTable.getCellRect(row, col, false);
-                    
                     int relativeX = e.getX() - (int)cellRect.getX();
                     
                     if (relativeX < cellRect.getWidth() / 2) {
-                        handleEdit(employeeId);
+                        handleEdit(row);
                     } else {
-                        handleDelete(employeeId);
+                        handleDelete(row);
                     }
                 }
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                hoveredRow = -1;
-                salaryTable.repaint();
             }
         });
 
@@ -181,12 +155,18 @@ public class SalaryTable extends JPanel {
             // Hiển thị tất cả dữ liệu
             displaySalaries(allSalaries);
         } else {
-            // Tìm kiếm trong dữ liệu hiện tại
-            List<SalaryDTO> searchResults = salaryService.searchSalaries(
-                currentMonth.getMonthValue(), 
-                currentMonth.getYear(), 
-                keyword
-            );
+            // Tìm kiếm trong dữ liệu đã load
+            List<SalaryDTO> searchResults = new ArrayList<>();
+            String lowerKeyword = keyword.toLowerCase();
+            
+            for (SalaryDTO salary : allSalaries) {
+                if ((salary.maLuong != null && salary.maLuong.toLowerCase().contains(lowerKeyword)) ||
+                    (salary.maNV != null && salary.maNV.toLowerCase().contains(lowerKeyword)) ||
+                    (salary.hoTen != null && salary.hoTen.toLowerCase().contains(lowerKeyword))) {
+                    searchResults.add(salary);
+                }
+            }
+            
             displaySalaries(searchResults);
         }
     }
@@ -194,36 +174,42 @@ public class SalaryTable extends JPanel {
     private void displaySalaries(List<SalaryDTO> salaries) {
         tableModel.setRowCount(0);
         for (SalaryDTO salary : salaries) {
+            // Convert TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+            String statusDisplay = "0".equals(salary.trangThai) || salary.trangThai == null ? 
+                "Chưa khóa" : "1".equals(salary.trangThai) ? "Đã khóa" : salary.trangThai;
+            
             tableModel.addRow(new Object[]{
+                salary.maLuong,
                 salary.maNV,
                 salary.hoTen,
-                salary.phongBan,
+                salary.thang,
+                salary.nam,
                 df.format(salary.luongCoBan != null ? salary.luongCoBan.doubleValue() : 0),
+                String.format("%.1f", salary.soNgayCong),
                 df.format(salary.tongPhucap != null ? salary.tongPhucap.doubleValue() : 0),
                 df.format(salary.tongKhauTru != null ? salary.tongKhauTru.doubleValue() : 0),
+                salary.ngayChot != null ? salary.ngayChot : "Chưa chốt",
                 df.format(salary.thucLinh != null ? salary.thucLinh.doubleValue() : 0),
-                salary.trangThai != null ? salary.trangThai : "Chưa xác định",
-                ""
+                statusDisplay,
+                salary.tinhTrangThanToan != null ? salary.tinhTrangThanToan : "Chưa thanh toán",
+                "Sửa | Xóa"
             });
         }
     }
 
-    private void handleEdit(Object employeeId) {
-        System.out.println("Sửa dữ liệu: " + employeeId);
+    private void handleEdit(int row) {
+        if (row < 0 || row >= allSalaries.size()) return;
         
-        // Tìm kiếm dữ liệu từ danh sách đã load
+        // Lấy mã lương từ row
+        String maLuong = (String) tableModel.getValueAt(row, 0);
+        
+        // Tìm dữ liệu tương ứng
         SalaryDTO salary = null;
         for (SalaryDTO s : allSalaries) {
-            if (s.maNV.equals(employeeId.toString())) {
+            if (s.maLuong.equals(maLuong)) {
                 salary = s;
                 break;
             }
-        }
-        
-        // Nếu không tìm thấy trong danh sách hiện tại, tìm kiếm trong database
-        if (salary == null) {
-            salary = salaryDAO.getSalaryByMaNV(employeeId.toString(), 
-                currentMonth.getMonthValue(), currentMonth.getYear());
         }
         
         if (salary == null) {
@@ -252,31 +238,29 @@ public class SalaryTable extends JPanel {
         }
     }
 
-    private void handleDelete(Object employeeId) {
-        System.out.println("Xóa mã: " + employeeId);
+    private void handleDelete(int row) {
+        if (row < 0 || row >= allSalaries.size()) return;
+        
+        String maLuong = (String) tableModel.getValueAt(row, 0);
+        String maNV = (String) tableModel.getValueAt(row, 1);
         
         int confirm = JOptionPane.showConfirmDialog(this, 
-            "Bạn chắc chắn muốn xóa dữ liệu lương của nhân viên: " + employeeId + "?",
+            "Bạn chắc chắn muốn xóa dữ liệu lương của " + maNV + "?",
             "Xác nhận xóa", 
             JOptionPane.YES_NO_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
-            JOptionPane.showMessageDialog(this, "Xóa dữ liệu lương không được phép (chỉ cập nhật trạng thái được cho phép)", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Chức năng xóa không được phép. Chỉ được cập nhật trạng thái.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void loadSalaryData() {
-        int thang = currentMonth.getMonthValue();
-        int nam = currentMonth.getYear();
-        
-        System.out.println("DEBUG: Loading salary data for month " + thang + "/" + nam);
-        allSalaries = salaryDAO.getSalariesByMonthYear(thang, nam);
-        System.out.println("DEBUG: Retrieved " + allSalaries.size() + " salary records");
-        
-        if (allSalaries.isEmpty()) {
-            System.out.println("DEBUG: No data for current month, loading all salaries");
+        if (currentMonth == null) {
+            // Nếu chọn "Xem tất cả"
             allSalaries = salaryDAO.getAllSalaries();
-            System.out.println("DEBUG: Retrieved " + allSalaries.size() + " total salary records");
+        } else {
+            // Lọc theo tháng/năm
+            allSalaries = salaryDAO.getSalariesByMonthYear(currentMonth.getMonthValue(), currentMonth.getYear());
         }
         
         displaySalaries(allSalaries);
@@ -289,6 +273,12 @@ public class SalaryTable extends JPanel {
 
     public void loadSalaryDataByMonth(int thang, int nam) {
         currentMonth = YearMonth.of(nam, thang);
+        searchField.setText("");
+        loadSalaryData();
+    }
+
+    public void loadAllSalaryData() {
+        currentMonth = null;
         searchField.setText("");
         loadSalaryData();
     }

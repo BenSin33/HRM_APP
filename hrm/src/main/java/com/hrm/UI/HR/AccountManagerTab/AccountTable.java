@@ -5,7 +5,10 @@ import com.hrm.DAO.AccountManagerDAO;
 import com.hrm.DTO.AccountManagerDTO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 
 public class AccountTable extends JPanel {
@@ -13,14 +16,18 @@ public class AccountTable extends JPanel {
     private JTable accountTable;
     private DefaultTableModel tableModel;
     private AccountManagerDAO accountDAO;
+    private int hoveredRow = -1;
 
     public AccountTable() {
         setLayout(new BorderLayout());
         setOpaque(false);
         accountDAO = new AccountManagerDAO();
+        initComponent();
+    }
 
-        // Tạo model bảng
-        String[] columns = {"ID", "Tên tài khoản", "Email", "Phòng ban", "Vai trò", "Trạng thái", "Điện thoại", "Hành động"};
+    private void initComponent() {
+        // Tạo model bảng với nhiều cột thông tin hơn
+        String[] columns = {"Mã NV", "Tên tài khoản", "Họ tên", "Email", "Điện thoại", "Vai trò", "Phòng ban", "Trạng thái", "Thao tác"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -41,14 +48,58 @@ public class AccountTable extends JPanel {
             "gridColor: #e0e0e0; background: #ffffff");
 
         // Đặt độ rộng cột
-        accountTable.getColumnModel().getColumn(0).setPreferredWidth(50);
-        accountTable.getColumnModel().getColumn(1).setPreferredWidth(120);
-        accountTable.getColumnModel().getColumn(2).setPreferredWidth(150);
-        accountTable.getColumnModel().getColumn(3).setPreferredWidth(100);
+        accountTable.getColumnModel().getColumn(0).setPreferredWidth(60);
+        accountTable.getColumnModel().getColumn(1).setPreferredWidth(100);
+        accountTable.getColumnModel().getColumn(2).setPreferredWidth(120);
+        accountTable.getColumnModel().getColumn(3).setPreferredWidth(150);
         accountTable.getColumnModel().getColumn(4).setPreferredWidth(100);
-        accountTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        accountTable.getColumnModel().getColumn(5).setPreferredWidth(80);
         accountTable.getColumnModel().getColumn(6).setPreferredWidth(100);
         accountTable.getColumnModel().getColumn(7).setPreferredWidth(80);
+        accountTable.getColumnModel().getColumn(8).setPreferredWidth(100);
+
+        // Xử lý mouse click trên cột thao tác
+        accountTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = accountTable.rowAtPoint(e.getPoint());
+                int col = accountTable.columnAtPoint(e.getPoint());
+                
+                if (row != -1 && col == 8) {
+                    String maNV = (String) tableModel.getValueAt(row, 0);
+                    Rectangle cellRect = accountTable.getCellRect(row, col, false);
+                    int relativeX = e.getX() - (int)cellRect.getX();
+                    int buttonWidth = cellRect.width / 2;
+                    
+                    if (relativeX < buttonWidth) {
+                        handleEdit(maNV);
+                    } else {
+                        handleToggleStatus(maNV);
+                    }
+                }
+            }
+        });
+
+        // Xử lý mouse hover
+        accountTable.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int row = accountTable.rowAtPoint(e.getPoint());
+                int col = accountTable.columnAtPoint(e.getPoint());
+                
+                if (row != -1 && col == 8) {
+                    if (hoveredRow != row) {
+                        hoveredRow = row;
+                        accountTable.repaint();
+                    }
+                } else {
+                    if (hoveredRow != -1) {
+                        hoveredRow = -1;
+                        accountTable.repaint();
+                    }
+                }
+            }
+        });
 
         // ScrollPane
         JScrollPane scrollPane = new JScrollPane(accountTable);
@@ -75,12 +126,13 @@ public class AccountTable extends JPanel {
             tableModel.addRow(new Object[]{
                 account.maNV,
                 account.userId,
+                account.hoTen,
                 account.email != null ? account.email : "N/A",
-                account.phongBan,
-                account.roleName,
-                account.getStatusText(),
                 account.dienThoai != null ? account.dienThoai : "N/A",
-                "Chỉnh sửa"
+                account.roleName,
+                account.phongBan,
+                account.getStatusText(),
+                "Sửa / Khóa"
             });
         }
         
@@ -89,12 +141,57 @@ public class AccountTable extends JPanel {
     }
 
     private void updatePageInfo(int totalRecords) {
-        // Thay đổi label ở footer (có thể truy cập qua getComponent)
+        // Thay đổi label ở footer
         if (getComponentCount() > 1) {
             JPanel footerPanel = (JPanel) getComponent(1);
             if (footerPanel.getComponentCount() > 0) {
                 JLabel pageLabel = (JLabel) footerPanel.getComponent(0);
                 pageLabel.setText("Hiển thị tổng cộng " + totalRecords + " tài khoản");
+            }
+        }
+    }
+
+    private void handleEdit(String maNV) {
+        AccountManagerDTO account = accountDAO.getAccountByMaNV(maNV);
+        if (account == null) {
+            JOptionPane.showMessageDialog(this, "Không tìm thấy tài khoản!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        AccountEditForm editForm = new AccountEditForm();
+        editForm.setFormData(account);
+        
+        int result = JOptionPane.showConfirmDialog(this, editForm, "Cập nhật tài khoản", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION && editForm.validateForm()) {
+            AccountManagerDTO updated = editForm.getFormData();
+            if (accountDAO.updateAccount(updated)) {
+                JOptionPane.showMessageDialog(this, "Cập nhật thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                refreshData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void handleToggleStatus(String maNV) {
+        AccountManagerDTO account = accountDAO.getAccountByMaNV(maNV);
+        if (account == null) {
+            JOptionPane.showMessageDialog(this, "Không tìm thấy tài khoản!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        String message = account.status == 1 ? 
+            "Bạn chắc chắn muốn khóa tài khoản này?" : 
+            "Bạn chắc chắn muốn kích hoạt tài khoản này?";
+        
+        int confirm = JOptionPane.showConfirmDialog(this, message, "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            int newStatus = account.status == 1 ? 0 : 1;
+            if (accountDAO.setAccountStatus(account.userId, newStatus)) {
+                JOptionPane.showMessageDialog(this, "Cập nhật trạng thái thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                refreshData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

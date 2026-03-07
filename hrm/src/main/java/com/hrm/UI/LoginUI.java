@@ -69,15 +69,15 @@ public class LoginUI extends JFrame{
     welcomeLabel.setBounds(50, 50, 300, 40);
     rightPanel.add(welcomeLabel);
 
-    // Username
-    JLabel userLabel = new JLabel("Username");
+    // Mã nhân viên
+    JLabel userLabel = new JLabel("Mã nhân viên (MANV)");
     userLabel.setBounds(50, 130, 150, 20);
     rightPanel.add(userLabel);
 
     JTextField txtUserName = new JTextField();
     txtUserName.setBounds(50, 155, 300, 40);
     // Tùy chỉnh border cho đẹp hơn
-    txtUserName.putClientProperty("JTextField.placeholderText", "Nhập tài khoản...");
+    txtUserName.putClientProperty("JTextField.placeholderText", "Nhập mã nhân viên...");
     rightPanel.add(txtUserName);
 
     // Password
@@ -99,17 +99,17 @@ public class LoginUI extends JFrame{
     
     // Xử lý sự kiện khi bấm nút Đăng nhập
     btnLogin.addActionListener(e -> {
-        String user = txtUserName.getText();
+        String manv = txtUserName.getText();
         String pass = new String(txtPass.getPassword());
 
-        if(user.isEmpty() || pass.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập tài khoản và mật khẩu");
+        if(manv.isEmpty() || pass.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập mã nhân viên và mật khẩu");
             return;
         }
 
         // Sử dụng Service để xác thực
         AuthenticationService authService = new AuthenticationService();
-        UserDTO userInfo = authService.authenticate(user, pass);
+        UserDTO userInfo = authService.authenticateByMaNV(manv, pass);
 
         if(userInfo != null){
             if(authService.isAdmin(userInfo)){
@@ -127,7 +127,7 @@ public class LoginUI extends JFrame{
             }
             this.dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Tài khoản hoặc mật khẩu không đúng!");
+            JOptionPane.showMessageDialog(this, "Mã nhân viên hoặc mật khẩu không đúng!");
         }
     });
     rightPanel.add(btnLogin);

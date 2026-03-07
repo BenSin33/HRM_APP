@@ -19,6 +19,7 @@ import com.hrm.UI.HR.SalaryTab.SalaryManagement;
 import com.hrm.UI.HR.Leavetab.LeaveManagement;
 import com.hrm.UI.HR.Overview.DashboardOverview;
 import com.hrm.UI.component.*;
+import com.hrm.UI.HR.CategoryTab.*;
 
 public class HRDashboard extends JFrame {
     
@@ -48,8 +49,8 @@ public class HRDashboard extends JFrame {
         HRTabs.add(new SidebarTab("Quản lý lương", "PAYROLL_MANAGEMENT"));  
         HRTabs.add(new SidebarTab("Phân Quyền", "PERMISSION_MANAGEMENT"));  
         HRTabs.add(new SidebarTab("Quản lý hợp đồng", "CONTRACT_MANAGEMENT"));
-
         HRTabs.add(new SidebarTab("Quản lý tài khoản", "ACCOUNT_MANAGEMENT"));  
+        HRTabs.add(new SidebarTab("Quản lý danh mục", "CATEGORY_MANAGEMENT"));  
 
         HRTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
 
@@ -63,6 +64,7 @@ public class HRDashboard extends JFrame {
         contentPanel.add(createDashboardPanel(new EvaluationManagement()), "EVALUATION_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new MainPermissionPanel()), "PERMISSION_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new AccountManagerPanel()), "ACCOUNT_MANAGEMENT");
+        contentPanel.add(createDashboardPanel(new CategoryPanel()), "CATEGORY_MANAGEMENT");
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, HRTabs); // tạo sidebar
 
