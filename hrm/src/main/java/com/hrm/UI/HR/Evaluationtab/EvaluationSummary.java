@@ -1,32 +1,64 @@
 package com.hrm.UI.HR.Evaluationtab;
 
+import com.hrm.DAO.HR.EvaluationDAO;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
+import java.util.List;
 
 public class EvaluationSummary extends JPanel {
+
+    private final EvaluationDAO dao = new EvaluationDAO();
+
+    // Label refs để update khi đổi kỳ
+    private JLabel avgValueLbl;
+    private JLabel xsValueLbl;
+    private JLabel totValueLbl;
+    private JLabel pendValueLbl;
 
     public EvaluationSummary() {
         setLayout(new GridLayout(1, 4, 16, 0));
         setOpaque(false);
 
-        // Card 1: Điểm trung bình – nền tím đặc (khác hẳn 3 card còn lại)
-        add(buildAvgCard("Điểm trung bình", "71.0"));
+        // Lấy đợt đầu tiên để hiển thị mặc định
+        List<com.hrm.DTO.HR.EvaluationPeriodDTO> periods = dao.getAllPeriods();
+        String maDot = (periods != null && !periods.isEmpty()) ? periods.get(0).getMaDot() : "";
 
-        // Card 2: Xuất sắc – icon ribbon xanh lá
-        add(buildStatCard("Xuất sắc", "1",
-                new Color(220, 252, 231), new Color( 21, 128, 61),
+        // Load stats
+        String avg     = maDot.isEmpty() ? "0.0" : String.format("%.1f", dao.getAvgScore(maDot));
+        String xsCount = maDot.isEmpty() ? "0"   : String.valueOf(dao.countByXepLoai(maDot, "Xuất sắc"));
+        String totCount= maDot.isEmpty() ? "0"   : String.valueOf(dao.countByXepLoai(maDot, "Tốt"));
+        String pending = maDot.isEmpty() ? "0"   : String.valueOf(dao.countChoDuyet(maDot));
+
+        // Card 1: Điểm trung bình
+        add(buildAvgCard("Điểm trung bình", avg));
+
+        // Card 2: Xuất sắc
+        add(buildStatCard("Xuất sắc", xsCount,
+                new Color(220, 252, 231), new Color(21, 128, 61),
                 makeRibbonIcon(new Color(21, 128, 61)), null));
 
-        // Card 3: Tốt – icon trending arrow xanh dương
-        add(buildStatCard("Tốt", "1",
+        // Card 3: Tốt
+        add(buildStatCard("Tốt", totCount,
                 new Color(219, 234, 254), new Color(29, 78, 216),
                 makeTrendIcon(new Color(29, 78, 216)), null));
 
-        // Card 4: Chờ duyệt – border cam, icon tam giác cảnh báo
-        add(buildStatCard("Chờ duyệt", "2",
+        // Card 4: Chờ duyệt
+        add(buildStatCard("Chờ duyệt", pending,
                 new Color(255, 237, 213), new Color(194, 65, 12),
                 makeWarnIcon(new Color(234, 88, 12)), new Color(234, 88, 12)));
+    }
+
+    /**
+     * Gọi từ bên ngoài (EvaluationTable) khi đổi kỳ để refresh stats.
+     */
+    public void refreshStats(String maDot) {
+        if (maDot == null || maDot.isEmpty()) return;
+        if (avgValueLbl  != null) avgValueLbl.setText(String.format("%.1f", dao.getAvgScore(maDot)));
+        if (xsValueLbl   != null) xsValueLbl.setText(String.valueOf(dao.countByXepLoai(maDot, "Xuất sắc")));
+        if (totValueLbl  != null) totValueLbl.setText(String.valueOf(dao.countByXepLoai(maDot, "Tốt")));
+        if (pendValueLbl != null) pendValueLbl.setText(String.valueOf(dao.countChoDuyet(maDot)));
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -45,23 +77,21 @@ public class EvaluationSummary extends JPanel {
         card.setOpaque(false);
         card.setBorder(BorderFactory.createEmptyBorder(22, 22, 22, 22));
 
-        // Text bên trái
         JLabel labelLbl = new JLabel(label);
-        labelLbl.setForeground(new Color(233, 213, 255)); // tím nhạt
+        labelLbl.setForeground(new Color(233, 213, 255));
         labelLbl.setFont(labelLbl.getFont().deriveFont(Font.PLAIN, 13f));
 
-        JLabel valueLbl = new JLabel(value);
-        valueLbl.setFont(valueLbl.getFont().deriveFont(Font.BOLD, 36f));
-        valueLbl.setForeground(Color.WHITE);
+        avgValueLbl = new JLabel(value);
+        avgValueLbl.setFont(avgValueLbl.getFont().deriveFont(Font.BOLD, 36f));
+        avgValueLbl.setForeground(Color.WHITE);
 
         JPanel textPanel = new JPanel();
         textPanel.setOpaque(false);
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.add(labelLbl);
         textPanel.add(Box.createVerticalStrut(8));
-        textPanel.add(valueLbl);
+        textPanel.add(avgValueLbl);
 
-        // Icon sao bên phải
         JLabel iconLbl = new JLabel(makeStarIcon(new Color(233, 213, 255)));
         iconLbl.setVerticalAlignment(SwingConstants.CENTER);
 
@@ -89,7 +119,6 @@ public class EvaluationSummary extends JPanel {
         card.putClientProperty("FlatLaf.style", borderStyle);
         card.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Text
         JLabel labelLbl = new JLabel(label);
         labelLbl.setForeground(new Color(107, 114, 128));
         labelLbl.setFont(labelLbl.getFont().deriveFont(Font.PLAIN, 13f));
@@ -99,6 +128,11 @@ public class EvaluationSummary extends JPanel {
         valueLbl.setFont(valueLbl.getFont().deriveFont(Font.BOLD, 32f));
         valueLbl.setForeground(valueFg);
 
+        // Lưu ref để update sau
+        if ("Xuất sắc".equals(label))   xsValueLbl   = valueLbl;
+        if ("Tốt".equals(label))         totValueLbl  = valueLbl;
+        if ("Chờ duyệt".equals(label))  pendValueLbl = valueLbl;
+
         JPanel textPanel = new JPanel();
         textPanel.setOpaque(false);
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
@@ -106,7 +140,6 @@ public class EvaluationSummary extends JPanel {
         textPanel.add(Box.createVerticalStrut(8));
         textPanel.add(valueLbl);
 
-        // Icon
         JLabel iconLbl = new JLabel(icon);
         iconLbl.setVerticalAlignment(SwingConstants.CENTER);
 
@@ -120,10 +153,9 @@ public class EvaluationSummary extends JPanel {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // ICONS (Graphics2D – không cần file ảnh)
+    // ICONS
     // ─────────────────────────────────────────────────────────────
 
-    /** ⭐ Star outline */
     private Icon makeStarIcon(Color color) {
         return new Icon() {
             final int S = 44;
@@ -150,7 +182,6 @@ public class EvaluationSummary extends JPanel {
         };
     }
 
-    /** 🎖 Ribbon / medal icon */
     private Icon makeRibbonIcon(Color color) {
         return new Icon() {
             final int S = 36;
@@ -159,12 +190,10 @@ public class EvaluationSummary extends JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(color);
                 g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                // circle top
                 g2.drawOval(x+6, y+2, S-12, S-20);
-                // ribbon tails
-                g2.drawLine(x+8,  y+S-16, x+4,  y+S-2);
+                g2.drawLine(x+8,   y+S-16, x+4,   y+S-2);
                 g2.drawLine(x+S-8, y+S-16, x+S-4, y+S-2);
-                g2.drawLine(x+8,  y+S-16, x+S/2, y+S-8);
+                g2.drawLine(x+8,   y+S-16, x+S/2, y+S-8);
                 g2.drawLine(x+S-8, y+S-16, x+S/2, y+S-8);
                 g2.dispose();
             }
@@ -173,7 +202,6 @@ public class EvaluationSummary extends JPanel {
         };
     }
 
-    /** 📈 Trending up arrow */
     private Icon makeTrendIcon(Color color) {
         return new Icon() {
             final int S = 36;
@@ -182,11 +210,9 @@ public class EvaluationSummary extends JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(color);
                 g2.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                // line going up-right
                 g2.drawPolyline(
                     new int[]{x+3,  x+11, x+20, x+S-3},
                     new int[]{y+S-5, y+S-14, y+S-10, y+5}, 4);
-                // arrow head
                 g2.drawLine(x+S-10, y+5,  x+S-3, y+5);
                 g2.drawLine(x+S-3,  y+5,  x+S-3, y+12);
                 g2.dispose();
@@ -196,7 +222,6 @@ public class EvaluationSummary extends JPanel {
         };
     }
 
-    /** ⚠ Warning triangle */
     private Icon makeWarnIcon(Color color) {
         return new Icon() {
             final int S = 36;
@@ -208,7 +233,6 @@ public class EvaluationSummary extends JPanel {
                 int[] px = {x+S/2, x+3, x+S-3};
                 int[] py = {y+3, y+S-4, y+S-4};
                 g2.drawPolygon(px, py, 3);
-                // !
                 g2.drawLine(x+S/2, y+12, x+S/2, y+S-14);
                 g2.fillOval(x+S/2-2, y+S-11, 4, 4);
                 g2.dispose();
