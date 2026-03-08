@@ -137,4 +137,34 @@ public class DepartmentDAO {
         }
         return 0;
     }
+
+    /**
+     * Get all departments with employee count.
+     */
+    public List<DepartmentDTO> getAllWithEmployeeCount() {
+        List<DepartmentDTO> list = new ArrayList<>();
+        String sql = "SELECT pb.maphongban, pb.tenphongban, COUNT(nv.manv) as soNhanVien " +
+                     "FROM phongban pb LEFT JOIN nhanvien nv ON pb.maphongban = nv.maphongban " +
+                     "GROUP BY pb.maphongban, pb.tenphongban";
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) {
+            System.err.println("Lỗi: Không thể kết nối database trong DepartmentDAO.getAllWithEmployeeCount()");
+            return list;
+        }
+        try (conn;
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                DepartmentDTO dto = new DepartmentDTO(
+                        rs.getString("maphongban"),
+                        rs.getString("tenphongban"),
+                        rs.getInt("soNhanVien")
+                );
+                list.add(dto);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
