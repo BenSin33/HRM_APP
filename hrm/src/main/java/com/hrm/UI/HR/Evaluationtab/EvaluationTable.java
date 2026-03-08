@@ -1,10 +1,15 @@
 package com.hrm.UI.HR.Evaluationtab;
 
+import com.hrm.DAO.HR.EvaluationDAO;
+import com.hrm.DTO.HR.EvaluationDTO;
+import com.hrm.DTO.HR.EvaluationPeriodDTO;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
 public class EvaluationTable extends JPanel {
 
@@ -16,14 +21,14 @@ public class EvaluationTable extends JPanel {
     private static final Color ROW_SEP  = new Color(243, 244, 246);
 
     // Xếp loại badges
-    private static final Color XS_BG = new Color(220, 252, 231); private static final Color XS_FG = new Color(21,128,61);
-    private static final Color TOT_BG = new Color(219,234,254);  private static final Color TOT_FG = new Color(29,78,216);
-    private static final Color TB_BG  = new Color(254,243,199);  private static final Color TB_FG  = new Color(161,98,7);
-    private static final Color KEM_BG = new Color(254,226,226);  private static final Color KEM_FG = new Color(185,28,28);
+    private static final Color XS_BG  = new Color(220, 252, 231); private static final Color XS_FG  = new Color(21, 128, 61);
+    private static final Color TOT_BG = new Color(219, 234, 254); private static final Color TOT_FG = new Color(29,  78, 216);
+    private static final Color TB_BG  = new Color(254, 243, 199); private static final Color TB_FG  = new Color(161, 98,   7);
+    private static final Color KEM_BG = new Color(254, 226, 226); private static final Color KEM_FG = new Color(185, 28,  28);
 
     // Trạng thái badges
-    private static final Color PEND_BG  = new Color(254,243,199); private static final Color PEND_FG  = new Color(161,98,7);
-    private static final Color DONE_BG  = new Color(220,252,231); private static final Color DONE_FG  = new Color(21,128,61);
+    private static final Color PEND_BG = new Color(254, 243, 199); private static final Color PEND_FG = new Color(161, 98,  7);
+    private static final Color DONE_BG = new Color(220, 252, 231); private static final Color DONE_FG = new Color(21, 128, 61);
 
     // Thưởng/Phạt màu chữ
     private static final Color REWARD_FG  = new Color(21, 128, 61);
@@ -32,22 +37,25 @@ public class EvaluationTable extends JPanel {
 
     private DefaultTableModel model;
     private JComboBox<String> periodBox;
+    private List<EvaluationPeriodDTO> periods;
+    private final EvaluationDAO dao = new EvaluationDAO();
 
-    // Data: {id, name, position, team, reviewer, score, rank, rewardType, status}
-    // rewardType: "Tăng lương" | "Thưởng" | "Cảnh cáo" | "Trừ lương" | "Không có"
-    private final Object[][] fullData = {
-        {"NV001","Nguyễn Văn A","Senior Developer","Tech Team","Trần Thị B", 95,"Xuất sắc","Tăng lương","Chờ duyệt"},
-        {"NV005","Phạm Văn E",  "UI/UX Designer",  "Design Team","Trần Thị B",88,"Tốt",     "Thưởng",   "Đã duyệt"},
-        {"NV003","Lê Văn C",    "Junior Developer","Tech Team","Trần Thị B", 52,"Kém",      "Cảnh cáo", "Đã duyệt"},
-        {"NV007","Trần Thị G",  "Frontend Developer","Tech Team","Trần Thị B",75,"Trung bình","Không có","-"},
-        {"NV008","Lê Văn H",    "Backend Developer","Tech Team","Trần Thị B", 45,"Kém",     "Trừ lương","Chờ duyệt"},
-    };
+    // Ref tới Summary để refresh stats khi đổi kỳ
+    private EvaluationSummary summary;
 
     public EvaluationTable() {
+        this(null);
+    }
+
+    public EvaluationTable(EvaluationSummary summary) {
+        this.summary = summary;
         setLayout(new BorderLayout(0, 0));
         setOpaque(false);
 
-        // ── Kỳ đánh giá selector (ngoài card) ────────────────────
+        // ── Load danh sách đợt từ DB ──────────────────────────────
+        periods = dao.getAllPeriods();
+
+        // ── Kỳ đánh giá selector ─────────────────────────────────
         JPanel periodPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         periodPanel.setBackground(Color.WHITE);
         periodPanel.putClientProperty("FlatLaf.style",
@@ -58,10 +66,23 @@ public class EvaluationTable extends JPanel {
         periodLabel.setForeground(GRAY900);
         periodLabel.setFont(periodLabel.getFont().deriveFont(Font.PLAIN, 13f));
 
-        periodBox = new JComboBox<>(new String[]{"Q4 2024", "Q3 2024", "Q2 2024", "Q1 2024"});
+        // Build label list từ DB
+        String[] labels = periods.stream()
+                .map(EvaluationPeriodDTO::getLabel)
+                .toArray(String[]::new);
+
+        // Fallback nếu DB chưa có data
+        if (labels.length == 0) {
+            labels = new String[]{"Chưa có đợt đánh giá"};
+        }
+
+        periodBox = new JComboBox<>(labels);
         periodBox.putClientProperty("FlatLaf.style",
                 "arc:8; background:#FFFFFF; borderColor:#E5E7EB");
         periodBox.setPreferredSize(new Dimension(130, 32));
+
+        // Khi đổi kỳ → load lại bảng
+        periodBox.addActionListener(e -> loadTableData());
 
         periodPanel.add(periodLabel);
         periodPanel.add(periodBox);
@@ -79,6 +100,44 @@ public class EvaluationTable extends JPanel {
         wrapper.add(card,        BorderLayout.CENTER);
 
         add(wrapper, BorderLayout.CENTER);
+
+        // Load data lần đầu
+        loadTableData();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // RELOAD KHI TẠO ĐỢT MỚI
+    // ─────────────────────────────────────────────────────────────
+    public void reloadPeriods() {
+        periods = dao.getAllPeriods();
+        periodBox.removeAllItems();
+        for (EvaluationPeriodDTO p : periods) {
+            periodBox.addItem(p.getLabel());
+        }
+        if (periodBox.getItemCount() > 0) {
+            periodBox.setSelectedIndex(0);
+        }
+        loadTableData();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LOAD DATA TỪ DB
+    // ─────────────────────────────────────────────────────────────
+    private void loadTableData() {
+        model.setRowCount(0); // Xóa data cũ
+
+        int idx = periodBox.getSelectedIndex();
+        if (periods == null || periods.isEmpty() || idx < 0 || idx >= periods.size()) return;
+
+        String maDot = periods.get(idx).getMaDot();
+        List<EvaluationDTO> list = dao.getEvaluationsByPeriod(maDot);
+
+        for (EvaluationDTO dto : list) {
+            model.addRow(dto.toTableRow());
+        }
+
+        // Cập nhật summary cards theo kỳ mới
+        if (summary != null) summary.refreshStats(maDot);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -90,8 +149,6 @@ public class EvaluationTable extends JPanel {
         model = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-
-        for (Object[] d : fullData) model.addRow(toRow(d));
 
         JTable table = new JTable(model);
         table.setRowHeight(80);
@@ -127,13 +184,13 @@ public class EvaluationTable extends JPanel {
             @Override public Component getTableCellRendererComponent(JTable t, Object v,
                     boolean sel, boolean focus, int row, int col) {
                 super.getTableCellRendererComponent(t, v, sel, focus, row, col);
-                setBackground(sel ? new Color(245,243,255) : Color.WHITE);
+                setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
                 setForeground(GRAY900);
                 setVerticalAlignment(SwingConstants.CENTER);
                 setHorizontalAlignment(SwingConstants.CENTER);
                 setBorder(new CompoundBorder(
-                    new MatteBorder(0,0,1,0,ROW_SEP),
-                    BorderFactory.createEmptyBorder(0,8,0,8)));
+                    new MatteBorder(0, 0, 1, 0, ROW_SEP),
+                    BorderFactory.createEmptyBorder(0, 8, 0, 8)));
                 return this;
             }
         };
@@ -145,52 +202,38 @@ public class EvaluationTable extends JPanel {
         return scroll;
     }
 
-    private Object[] toRow(Object[] d) {
-        return new Object[]{
-            d[0],                                          // mã NV
-            new String[]{(String)d[1],(String)d[2],(String)d[3]}, // name+pos+team
-            d[4],                                          // reviewer
-            new Object[]{d[5], d[6]},                     // score + rank (for color)
-            d[6],                                          // xếp loại badge
-            new String[]{(String)d[7], (String)d[6]},     // reward + rank
-            d[8]                                           // trạng thái
-        };
-    }
-
     // ─────────────────────────────────────────────────────────────
     // CELL RENDERERS
     // ─────────────────────────────────────────────────────────────
 
-    /** Mã NV in đậm – căn giữa dọc */
     class IdRenderer extends DefaultTableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
             super.getTableCellRendererComponent(t, v, sel, focus, row, col);
             setText("<html><b>" + v + "</b></html>");
             setForeground(GRAY900);
-            setBackground(sel ? new Color(245,243,255) : Color.WHITE);
+            setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
             setVerticalAlignment(SwingConstants.CENTER);
             setHorizontalAlignment(SwingConstants.CENTER);
             setBorder(new CompoundBorder(
-                new MatteBorder(0,0,1,0,ROW_SEP),
-                BorderFactory.createEmptyBorder(0,8,0,8)));
+                new MatteBorder(0, 0, 1, 0, ROW_SEP),
+                BorderFactory.createEmptyBorder(0, 8, 0, 8)));
             return this;
         }
     }
 
-    /** Nhân viên: tên đậm / chức vụ / team xám */
     class EmployeeRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
-            String[] arr = (String[]) v; // [name, position, team]
+            String[] arr = (String[]) v;
 
             JPanel cell = new JPanel();
             cell.setOpaque(true);
-            cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
+            cell.setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
             cell.setLayout(new BoxLayout(cell, BoxLayout.Y_AXIS));
             cell.setBorder(new CompoundBorder(
-                new MatteBorder(0,0,1,0,ROW_SEP),
-                BorderFactory.createEmptyBorder(12,8,12,8)));
+                new MatteBorder(0, 0, 1, 0, ROW_SEP),
+                BorderFactory.createEmptyBorder(12, 8, 12, 8)));
 
             JLabel name = new JLabel(arr[0]);
             name.setFont(name.getFont().deriveFont(Font.BOLD, 13f));
@@ -202,7 +245,7 @@ public class EvaluationTable extends JPanel {
 
             JLabel team = new JLabel(arr[2]);
             team.setFont(team.getFont().deriveFont(Font.PLAIN, 11f));
-            team.setForeground(new Color(156,163,175));
+            team.setForeground(new Color(156, 163, 175));
 
             cell.add(name);
             cell.add(Box.createVerticalStrut(2));
@@ -213,29 +256,19 @@ public class EvaluationTable extends JPanel {
         }
     }
 
-    /** Điểm số: số lớn màu tím + /100 xám nhỏ – căn giữa dọc */
     class ScoreRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
             Object[] arr = (Object[]) v;
             int score = (Integer) arr[0];
 
-            Color scoreColor;
-            switch (arr[1].toString()) {
-                case "Kém":
-                    scoreColor = new Color(239, 68, 68);
-                    break;
-                default:
-                    scoreColor = PURPLE;
-                    break;
-            }
+            Color scoreColor = "Kém".equals(arr[1].toString())
+                    ? new Color(239, 68, 68) : PURPLE;
 
-            // Cell ngoài: GridBagLayout để căn giữa hoàn toàn
             JPanel cell = new JPanel(new GridBagLayout());
-            cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
-            cell.setBorder(new MatteBorder(0,0,1,0,ROW_SEP));
+            cell.setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
+            cell.setBorder(new MatteBorder(0, 0, 1, 0, ROW_SEP));
 
-            // Inner panel chứa "95 /100" nằm ngang, căn baseline
             JPanel inner = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
             inner.setOpaque(false);
 
@@ -252,40 +285,26 @@ public class EvaluationTable extends JPanel {
 
             inner.add(big);
             inner.add(small);
-
-            cell.add(inner); // GridBagLayout tự căn giữa
+            cell.add(inner);
             return cell;
         }
     }
 
-    /** Xếp loại badge bo tròn */
     class RankBadgeRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
             String rank = v == null ? "" : v.toString();
 
             JPanel cell = new JPanel(new GridBagLayout());
-            cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
-            cell.setBorder(new MatteBorder(0,0,1,0,ROW_SEP));
+            cell.setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
+            cell.setBorder(new MatteBorder(0, 0, 1, 0, ROW_SEP));
 
             Color bg, fg;
             switch (rank) {
-                case "Xuất sắc":   
-                    bg = XS_BG;  
-                    fg = XS_FG;  
-                    break;
-                case "Tốt":        
-                    bg = TOT_BG; 
-                    fg = TOT_FG; 
-                    break;
-                case "Trung bình": 
-                    bg = TB_BG;  
-                    fg = TB_FG;  
-                    break;
-                default:            
-                    bg = KEM_BG; 
-                    fg = KEM_FG; 
-                    break;
+                case "Xuất sắc":   bg = XS_BG;  fg = XS_FG;  break;
+                case "Tốt":        bg = TOT_BG; fg = TOT_FG; break;
+                case "Trung bình": bg = TB_BG;  fg = TB_FG;  break;
+                default:           bg = KEM_BG; fg = KEM_FG; break;
             }
 
             JLabel badge = new JLabel(rank, SwingConstants.CENTER) {
@@ -309,17 +328,15 @@ public class EvaluationTable extends JPanel {
         }
     }
 
-    /** Thưởng/Phạt: icon + text màu theo loại – căn giữa dọc */
     class RewardRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
             String[] arr = (String[]) v;
             String reward = arr[0];
 
-            // Cell ngoài GridBagLayout = căn giữa hoàn toàn
             JPanel cell = new JPanel(new GridBagLayout());
-            cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
-            cell.setBorder(new MatteBorder(0,0,1,0,ROW_SEP));
+            cell.setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
+            cell.setBorder(new MatteBorder(0, 0, 1, 0, ROW_SEP));
 
             if ("Không có".equals(reward)) {
                 JLabel lbl = new JLabel("Không có");
@@ -333,7 +350,6 @@ public class EvaluationTable extends JPanel {
             Color iconColor = isReward ? REWARD_FG : PENALTY_FG;
             Color textColor = isReward ? REWARD_FG : PENALTY_FG;
 
-            // Inner panel nằm ngang: icon + text
             JPanel inner = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
             inner.setOpaque(false);
 
@@ -347,8 +363,7 @@ public class EvaluationTable extends JPanel {
 
             inner.add(icon);
             inner.add(text);
-
-            cell.add(inner); // GridBagLayout căn giữa inner vào cell
+            cell.add(inner);
             return cell;
         }
 
@@ -378,7 +393,7 @@ public class EvaluationTable extends JPanel {
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     g2.setColor(c);
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    g2.drawPolygon(new int[]{x+8,x+1,x+15}, new int[]{y+1,y+15,y+15}, 3);
+                    g2.drawPolygon(new int[]{x+8, x+1, x+15}, new int[]{y+1, y+15, y+15}, 3);
                     g2.drawLine(x+8, y+6, x+8, y+11);
                     g2.fillOval(x+6, y+13, 3, 3);
                     g2.dispose();
@@ -389,15 +404,14 @@ public class EvaluationTable extends JPanel {
         }
     }
 
-    /** Trạng thái badge: Chờ duyệt / Đã duyệt / dấu gạch */
     class StatusBadgeRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
             String status = v == null ? "" : v.toString();
 
             JPanel cell = new JPanel(new GridBagLayout());
-            cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
-            cell.setBorder(new MatteBorder(0,0,1,0,ROW_SEP));
+            cell.setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
+            cell.setBorder(new MatteBorder(0, 0, 1, 0, ROW_SEP));
 
             if ("-".equals(status)) {
                 JLabel dash = new JLabel("-");
