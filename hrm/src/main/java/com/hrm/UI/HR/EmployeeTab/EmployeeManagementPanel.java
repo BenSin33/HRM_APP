@@ -3,16 +3,20 @@ package com.hrm.UI.HR.EmployeeTab;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultCellEditor;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -22,7 +26,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.ImageIcon;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -42,6 +45,8 @@ public class EmployeeManagementPanel extends JPanel {
     private Icon viewIcon;
     private Icon editIcon;
     private Icon deleteIcon;
+
+    private com.hrm.DAO.HR.NhanVienHRDAO nhanVienHRDAO = new com.hrm.DAO.HR.NhanVienHRDAO();
 
     public EmployeeManagementPanel() {
         setLayout(new BorderLayout());
@@ -87,9 +92,29 @@ public class EmployeeManagementPanel extends JPanel {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setOpaque(false);
 
-        searchField = new JTextField(20);
-        final String SEARCH_PLACEHOLDER = "Tìm kiếm theo tên, mã NV, email...";
-        searchField.setText("");
+        searchField = new JTextField(45);
+        final String SEARCH_PLACEHOLDER = "Tìm kiếm nhân viên theo tên, mã NV, email";
+        searchField.setPreferredSize(new Dimension(420, 32));
+        searchField.setMinimumSize(new Dimension(320, 32));
+        searchField.setText(SEARCH_PLACEHOLDER);
+        searchField.setForeground(new Color(150, 150, 150));
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (SEARCH_PLACEHOLDER.equals(searchField.getText())) {
+                    searchField.setText("");
+                    searchField.setForeground(new Color(33, 37, 41));
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().trim().isEmpty()) {
+                    searchField.setText(SEARCH_PLACEHOLDER);
+                    searchField.setForeground(new Color(150, 150, 150));
+                }
+            }
+        });
+
         filterBox = new JComboBox<>(new String[]{"Tất cả phòng ban", "IT", "Kinh doanh", "Kế toán"});
         JButton addBtn = new JButton("+ Thêm nhân viên");
         addBtn.setBackground(new Color(88, 63, 191));
@@ -115,7 +140,9 @@ public class EmployeeManagementPanel extends JPanel {
         // Action lọc phòng ban
         filterBox.addActionListener(e -> {
             currentDept = (String) filterBox.getSelectedItem();
-            currentKeyword = searchField.getText().trim().toLowerCase();
+            String raw = searchField.getText().trim();
+            if (SEARCH_PLACEHOLDER.equals(raw)) raw = "";
+            currentKeyword = raw.toLowerCase();
             refreshTableFromMaster(currentKeyword, currentDept);
         });
 
@@ -136,16 +163,20 @@ public class EmployeeManagementPanel extends JPanel {
         panel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         String[] columns = {"MÃ NV", "HỌ VÀ TÊN", "EMAIL", "PHÒNG BAN", "CHỨC VỤ", "TRẠNG THÁI", "THAO TÁC"};
-        Object[][] data = {
-                {"NV001", "Nguyễn Văn A", "nva@company.com", "IT", "Developer", "Đang làm"},
-                {"NV002", "Trần Thị B", "ttb@company.com", "Kinh doanh", "Sales Manager", "Đang làm"},
-                {"NV003", "Lê Văn C", "lvc@company.com", "Kế toán", "Accountant", "Đang làm"},
-                {"NV004", "Phạm Thị D", "ptd@company.com", "IT", "Designer", "Nghỉ việc"}
-        };
 
-        // load master data
-        for (Object[] row : data) {
-            masterData.add(row.clone());
+        // Lấy dữ liệu từ database HR (JDBCConection / HRM_System), không dùng NhanVienDAO (JDBCUtil)
+        masterData.clear();
+        java.util.List<com.hrm.DTO.Manager.NhanVienDTO> dsNhanVien = nhanVienHRDAO.getAll();
+        for (com.hrm.DTO.Manager.NhanVienDTO nv : dsNhanVien) {
+            Object[] row = {
+                nv.getManv(),
+                nv.getHoten(),
+                nv.getEmail(),
+                nv.getMaphongban(), // Nếu có DAO phòng ban thì lấy tên
+                nv.getMachucvu(),   // Nếu có DAO chức vụ thì lấy tên
+                nv.getTrangthai()
+            };
+            masterData.add(row);
         }
 
         model = new DefaultTableModel(columns, 0) {

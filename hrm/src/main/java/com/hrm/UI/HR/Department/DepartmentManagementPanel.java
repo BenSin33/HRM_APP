@@ -23,14 +23,14 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import com.hrm.DAO.HR.DepartmentDAO;
 import com.hrm.DTO.HR.DepartmentDTO;
+import com.hrm.Service.DepartmentService;
 
 public class DepartmentManagementPanel extends JPanel {
 
     private JPanel cardsContainer;
     private JTextField searchField;
-    private DepartmentDAO departmentDAO = new DepartmentDAO();
+    private DepartmentService departmentService = new DepartmentService();
 
     public DepartmentManagementPanel() {
         setLayout(new BorderLayout());
@@ -79,14 +79,14 @@ public class DepartmentManagementPanel extends JPanel {
         JPanel stats = new JPanel(new GridLayout(1, 4, 18, 0));
         stats.setOpaque(false);
 
-        // Calculate values from database (dùng chung DepartmentDAO để vừa đồng bộ, vừa tránh lỗi kết nối khác nguồn)
-        List<DepartmentDTO> departments = departmentDAO.getAll();
+        // Calculate values from database
+        List<DepartmentDTO> departments = departmentService.getAllDepartmentsWithEmployeeCount();
         int totalDepartments = departments.size();
 
         int totalEmployees = 0;
         int maxEmployees = 0;
         for (DepartmentDTO dept : departments) {
-            int empCount = departmentDAO.countEmployees(dept.getMaPhongBan());
+            int empCount = dept.getSoNhanVien();
             totalEmployees += empCount;
             if (empCount > maxEmployees) {
                 maxEmployees = empCount;
@@ -225,36 +225,11 @@ public class DepartmentManagementPanel extends JPanel {
         cardsContainer.setOpaque(false);
         cardsContainer.setBorder(new EmptyBorder(24, 0, 0, 0));
 
-        // Các phòng ban mẫu giống ảnh
-        cardsContainer.add(createDepartmentCard("Phòng Công nghệ", "TECH", 12,
-                "Trần Thị B", "NV002",
-                "Phòng phát triển và bảo trì hệ thống công nghệ thông tin",
-                "tech@company.com", "0901234567", "Tầng 3, Tòa nhà A"));
-
-        cardsContainer.add(createDepartmentCard("Phòng Nhân sự", "HR", 5,
-                "Phạm Thị D", "NV004",
-                "Phòng quản lý nguồn nhân lực và phát triển tổ chức",
-                "hr@company.com", "0901234568", "Tầng 2, Tòa nhà A"));
-
-        cardsContainer.add(createDepartmentCard("Phòng Thiết kế", "DESIGN", 6,
-                "Phạm Văn E", "NV005",
-                "Phòng thiết kế sản phẩm và trải nghiệm người dùng",
-                "design@company.com", "0901234569", "Tầng 4, Tòa nhà A"));
-
-        cardsContainer.add(createDepartmentCard("Phòng Kiểm thử", "QA", 4,
-                "Hoàng Thị F", "NV006",
-                "Phòng đảm bảo chất lượng sản phẩm",
-                "qa@company.com", "0901234570", "Tầng 3, Tòa nhà A"));
-
-        cardsContainer.add(createDepartmentCard("Phòng Kinh doanh", "SALES", 8,
-                "Nguyễn Văn I", "NV009",
-                "Phòng phát triển kinh doanh và chăm sóc khách hàng",
-                "sales@company.com", "0901234571", "Tầng 1, Tòa nhà A"));
-
-        cardsContainer.add(createDepartmentCard("Phòng Kế toán", "ACC", 4,
-                "Trần Văn J", "NV010",
-                "Phòng kế toán và tài chính",
-                "accounting@company.com", "0901234572", "Tầng 2, Tòa nhà A"));
+        // Load departments from database
+        List<DepartmentDTO> departments = departmentService.getAllDepartmentsWithEmployeeCount();
+        for (DepartmentDTO dept : departments) {
+            cardsContainer.add(createDepartmentCard(dept));
+        }
 
         // Bọc grid trong JScrollPane để có thể kéo xuống xem các phòng bên dưới
         JScrollPane scroll = new JScrollPane(cardsContainer);
@@ -268,6 +243,13 @@ public class DepartmentManagementPanel extends JPanel {
     }
 
     // ============== MỘT CARD PHÒNG BAN ==============
+    private JPanel createDepartmentCard(DepartmentDTO dept) {
+        return createDepartmentCard(dept.getTenPhongBan(), dept.getMaPhongBan(), dept.getSoNhanVien(),
+                "Chưa cập nhật", "N/A",
+                "Mô tả phòng ban sẽ được cập nhật sau",
+                "N/A", "N/A", "N/A");
+    }
+
     private JPanel createDepartmentCard(String name, String code, int employees,
                                         String manager, String managerId, String description,
                                         String email, String phone, String location) {
@@ -488,12 +470,6 @@ public class DepartmentManagementPanel extends JPanel {
         JTextField nameField = new JTextField();
         JTextField codeField = new JTextField();
         JTextField employeesField = new JTextField();
-        JTextField managerField = new JTextField();
-        JTextField managerIdField = new JTextField();
-        JTextField descField = new JTextField();
-        JTextField emailField = new JTextField();
-        JTextField phoneField = new JTextField();
-        JTextField locationField = new JTextField();
 
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
         form.add(new JLabel("Tên phòng ban:"));
@@ -502,18 +478,6 @@ public class DepartmentManagementPanel extends JPanel {
         form.add(codeField);
         form.add(new JLabel("Số nhân viên:"));
         form.add(employeesField);
-        form.add(new JLabel("Trưởng phòng:"));
-        form.add(managerField);
-        form.add(new JLabel("Mã NV Trưởng phòng:"));
-        form.add(managerIdField);
-        form.add(new JLabel("Mô tả:"));
-        form.add(descField);
-        form.add(new JLabel("Email:"));
-        form.add(emailField);
-        form.add(new JLabel("Điện thoại:"));
-        form.add(phoneField);
-        form.add(new JLabel("Vị trí:"));
-        form.add(locationField);
 
         int result = JOptionPane.showConfirmDialog(
                 null,
@@ -523,25 +487,73 @@ public class DepartmentManagementPanel extends JPanel {
         );
 
         if (result == JOptionPane.OK_OPTION) {
-            try {
-                int employees = Integer.parseInt(employeesField.getText());
-                JPanel newCard = createDepartmentCard(
-                        nameField.getText(),
-                        codeField.getText(),
-                        employees,
-                        managerField.getText(),
-                        managerIdField.getText(),
-                        descField.getText(),
-                        emailField.getText(),
-                        phoneField.getText(),
-                        locationField.getText()
-                );
-                cardsContainer.add(newCard);
-                cardsContainer.revalidate();
-                cardsContainer.repaint();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(null, "Số nhân viên phải là số nguyên!");
+            String tenPhongBan = nameField.getText().trim();
+            String maPhongBan = codeField.getText().trim();
+            String soNhanVienStr = employeesField.getText().trim();
+
+            if (tenPhongBan.isEmpty() || maPhongBan.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Vui lòng nhập đầy đủ tên và mã phòng ban!");
+                return;
             }
+
+            int soNhanVien = 0;
+            if (!soNhanVienStr.isEmpty()) {
+                try {
+                    soNhanVien = Integer.parseInt(soNhanVienStr);
+                    if (soNhanVien < 0) {
+                        JOptionPane.showMessageDialog(null, "Số nhân viên phải là số không âm!");
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(null, "Số nhân viên phải là số nguyên!");
+                    return;
+                }
+            }
+
+            // Kiểm tra mã phòng ban đã tồn tại chưa
+            DepartmentDTO existing = departmentService.findDepartmentById(maPhongBan);
+            if (existing != null) {
+                JOptionPane.showMessageDialog(null, "Mã phòng ban đã tồn tại!");
+                return;
+            }
+
+            // Thêm vào database
+            DepartmentDTO newDept = new DepartmentDTO(maPhongBan, tenPhongBan, soNhanVien);
+            departmentService.addDepartment(newDept);
+
+            // Refresh toàn bộ panel
+            refreshPanel();
+
+            JOptionPane.showMessageDialog(null, "Thêm phòng ban thành công!");
         }
+    }
+
+    /**
+     * Refresh the entire panel to update stats and department cards
+     */
+    private void refreshPanel() {
+        // Remove all components
+        removeAll();
+
+        // Reinitialize the panel
+        setLayout(new BorderLayout());
+        setBackground(new Color(245, 247, 250));
+        setBorder(new EmptyBorder(24, 24, 24, 24));
+
+        JPanel topSection = new JPanel();
+        topSection.setOpaque(false);
+        topSection.setLayout(new BoxLayout(topSection, BoxLayout.Y_AXIS));
+
+        topSection.add(createTitleSection());
+        topSection.add(Box.createVerticalStrut(20));
+        topSection.add(createStatsSection());
+        topSection.add(Box.createVerticalStrut(20));
+        topSection.add(createSearchSection());
+
+        add(topSection, BorderLayout.NORTH);
+        add(createCardsArea(), BorderLayout.CENTER);
+
+        revalidate();
+        repaint();
     }
 }
