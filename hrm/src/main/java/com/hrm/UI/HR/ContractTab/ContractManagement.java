@@ -46,6 +46,13 @@ public class ContractManagement extends JPanel {
         filterContainer.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         
         ContractFilter filter = new ContractFilter();
+        // Wire up filter callback to trigger table filtering
+        filter.setFilterCallback(e -> {
+            String searchText = filter.getSearchText();
+            String status = filter.getSelectedStatus();
+            String type = filter.getSelectedType();
+            contractTable.applyFilter(searchText, status, type);
+        });
         filterContainer.add(filter, BorderLayout.CENTER);
         centerPanel.add(filterContainer, BorderLayout.NORTH);
 

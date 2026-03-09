@@ -46,29 +46,69 @@ public class SalaryManagement extends JPanel {
     }
 
     private void onMonthChanged() {
-        YearMonth selectedMonth = summary.getSelectedMonth();
-        if (selectedMonth != null) {
+        if (summary.getFilterMode() == SalarySummary.FilterMode.QUICK_MONTH && summary.getSelectedMonth() != null) {
+            YearMonth selectedMonth = summary.getSelectedMonth();
             salaryTable.loadSalaryDataByMonth(selectedMonth.getMonthValue(), selectedMonth.getYear());
+            return;
+        }
+
+        YearMonth fromMonth = summary.getFilterFromMonth();
+        YearMonth toMonth = summary.getFilterToMonth();
+        if (summary.getFilterMode() == SalarySummary.FilterMode.DATE_RANGE && fromMonth != null && toMonth != null) {
+            salaryTable.loadSalaryDataByDateRange(fromMonth, toMonth);
         } else {
-            // Nếu chọn "Xem tất cả"
             salaryTable.loadAllSalaryData();
         }
     }
 
+    private YearMonth getFromMonthForAction() {
+        if (summary.getFilterMode() == SalarySummary.FilterMode.QUICK_MONTH && summary.getSelectedMonth() != null) {
+            return summary.getSelectedMonth();
+        }
+        if (summary.getFilterMode() == SalarySummary.FilterMode.DATE_RANGE) {
+            return summary.getFilterFromMonth();
+        }
+        return null;
+    }
+
+    private YearMonth getToMonthForAction() {
+        if (summary.getFilterMode() == SalarySummary.FilterMode.QUICK_MONTH && summary.getSelectedMonth() != null) {
+            return summary.getSelectedMonth();
+        }
+        if (summary.getFilterMode() == SalarySummary.FilterMode.DATE_RANGE) {
+            return summary.getFilterToMonth();
+        }
+        return null;
+    }
+
     private void handleLockSalary() {
-        YearMonth selectedMonth = summary.getSelectedMonth();
-        if (selectedMonth == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn tháng!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+        YearMonth fromMonth = getFromMonthForAction();
+        YearMonth toMonth = getToMonthForAction();
+        
+        if (fromMonth == null || toMonth == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn bộ lọc tháng hoặc khoảng ngày trước khi khóa lương!", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-            "Bạn có chắc chắn muốn khóa bảng lương tháng " + selectedMonth.getMonthValue() + "/" + selectedMonth.getYear() + "?",
+            "Bạn có chắc chắn muốn khóa bảng lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
+            " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "?",
             "Xác nhận khóa lương",
             JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            if (salaryService.lockSalariesByMonth(selectedMonth.getMonthValue(), selectedMonth.getYear())) {
+            // Khóa từng tháng trong khoảng
+            boolean success = true;
+            YearMonth current = fromMonth;
+            while (!current.isAfter(toMonth)) {
+                if (!salaryService.lockSalariesByMonth(current.getMonthValue(), current.getYear())) {
+                    success = false;
+                    break;
+                }
+                current = current.plusMonths(1);
+            }
+            
+            if (success) {
                 JOptionPane.showMessageDialog(this, "Đã khóa bảng lương thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 salaryTable.refreshData();
             } else {
@@ -78,19 +118,33 @@ public class SalaryManagement extends JPanel {
     }
 
     private void handleUnlockSalary() {
-        YearMonth selectedMonth = summary.getSelectedMonth();
-        if (selectedMonth == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn tháng!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+        YearMonth fromMonth = getFromMonthForAction();
+        YearMonth toMonth = getToMonthForAction();
+        
+        if (fromMonth == null || toMonth == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn bộ lọc tháng hoặc khoảng ngày trước khi mở khóa lương!", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-            "Bạn có chắc chắn muốn mở khóa bảng lương tháng " + selectedMonth.getMonthValue() + "/" + selectedMonth.getYear() + "?",
+            "Bạn có chắc chắn muốn mở khóa bảng lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
+            " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "?",
             "Xác nhận mở khóa",
             JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            if (salaryService.unlockSalariesByMonth(selectedMonth.getMonthValue(), selectedMonth.getYear())) {
+            // Mở khóa từng tháng trong khoảng
+            boolean success = true;
+            YearMonth current = fromMonth;
+            while (!current.isAfter(toMonth)) {
+                if (!salaryService.unlockSalariesByMonth(current.getMonthValue(), current.getYear())) {
+                    success = false;
+                    break;
+                }
+                current = current.plusMonths(1);
+            }
+            
+            if (success) {
                 JOptionPane.showMessageDialog(this, "Đã mở khóa bảng lương thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 salaryTable.refreshData();
             } else {
@@ -100,21 +154,25 @@ public class SalaryManagement extends JPanel {
     }
 
     private void handleCalculateSalary() {
-        YearMonth selectedMonth = summary.getSelectedMonth();
-        if (selectedMonth == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn tháng!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+        YearMonth fromMonth = getFromMonthForAction();
+        YearMonth toMonth = getToMonthForAction();
+        
+        if (fromMonth == null || toMonth == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn bộ lọc tháng hoặc khoảng ngày trước khi tính lương!", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-            "Bạn có chắc chắn muốn tính lương cho tháng " + selectedMonth.getMonthValue() + "/" + selectedMonth.getYear() + "?",
+            "Bạn có chắc chắn muốn tính lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
+            " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "?",
             "Xác nhận tính lương",
             JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
             // TODO: Gọi hàm tính lương từ Service
             JOptionPane.showMessageDialog(this, 
-                "Đang tính lương cho tháng " + selectedMonth.getMonthValue() + "/" + selectedMonth.getYear() + "...",
+                "Đang tính lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
+                " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "...",
                 "Thông báo",
                 JOptionPane.INFORMATION_MESSAGE);
             salaryTable.refreshData();

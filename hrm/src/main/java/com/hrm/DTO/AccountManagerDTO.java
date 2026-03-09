@@ -1,7 +1,6 @@
 package com.hrm.DTO;
 
 public class AccountManagerDTO {
-    public String userId;
     public String maNV;
     public String hoTen;
     public String phongBan;
@@ -13,9 +12,8 @@ public class AccountManagerDTO {
 
     public AccountManagerDTO() {}
 
-    public AccountManagerDTO(String userId, String maNV, String hoTen, String phongBan,
+    public AccountManagerDTO(String maNV, String hoTen, String phongBan,
                              String roleId, String roleName, int status, String email, String dienThoai) {
-        this.userId = userId;
         this.maNV = maNV;
         this.hoTen = hoTen;
         this.phongBan = phongBan;

@@ -14,7 +14,7 @@ public class AccountManagerDAO {
     // Lấy tất cả tài khoản
     public List<AccountManagerDTO> getAllAccounts() {
         List<AccountManagerDTO> list = new ArrayList<>();
-        String sql = "SELECT tk.USERID, tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
+        String sql = "SELECT tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
                      "tk.STATUS, nv.EMAIL, nv.DIENTHOAI " +
                      "FROM taikhoan tk " +
                      "JOIN nhanvien nv ON tk.MANV = nv.MANV " +
@@ -28,7 +28,6 @@ public class AccountManagerDAO {
             
             while (rs.next()) {
                 AccountManagerDTO dto = new AccountManagerDTO(
-                    rs.getString("USERID"),
                     rs.getString("MANV"),
                     rs.getString("HOTEN"),
                     rs.getString("TENPHONGBAN"),
@@ -48,7 +47,7 @@ public class AccountManagerDAO {
 
     // Lấy tài khoản theo mã nhân viên
     public AccountManagerDTO getAccountByMaNV(String maNV) {
-        String sql = "SELECT tk.USERID, tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
+        String sql = "SELECT tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
                      "tk.STATUS, nv.EMAIL, nv.DIENTHOAI " +
                      "FROM taikhoan tk " +
                      "JOIN nhanvien nv ON tk.MANV = nv.MANV " +
@@ -64,43 +63,6 @@ public class AccountManagerDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return new AccountManagerDTO(
-                        rs.getString("USERID"),
-                        rs.getString("MANV"),
-                        rs.getString("HOTEN"),
-                        rs.getString("TENPHONGBAN"),
-                        rs.getString("ROLEID"),
-                        rs.getString("ROLENAME"),
-                        rs.getInt("STATUS"),
-                        rs.getString("EMAIL"),
-                        rs.getString("DIENTHOAI")
-                    );
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // Lấy tài khoản theo userId
-    public AccountManagerDTO getAccountByUserId(String userId) {
-        String sql = "SELECT tk.USERID, tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
-                     "tk.STATUS, nv.EMAIL, nv.DIENTHOAI " +
-                     "FROM taikhoan tk " +
-                     "JOIN nhanvien nv ON tk.MANV = nv.MANV " +
-                     "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
-                     "JOIN role r ON tk.ROLEID = r.ROLEID " +
-                     "WHERE tk.USERID = ?";
-        
-        try (Connection conn = JDBCConection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, userId);
-            
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new AccountManagerDTO(
-                        rs.getString("USERID"),
                         rs.getString("MANV"),
                         rs.getString("HOTEN"),
                         rs.getString("TENPHONGBAN"),
@@ -121,7 +83,7 @@ public class AccountManagerDAO {
     // Lấy tất cả tài khoản theo roleId
     public List<AccountManagerDTO> getAccountsByRoleId(String roleId) {
         List<AccountManagerDTO> list = new ArrayList<>();
-        String sql = "SELECT tk.USERID, tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
+        String sql = "SELECT tk.MANV, nv.HOTEN, pb.TENPHONGBAN, tk.ROLEID, r.ROLENAME, " +
                      "tk.STATUS, nv.EMAIL, nv.DIENTHOAI " +
                      "FROM taikhoan tk " +
                      "JOIN nhanvien nv ON tk.MANV = nv.MANV " +
@@ -138,7 +100,6 @@ public class AccountManagerDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     AccountManagerDTO dto = new AccountManagerDTO(
-                        rs.getString("USERID"),
                         rs.getString("MANV"),
                         rs.getString("HOTEN"),
                         rs.getString("TENPHONGBAN"),
@@ -159,16 +120,15 @@ public class AccountManagerDAO {
 
     // Thêm tài khoản
     public boolean addAccount(AccountManagerDTO account) {
-        String sql = "INSERT INTO taikhoan (USERID, MANV, ROLEID, PASSWORD, STATUS) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO taikhoan (MANV, ROLEID, PASSWORD, STATUS) VALUES (?, ?, ?, ?)";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setString(1, account.userId);
-            ps.setString(2, account.maNV);
-            ps.setString(3, account.roleId);
-            ps.setString(4, "123"); // Mật khẩu mặc định
-            ps.setInt(5, account.status);
+            ps.setString(1, account.maNV);
+            ps.setString(2, account.roleId);
+            ps.setString(3, "123"); // Mật khẩu mặc định
+            ps.setInt(4, account.status);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -179,14 +139,14 @@ public class AccountManagerDAO {
 
     // Cập nhật tài khoản
     public boolean updateAccount(AccountManagerDTO account) {
-        String sql = "UPDATE taikhoan SET ROLEID = ?, STATUS = ? WHERE USERID = ?";
+        String sql = "UPDATE taikhoan SET ROLEID = ?, STATUS = ? WHERE MANV = ?";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, account.roleId);
             ps.setInt(2, account.status);
-            ps.setString(3, account.userId);
+            ps.setString(3, account.maNV);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -196,13 +156,13 @@ public class AccountManagerDAO {
     }
 
     // Xóa tài khoản
-    public boolean deleteAccount(String userId) {
-        String sql = "DELETE FROM taikhoan WHERE USERID = ?";
+    public boolean deleteAccount(String maNV) {
+        String sql = "DELETE FROM taikhoan WHERE MANV = ?";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setString(1, userId);
+            ps.setString(1, maNV);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -211,14 +171,14 @@ public class AccountManagerDAO {
     }
 
     // Đổi mật khẩu
-    public boolean changePassword(String userId, String newPassword) {
-        String sql = "UPDATE taikhoan SET PASSWORD = ? WHERE USERID = ?";
+    public boolean changePassword(String maNV, String newPassword) {
+        String sql = "UPDATE taikhoan SET PASSWORD = ? WHERE MANV = ?";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, newPassword);
-            ps.setString(2, userId);
+            ps.setString(2, maNV);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -244,14 +204,14 @@ public class AccountManagerDAO {
     }
 
     // Kích hoạt/Vô hiệu hóa tài khoản
-    public boolean setAccountStatus(String userId, int status) {
-        String sql = "UPDATE taikhoan SET STATUS = ? WHERE USERID = ?";
+    public boolean setAccountStatus(String maNV, int status) {
+        String sql = "UPDATE taikhoan SET STATUS = ? WHERE MANV = ?";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setInt(1, status);
-            ps.setString(2, userId);
+            ps.setString(2, maNV);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
