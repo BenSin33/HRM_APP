@@ -16,7 +16,6 @@ import com.hrm.utils.JDBCConection;
 
 public class AccountEditForm extends JPanel implements IFormInput<AccountManagerDTO> {
     private JTextField txtMaNV;
-    private JTextField txtUserId;
     private JTextField txtHoTen;
     private JTextField txtEmail;
     private JTextField txtDienThoai;
@@ -30,7 +29,7 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
     public AccountEditForm() {
         roleIds = new ArrayList<>();
         roleMap = new HashMap<>();
-        setLayout(new GridLayout(9, 2, 10, 10));
+        setLayout(new GridLayout(8, 2, 10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Mã nhân viên
@@ -38,12 +37,6 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         txtMaNV = new JTextField();
         txtMaNV.setEditable(false);
         add(txtMaNV);
-
-        // User ID
-        add(new JLabel("User ID:"));
-        txtUserId = new JTextField();
-        txtUserId.setEditable(false);
-        add(txtUserId);
 
         // Họ tên
         add(new JLabel("Họ tên:"));
@@ -107,7 +100,6 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
     public void setFormData(AccountManagerDTO account) {
         if (account != null) {
             txtMaNV.setText(account.maNV);
-            txtUserId.setText(account.userId);
             txtHoTen.setText(account.hoTen);
             txtEmail.setText(account.email != null ? account.email : "");
             txtDienThoai.setText(account.dienThoai != null ? account.dienThoai : "");
@@ -121,7 +113,6 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
     public AccountManagerDTO getFormData() {
         AccountManagerDTO account = new AccountManagerDTO();
         account.maNV = txtMaNV.getText();
-        account.userId = txtUserId.getText();
         account.hoTen = txtHoTen.getText();
         account.email = txtEmail.getText();
         account.dienThoai = txtDienThoai.getText();
@@ -136,7 +127,6 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
     @Override
     public void clearForm() {
         txtMaNV.setText("");
-        txtUserId.setText("");
         txtHoTen.setText("");
         txtEmail.setText("");
         txtDienThoai.setText("");

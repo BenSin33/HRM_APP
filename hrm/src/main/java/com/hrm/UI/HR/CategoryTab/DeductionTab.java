@@ -7,6 +7,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.util.List;
 
@@ -17,6 +18,8 @@ public class DeductionTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private DeductionDAO deductionDAO;
+    private CategoryActionRenderer actionRenderer;
+    private int hoveredRow = -1;
     private JButton btnAdd, btnRefresh;
 
     public DeductionTab() {
@@ -66,9 +69,22 @@ public class DeductionTab extends JPanel {
             }
         };
 
-        table = new JTable(tableModel);
+        table = new JTable(tableModel) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+                if (column == 3 && renderer instanceof CategoryActionRenderer) {
+                    ((CategoryActionRenderer) renderer).setHovered(row == hoveredRow);
+                }
+                return c;
+            }
+        };
+        table.setRowHeight(36);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getColumnModel().getColumn(3).setPreferredWidth(120);
+        table.getColumnModel().getColumn(3).setPreferredWidth(140);
+        actionRenderer = new CategoryActionRenderer();
+        table.getColumnModel().getColumn(3).setCellRenderer(actionRenderer);
+
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -76,6 +92,29 @@ public class DeductionTab extends JPanel {
                 int col = table.columnAtPoint(evt.getPoint());
                 if (row >= 0 && col == 3) {
                     handleTableAction(row, evt.getX(), evt.getPoint().x);
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                hoveredRow = -1;
+                table.repaint();
+            }
+        });
+
+        table.addMouseMotionListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                if (row != -1 && col == 3) {
+                    if (hoveredRow != row) {
+                        hoveredRow = row;
+                        table.repaint();
+                    }
+                } else if (hoveredRow != -1) {
+                    hoveredRow = -1;
+                    table.repaint();
                 }
             }
         });
@@ -171,7 +210,7 @@ public class DeductionTab extends JPanel {
                 deduction.getMaKhauTru(),
                 deduction.getTenKhauTru(),
                 String.format("%,.0f VND", deduction.getSoTienMacDinh()),
-                "Sửa | Xóa"
+                ""
             });
         }
     }

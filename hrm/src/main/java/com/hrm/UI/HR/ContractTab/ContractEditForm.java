@@ -7,6 +7,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import com.hrm.DTO.ContractDTO;
 import com.hrm.UI.component.IFormInput;
+import com.toedter.calendar.JDateChooser;
+import java.util.Date;
+import java.util.Calendar;
 
 public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> {
     private JTextField txtMaHopDong;
@@ -14,8 +17,8 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
     private JTextField txtHoTen;
     private JTextField txtPhongBan;
     private JTextField txtLoaiHopDong;
-    private JTextField txtNgayKy;
-    private JTextField txtNgayHetHan;
+    private JDateChooser dateNgayKy;
+    private JDateChooser dateNgayHetHan;
     private JTextField txtLuongCoBan;
     private JComboBox<String> cbTrangThai;
 
@@ -52,15 +55,19 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
         txtLoaiHopDong = new JTextField();
         add(txtLoaiHopDong);
 
-        // Ngày ký
-        add(new JLabel("Ngày ký (dd/MM/yyyy):"));
-        txtNgayKy = new JTextField();
-        add(txtNgayKy);
+        // Ngày ký - Date Picker
+        add(new JLabel("Ngày ký:"));
+        dateNgayKy = new JDateChooser();
+        dateNgayKy.setDateFormatString("dd/MM/yyyy");
+        dateNgayKy.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        add(dateNgayKy);
 
-        // Ngày hết hạn
-        add(new JLabel("Ngày hết hạn (dd/MM/yyyy):"));
-        txtNgayHetHan = new JTextField();
-        add(txtNgayHetHan);
+        // Ngày hết hạn - Date Picker
+        add(new JLabel("Ngày hết hạn:"));
+        dateNgayHetHan = new JDateChooser();
+        dateNgayHetHan.setDateFormatString("dd/MM/yyyy");
+        dateNgayHetHan.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        add(dateNgayHetHan);
 
         // Lương cơ bản
         add(new JLabel("Lương cơ bản:"));
@@ -82,14 +89,25 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
             txtPhongBan.setText(contract.phongBan);
             txtLoaiHopDong.setText(contract.loaiHopDong);
             
+            // Set date pickers
             if (contract.ngayLamHopDong != null) {
-                txtNgayKy.setText(contract.ngayLamHopDong.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                Calendar cal = Calendar.getInstance();
+                cal.set(contract.ngayLamHopDong.getYear(), 
+                        contract.ngayLamHopDong.getMonthValue() - 1, 
+                        contract.ngayLamHopDong.getDayOfMonth());
+                dateNgayKy.setDate(cal.getTime());
             }
             if (contract.hanHopDong != null) {
-                txtNgayHetHan.setText(contract.hanHopDong.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                Calendar cal = Calendar.getInstance();
+                cal.set(contract.hanHopDong.getYear(), 
+                        contract.hanHopDong.getMonthValue() - 1, 
+                        contract.hanHopDong.getDayOfMonth());
+                dateNgayHetHan.setDate(cal.getTime());
             }
+            
+            // Set salary without formatting
             if (contract.luongCoBan != null) {
-                txtLuongCoBan.setText(contract.luongCoBan.toString());
+                txtLuongCoBan.setText(contract.luongCoBan.toPlainString());
             }
             cbTrangThai.setSelectedItem(contract.trangThai);
         }
@@ -104,17 +122,42 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
         contract.phongBan = txtPhongBan.getText();
         contract.loaiHopDong = txtLoaiHopDong.getText();
         
+        // Get dates from date pickers
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            contract.ngayLamHopDong = LocalDate.parse(txtNgayKy.getText(), formatter);
-            contract.hanHopDong = LocalDate.parse(txtNgayHetHan.getText(), formatter);
+            if (dateNgayKy.getDate() != null) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(dateNgayKy.getDate());
+                contract.ngayLamHopDong = LocalDate.of(
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH) + 1,
+                    cal.get(Calendar.DAY_OF_MONTH)
+                );
+            }
+            if (dateNgayHetHan.getDate() != null) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(dateNgayHetHan.getDate());
+                contract.hanHopDong = LocalDate.of(
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH) + 1,
+                    cal.get(Calendar.DAY_OF_MONTH)
+                );
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
         
+        // Parse salary - remove all non-digit characters except decimal point
         try {
-            contract.luongCoBan = new BigDecimal(txtLuongCoBan.getText().replaceAll("[^0-9]", ""));
+            String salaryText = txtLuongCoBan.getText().trim();
+            // Remove currency symbols, commas, and spaces
+            salaryText = salaryText.replaceAll("[^0-9.]", "");
+            if (!salaryText.isEmpty()) {
+                contract.luongCoBan = new BigDecimal(salaryText);
+            } else {
+                contract.luongCoBan = BigDecimal.ZERO;
+            }
         } catch (Exception e) {
+            e.printStackTrace();
             contract.luongCoBan = BigDecimal.ZERO;
         }
         
@@ -129,8 +172,8 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
         txtHoTen.setText("");
         txtPhongBan.setText("");
         txtLoaiHopDong.setText("");
-        txtNgayKy.setText("");
-        txtNgayHetHan.setText("");
+        dateNgayKy.setDate(null);
+        dateNgayHetHan.setDate(null);
         txtLuongCoBan.setText("");
         cbTrangThai.setSelectedIndex(0);
     }
@@ -141,8 +184,8 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
             JOptionPane.showMessageDialog(this, "Vui lòng nhập loại hợp đồng!");
             return false;
         }
-        if (txtNgayKy.getText().trim().isEmpty() || txtNgayHetHan.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ ngày ký và ngày hết hạn!");
+        if (dateNgayKy.getDate() == null || dateNgayHetHan.getDate() == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày ký và ngày hết hạn!");
             return false;
         }
         if (txtLuongCoBan.getText().trim().isEmpty()) {

@@ -1,10 +1,18 @@
 package com.hrm.UI.HR.ContractTab;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class ContractFilter extends JPanel {
+    private JTextField searchField;
+    private JComboBox<String> statusFilter;
+    private JComboBox<String> typeFilter;
+    private ActionListener filterCallback;
+
     public ContractFilter() {
         initComponent();
     }
@@ -20,7 +28,7 @@ public class ContractFilter extends JPanel {
         searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
         searchPanel.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
         
-        JTextField searchField = new JTextField();
+        searchField = new JTextField();
         searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         searchField.setText("Tìm kiếm theo tên, mã NV, mã hợp đồng...");
         searchField.setForeground(new Color(180, 180, 180));
@@ -43,6 +51,24 @@ public class ContractFilter extends JPanel {
             }
         });
         
+        // Add document listener for real-time search
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                triggerFilter();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                triggerFilter();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                triggerFilter();
+            }
+        });
+        
         searchPanel.add(searchField, BorderLayout.CENTER);
         add(searchPanel, BorderLayout.CENTER);
         
@@ -52,26 +78,56 @@ public class ContractFilter extends JPanel {
         filterPanel.setOpaque(false);
         
         // Filter: Trạng thái
-        JComboBox<String> statusFilter = new JComboBox<>(new String[]{
-            "Tất cả trạng thái", "Đang hiệu lực", "Sắp hết hạn", "Đã hết hạn"
+        statusFilter = new JComboBox<>(new String[]{
+            "Tất cả trạng thái", "Đang hiệu lực", "Sắp hết hạn", "Hết hạn"
         });
         statusFilter.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         statusFilter.setBackground(Color.WHITE);
         statusFilter.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         statusFilter.setPreferredSize(new Dimension(150, 40));
+        statusFilter.addActionListener(e -> triggerFilter());
         
         // Filter: Loại hợp đồng
-        JComboBox<String> typeFilter = new JComboBox<>(new String[]{
+        typeFilter = new JComboBox<>(new String[]{
             "Tất cả loại HD", "Toàn thời gian", "Bán thời gian", "Thử việc", "Hợp đồng khác"
         });
         typeFilter.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         typeFilter.setBackground(Color.WHITE);
         typeFilter.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         typeFilter.setPreferredSize(new Dimension(150, 40));
+        typeFilter.addActionListener(e -> triggerFilter());
         
         filterPanel.add(statusFilter);
         filterPanel.add(typeFilter);
         
         add(filterPanel, BorderLayout.EAST);
+    }
+
+    private void triggerFilter() {
+        if (filterCallback != null) {
+            filterCallback.actionPerformed(null);
+        }
+    }
+
+    public void setFilterCallback(ActionListener callback) {
+        this.filterCallback = callback;
+    }
+
+    public String getSearchText() {
+        String text = searchField.getText();
+        if (text.equals("Tìm kiếm theo tên, mã NV, mã hợp đồng...")) {
+            return "";
+        }
+        return text.trim();
+    }
+
+    public String getSelectedStatus() {
+        String selected = (String) statusFilter.getSelectedItem();
+        return selected.equals("Tất cả trạng thái") ? "" : selected;
+    }
+
+    public String getSelectedType() {
+        String selected = (String) typeFilter.getSelectedItem();
+        return selected.equals("Tất cả loại HD") ? "" : selected;
     }
 }

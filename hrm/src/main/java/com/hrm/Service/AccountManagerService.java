@@ -15,8 +15,8 @@ public class AccountManagerService {
         return accountDAO.getAllAccounts();
     }
 
-    public AccountManagerDTO getAccountByUserId(String userId) {
-        return accountDAO.getAccountByUserId(userId);
+    public AccountManagerDTO getAccountByMaNV(String maNV) {
+        return accountDAO.getAccountByMaNV(maNV);
     }
 
     public List<AccountManagerDTO> getAccountsByRoleId(String roleId) {
@@ -31,19 +31,19 @@ public class AccountManagerService {
         return accountDAO.updateAccount(account);
     }
 
-    public boolean deleteAccount(String userId) {
-        return accountDAO.deleteAccount(userId);
+    public boolean deleteAccount(String maNV) {
+        return accountDAO.deleteAccount(maNV);
     }
 
-    public boolean changePassword(String userId, String newPassword) {
-        return accountDAO.changePassword(userId, newPassword);
+    public boolean changePassword(String maNV, String newPassword) {
+        return accountDAO.changePassword(maNV, newPassword);
     }
 
     public boolean changePasswordByManv(String manv, String newPassword) {
         return accountDAO.changePasswordByManv(manv, newPassword);
     }
 
-    public boolean setAccountStatus(String userId, int status) {
-        return accountDAO.setAccountStatus(userId, status);
+    public boolean setAccountStatus(String maNV, int status) {
+        return accountDAO.setAccountStatus(maNV, status);
     }
 }

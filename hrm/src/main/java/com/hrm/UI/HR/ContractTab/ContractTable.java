@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.ContractDAO;
@@ -23,11 +23,13 @@ public class ContractTable extends JPanel {
     private ContractDAO contractDAO;
     private DecimalFormat df = new DecimalFormat("#,###");
     private ContractManagement parentPanel;
+    private List<ContractDTO> allContracts; // Store all contracts for filtering
 
     public ContractTable() {
         setLayout(new BorderLayout());
         setOpaque(false);
         contractDAO = new ContractDAO();
+        allContracts = new ArrayList<>();
         initComponent();
     }
 
@@ -36,7 +38,7 @@ public class ContractTable extends JPanel {
     }
 
     private void initComponent() {
-        String[] columnNames = {"MÃ HD", "NHÂN VIÊN", "LOẠI HỢP ĐỒNG", "THỜI HẠN", "LƯƠNG", "TRẠNG THÁI", "THAO TÁC"};
+        String[] columnNames = {"MÃ HD", "MÃ NV", "TÊN NHÂN VIÊN", "PHÒNG BAN", "LOẠI HỢP ĐỒNG", "THỜI HẠN", "LƯƠNG", "TRẠNG THÁI", "THAO TÁC"};
 
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -53,20 +55,20 @@ public class ContractTable extends JPanel {
             @Override
             public Component prepareRenderer(TableCellRenderer cellRenderer, int row, int column) {
                 Component c = super.prepareRenderer(cellRenderer, row, column);
-                if (column == 6 && cellRenderer instanceof ContractTableRenderer) {
+                if (column == 8 && cellRenderer instanceof ContractTableRenderer) {
                     ((ContractTableRenderer)cellRenderer).setHovered(row == hoveredRow);
                 }
                 return c;
             }
         };
-        contractTable.setRowHeight(50);
+        contractTable.setRowHeight(45);
         contractTable.getTableHeader().setBackground(new Color(241, 245, 249));
         contractTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         
         // Cấu hình cột
         renderer = new ContractTableRenderer();
-        contractTable.getColumnModel().getColumn(6).setCellRenderer(renderer);
-        contractTable.getColumnModel().getColumn(6).setPreferredWidth(120);
+        contractTable.getColumnModel().getColumn(8).setCellRenderer(renderer);
+        contractTable.getColumnModel().getColumn(8).setPreferredWidth(120);
 
         // Xử lý mouse hover
         contractTable.addMouseMotionListener(new MouseAdapter() {
@@ -75,7 +77,7 @@ public class ContractTable extends JPanel {
                 int row = contractTable.rowAtPoint(e.getPoint());
                 int col = contractTable.columnAtPoint(e.getPoint());
                 
-                if (row != -1 && col == 6) {
+                if (row != -1 && col == 8) {
                     if (hoveredRow != row) {
                         hoveredRow = row;
                         contractTable.repaint();
@@ -96,7 +98,7 @@ public class ContractTable extends JPanel {
                 int row = contractTable.rowAtPoint(e.getPoint());
                 int col = contractTable.columnAtPoint(e.getPoint());
                 
-                if (row != -1 && col == 6) {
+                if (row != -1 && col == 8) {
                     Object contractId = tableModel.getValueAt(row, 0);
                     Rectangle cellRect = contractTable.getCellRect(row, col, false);
                     int relativeX = e.getX() - (int)cellRect.getX();
@@ -194,10 +196,9 @@ public class ContractTable extends JPanel {
     }
 
     private void loadContractData() {
-        List<ContractDTO> contracts = contractDAO.getAllContracts();
+        allContracts = contractDAO.getAllContracts();
         
-        for (ContractDTO contract : contracts) {
-            LocalDate today = LocalDate.now();
+        for (ContractDTO contract : allContracts) {
             String trangThai = contract.trangThai;
             
             String ngayKy = contract.ngayLamHopDong != null ? 
@@ -207,9 +208,11 @@ public class ContractTable extends JPanel {
             
             tableModel.addRow(new Object[]{
                 contract.maHopDong,
-                contract.hoTen + "\n" + contract.maNV + " - " + contract.phongBan,
+                contract.maNV,
+                contract.hoTen,
+                contract.phongBan,
                 contract.loaiHopDong,
-                ngayKy + "\n" + ngayHetHan,
+                ngayKy + " - " + ngayHetHan,
                 df.format(contract.luongCoBan != null ? contract.luongCoBan.doubleValue() : 0) + " đ",
                 trangThai,
                 ""
@@ -221,5 +224,50 @@ public class ContractTable extends JPanel {
     public void refreshData() {
         tableModel.setRowCount(0);
         loadContractData();
+    }
+
+    // Filter method
+    public void applyFilter(String searchText, String status, String type) {
+        tableModel.setRowCount(0);
+        
+        for (ContractDTO contract : allContracts) {
+            // Filter by search text
+            if (!searchText.isEmpty()) {
+                String lowerSearch = searchText.toLowerCase();
+                if (!contract.maHopDong.toLowerCase().contains(lowerSearch) &&
+                    !contract.maNV.toLowerCase().contains(lowerSearch) &&
+                    !contract.hoTen.toLowerCase().contains(lowerSearch)) {
+                    continue;
+                }
+            }
+            
+            // Filter by status
+            if (!status.isEmpty() && !contract.trangThai.equals(status)) {
+                continue;
+            }
+            
+            // Filter by type
+            if (!type.isEmpty() && !contract.loaiHopDong.equals(type)) {
+                continue;
+            }
+            
+            // Add matching row
+            String ngayKy = contract.ngayLamHopDong != null ? 
+                contract.ngayLamHopDong.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A";
+            String ngayHetHan = contract.hanHopDong != null ? 
+                contract.hanHopDong.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A";
+            
+            tableModel.addRow(new Object[]{
+                contract.maHopDong,
+                contract.maNV,
+                contract.hoTen,
+                contract.phongBan,
+                contract.loaiHopDong,
+                ngayKy + " - " + ngayHetHan,
+                df.format(contract.luongCoBan != null ? contract.luongCoBan.doubleValue() : 0) + " đ",
+                contract.trangThai,
+                ""
+            });
+        }
     }
 }

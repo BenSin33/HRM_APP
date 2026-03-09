@@ -166,6 +166,21 @@ public class SalaryDAO {
         return false;
     }
 
+    // Xóa bảng lương theo mã lương
+    public boolean deleteSalary(String maLuong) {
+        String sql = "DELETE FROM bangluong WHERE MALUONG = ?";
+
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, maLuong);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // Khóa lương (thay đổi TRANGTHAI từ 0 thành 1)
     public boolean lockSalary(String maLuong) {
         String sql = "UPDATE bangluong SET TRANGTHAI = 1, NGAYCHOTLUONG = CURDATE() WHERE MALUONG = ?";
@@ -314,6 +329,56 @@ public class SalaryDAO {
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
                     // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
+                    dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
+                    dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
+                        rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
+                    dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                    list.add(dto);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+    
+    // Lấy bảng lương theo khoảng thời gian
+    public List<SalaryDTO> getSalariesByDateRange(int fromMonth, int fromYear, int toMonth, int toYear) {
+        List<SalaryDTO> list = new ArrayList<>();
+        String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
+                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "FROM bangluong bl " +
+                     "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
+                     "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "WHERE (bl.NAM > ? OR (bl.NAM = ? AND bl.THANG >= ?)) " +
+                     "AND (bl.NAM < ? OR (bl.NAM = ? AND bl.THANG <= ?)) " +
+                     "ORDER BY bl.NAM DESC, bl.THANG DESC, nv.HOTEN ASC";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, fromYear);
+            ps.setInt(2, fromYear);
+            ps.setInt(3, fromMonth);
+            ps.setInt(4, toYear);
+            ps.setInt(5, toYear);
+            ps.setInt(6, toMonth);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SalaryDTO dto = new SalaryDTO();
+                    dto.maLuong = rs.getString("MALUONG");
+                    dto.maNV = rs.getString("MANV");
+                    dto.hoTen = rs.getString("HOTEN");
+                    dto.phongBan = rs.getString("TENPHONGBAN");
+                    dto.thang = rs.getInt("THANG");
+                    dto.nam = rs.getInt("NAM");
+                    dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
+                    dto.soNgayCong = rs.getFloat("SONGAYCONG");
+                    dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
+                    dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
+                    dto.thucLinh = rs.getBigDecimal("THUCLINH");
                     dto.trangThai = String.valueOf(rs.getInt("TRANGTHAI"));
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;

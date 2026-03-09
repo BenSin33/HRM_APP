@@ -44,6 +44,10 @@ public class SalaryService {
     public List<SalaryDTO> searchSalaries(int thang, int nam, String keyword) {
         return salaryDAO.searchSalaries(thang, nam, keyword);
     }
+    
+    public List<SalaryDTO> getSalariesByDateRange(int fromMonth, int fromYear, int toMonth, int toYear) {
+        return salaryDAO.getSalariesByDateRange(fromMonth, fromYear, toMonth, toYear);
+    }
 
     public SalaryStatistics getSalaryStatistics(int thang, int nam) {
         List<SalaryDTO> salaries = getSalariesByMonthYear(thang, nam);

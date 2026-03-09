@@ -12,9 +12,7 @@ public class Sidebar extends JPanel {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private Color sidebarColor = new Color(102, 0, 204);
-    private Color tabNormalColor = new Color(153, 51, 255);
-    private Color tabActiveColor = new Color(100, 0, 200);
-    
+
     private boolean isCollapsed = false;
     private final int EXPANDED_WIDTH = 250;
     private final int COLLAPSED_WIDTH = 70;
