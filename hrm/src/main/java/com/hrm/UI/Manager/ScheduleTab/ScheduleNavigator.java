@@ -4,10 +4,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.function.Consumer;
 
 public class ScheduleNavigator extends JPanel {
     private JLabel lblWeekRange;
     private LocalDate currentMonday;
+    private Consumer<LocalDate> onWeekChanged;
 
     public ScheduleNavigator(LocalDate currentMonday) {
         this.currentMonday = currentMonday;
@@ -32,12 +34,14 @@ public class ScheduleNavigator extends JPanel {
 
         btnPrev.addActionListener(e -> { 
             this.currentMonday = this.currentMonday.minusWeeks(1); 
-            updateWeekLabel(); 
+            updateWeekLabel();
+            notifyWeekChanged();
         });
         
         btnNext.addActionListener(e -> { 
             this.currentMonday = this.currentMonday.plusWeeks(1);  
-            updateWeekLabel(); 
+            updateWeekLabel();
+            notifyWeekChanged();
         });
 
         navBox.add(btnPrev);
@@ -65,6 +69,12 @@ public class ScheduleNavigator extends JPanel {
         lblWeekRange.setText(currentMonday.format(fmt) + " - " + sunday.format(fmt));
     }
 
+    private void notifyWeekChanged() {
+        if (onWeekChanged != null) {
+            onWeekChanged.accept(currentMonday);
+        }
+    }
+
     public LocalDate getCurrentMonday() {
         return currentMonday;
     }
@@ -72,6 +82,10 @@ public class ScheduleNavigator extends JPanel {
     public void setCurrentMonday(LocalDate currentMonday) {
         this.currentMonday = currentMonday;
         updateWeekLabel();
+    }
+
+    public void setOnWeekChanged(Consumer<LocalDate> onWeekChanged) {
+        this.onWeekChanged = onWeekChanged;
     }
 }
 

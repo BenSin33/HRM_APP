@@ -117,7 +117,7 @@ public class LoginUI extends JFrame{
                 new HRDashboard();
                 JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + userInfo.getManv());
             } else if(authService.isManager(userInfo)){
-                new ManagerDashboard();
+                ManagerDashboard dashboard = new ManagerDashboard();      // Tạo giao diện   
                 JOptionPane.showMessageDialog(this, "Xin chào quản lý: " + userInfo.getManv());
             } else if(authService.isEmployee(userInfo)){
                 new EDashboard(userInfo.getManv());

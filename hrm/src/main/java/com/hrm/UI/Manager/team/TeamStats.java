@@ -1,54 +1,69 @@
 package com.hrm.UI.Manager.team;
+
 import com.hrm.UI.Manager.color.ColorScheme;
+import com.hrm.UI.Manager.common.ManagerStatCard;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class TeamStats extends JPanel {
-    private JLabel lblTotal;
-    private JLabel lblActive;
-    private JLabel lblSenior;
-    private JLabel lblJunior;
+
+    private final ManagerStatCard cardTotal;
+    private final ManagerStatCard cardActive;
+    private final ManagerStatCard cardSenior;
+    private final ManagerStatCard cardJunior;
 
     public TeamStats() {
-        setLayout(new GridLayout(1, 4, 20, 0));
+        setLayout(new GridLayout(1, 4, 16, 0));
         setBackground(ColorScheme.MAIN_BG);
 
-        lblTotal = new JLabel("0");
-        lblActive = new JLabel("0");
-        lblSenior = new JLabel("0");
-        lblJunior = new JLabel("0");
+        // Tổng thành viên – xanh dương
+        cardTotal = new ManagerStatCard(
+                "Tổng thành viên",
+                "0",
+                new Color(219, 234, 254),   // blue-100
+                ManagerStatCard.makeTextIcon("👥", new Color(37, 99, 235)),
+                new Color(191, 219, 254)    // blue-200
+        );
 
-        add(createStatCard("Tổng thành viên", lblTotal, new Color(99, 102, 241)));
-        add(createStatCard("Đang hoạt động", lblActive, new Color(34, 197, 94)));
-        add(createStatCard("Senior", lblSenior, new Color(168, 85, 247)));
-        add(createStatCard("Junior", lblJunior, new Color(59, 130, 246)));
-    }
+        // Đang hoạt động – xanh lá
+        cardActive = new ManagerStatCard(
+                "Đang hoạt động",
+                "0",
+                new Color(220, 252, 231),   // green-100
+                ManagerStatCard.makeTextIcon("✓", new Color(22, 163, 74)),
+                new Color(187, 247, 208)    // green-200
+        );
 
-    private JPanel createStatCard(String label, JLabel valueLabel, Color valueColor) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
-            BorderFactory.createEmptyBorder(20, 25, 20, 25)
-        ));
+        // Senior – tím
+        cardSenior = new ManagerStatCard(
+                "Senior",
+                "0",
+                new Color(243, 232, 255),   // purple-100
+                ManagerStatCard.makeTextIcon("★", new Color(147, 51, 234)),
+                new Color(233, 213, 255)    // purple-200
+        );
 
-        JLabel labelText = new JLabel(label);
-        labelText.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        labelText.setForeground(new Color(100, 100, 100));
+        // Junior – xanh dương nhạt khác tông
+        cardJunior = new ManagerStatCard(
+                "Junior",
+                "0",
+                new Color(224, 242, 254),   // sky-100
+                ManagerStatCard.makeTextIcon("⬆", new Color(56, 189, 248)),
+                new Color(186, 230, 253)    // sky-200
+        );
 
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 40));
-        valueLabel.setForeground(valueColor);
-
-        card.add(labelText, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
-
-        return card;
+        add(cardTotal);
+        add(cardActive);
+        add(cardSenior);
+        add(cardJunior);
     }
 
     public void updateStats(int total, int active, int senior, int junior) {
-        lblTotal.setText(String.valueOf(total));
-        lblActive.setText(String.valueOf(active));
-        lblSenior.setText(String.valueOf(senior));
-        lblJunior.setText(String.valueOf(junior));
+        cardTotal.setValue(String.valueOf(total));
+        cardActive.setValue(String.valueOf(active));
+        cardSenior.setValue(String.valueOf(senior));
+        cardJunior.setValue(String.valueOf(junior));
     }
 }
+

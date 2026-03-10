@@ -1,74 +1,67 @@
 package com.hrm.UI.Manager.dashboard;
-import com.hrm.UI.Manager.color.ColorScheme;
+
+import com.hrm.UI.Manager.common.ManagerStatCard;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class DashboardStats extends JPanel {
-    private JLabel lblNhanVien;
-    private JLabel lblDonChoDuyet;
-    private JLabel lblNghiPhep;
-    private JLabel lblHieuSuat;
+
+    private final ManagerStatCard cardNhanVien;
+    private final ManagerStatCard cardDonChoDuyet;
+    private final ManagerStatCard cardNghiPhep;
+    private final ManagerStatCard cardHieuSuat;
 
     public DashboardStats() {
-        setLayout(new GridLayout(1, 4, 20, 0));
+        setLayout(new GridLayout(1, 4, 16, 0));
         setOpaque(false);
 
-        lblNhanVien = new JLabel("0");
-        lblDonChoDuyet = new JLabel("0");
-        lblNghiPhep = new JLabel("0");
-        lblHieuSuat = new JLabel("0%");
+        // Nhân viên trong team – xanh dương dịu, icon nhóm người
+        cardNhanVien = new ManagerStatCard(
+                "Nhân viên<br>trong team",
+                "0",
+                new Color(219, 234, 254),   // blue-100
+                ManagerStatCard.makeTextIcon("👥", new Color(37, 99, 235)),
+                new Color(191, 219, 254)    // blue-200
+        );
 
-        add(createStatCard("Nhân viên\ntrong team", new Color(99, 102, 241), "👥", lblNhanVien));
-        add(createStatCard("Đơn chờ duyệt", new Color(251, 146, 60), "⚠", lblDonChoDuyet));
-        add(createStatCard("Nghỉ phép\nhôm nay", new Color(59, 130, 246), "📅", lblNghiPhep));
-        add(createStatCard("Hiệu suất\ntrung bình", new Color(34, 197, 94), "📈", lblHieuSuat));
-    }
+        // Đơn chờ duyệt – cam, icon đồng hồ cát
+        cardDonChoDuyet = new ManagerStatCard(
+                "Đơn chờ duyệt",
+                "0",
+                new Color(255, 237, 213),   // orange-100
+                ManagerStatCard.makeTextIcon("⏳", new Color(234, 88, 12)),
+                new Color(254, 215, 170)    // orange-200
+        );
 
-    private JPanel createStatCard(String label, Color iconColor, String icon, JLabel valueLabel) {
-        JPanel card = new JPanel(new BorderLayout(15, 15));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
+        // Nghỉ phép hôm nay – xanh lá, icon lịch
+        cardNghiPhep = new ManagerStatCard(
+                "Nghỉ phép<br>hôm nay",
+                "0",
+                new Color(220, 252, 231),   // green-100
+                ManagerStatCard.makeTextIcon("📅", new Color(22, 163, 74)),
+                new Color(187, 247, 208)    // green-200
+        );
 
-        // Icon panel
-        JPanel iconPanel = new JPanel(new GridBagLayout());
-        iconPanel.setBackground(iconColor);
-        iconPanel.setPreferredSize(new Dimension(60, 60));
+        // Hiệu suất trung bình – tím, icon biểu đồ
+        cardHieuSuat = new ManagerStatCard(
+                "Hiệu suất<br>trung bình",
+                "0%",
+                new Color(243, 232, 255),   // purple-100
+                ManagerStatCard.makeTextIcon("📈", new Color(147, 51, 234)),
+                new Color(233, 213, 255)    // purple-200
+        );
 
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
-        iconLabel.setForeground(Color.WHITE);
-        iconPanel.add(iconLabel);
-
-        // Text panel
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setBackground(Color.WHITE);
-
-        JLabel labelText = new JLabel("<html>" + label.replace("\n", "<br>") + "</html>");
-        labelText.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        labelText.setForeground(new Color(100, 100, 100));
-
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        valueLabel.setForeground(new Color(30, 30, 30));
-
-        textPanel.add(labelText);
-        textPanel.add(Box.createRigidArea(new Dimension(0, 8)));
-        textPanel.add(valueLabel);
-
-        card.add(iconPanel, BorderLayout.WEST);
-        card.add(textPanel, BorderLayout.CENTER);
-
-        return card;
+        add(cardNhanVien);
+        add(cardDonChoDuyet);
+        add(cardNghiPhep);
+        add(cardHieuSuat);
     }
 
     public void updateStats(int nhanVien, int donChoDuyet, int nghiPhep, String hieuSuat) {
-        lblNhanVien.setText(String.valueOf(nhanVien));
-        lblDonChoDuyet.setText(String.valueOf(donChoDuyet));
-        lblNghiPhep.setText(String.valueOf(nghiPhep));
-        lblHieuSuat.setText(hieuSuat);
+        cardNhanVien.setValue(String.valueOf(nhanVien));
+        cardDonChoDuyet.setValue(String.valueOf(donChoDuyet));
+        cardNghiPhep.setValue(String.valueOf(nghiPhep));
+        cardHieuSuat.setValue(hieuSuat);
     }
 }
-

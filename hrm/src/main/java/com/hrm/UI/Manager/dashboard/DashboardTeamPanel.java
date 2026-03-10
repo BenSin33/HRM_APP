@@ -38,6 +38,14 @@ public class DashboardTeamPanel extends JPanel {
         membersList.repaint();
     }
 
+    public void clearMembers() {
+        if (membersList != null) {
+            membersList.removeAll();
+            membersList.revalidate();
+            membersList.repaint();
+        }
+    }
+
     private JPanel createMemberRow(String name, String role, String id) {
         JPanel row = new JPanel(new BorderLayout(10, 0));
         row.setBackground(Color.WHITE);

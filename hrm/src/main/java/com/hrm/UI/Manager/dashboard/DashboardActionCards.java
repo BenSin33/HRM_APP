@@ -3,17 +3,18 @@ package com.hrm.UI.Manager.dashboard;
 import com.hrm.UI.Manager.color.ColorScheme;
 import javax.swing.*;
 import java.awt.*;
-import javax.swing.*;
-import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.Consumer;
 
 public class DashboardActionCards extends JPanel {
     private JLabel lblDonChoXuLy;
     private JLabel lblDotDanhGia;
     private JLabel lblThanhVienTeam;
+    private Consumer<String> onActionClick;
 
-    public DashboardActionCards() {
+    public DashboardActionCards(Consumer<String> onActionClick) {
+        this.onActionClick = onActionClick;
         setLayout(new GridLayout(1, 3, 20, 0));
         setBackground(ColorScheme.MAIN_BG);
         setPreferredSize(new Dimension(0, 100));
@@ -45,7 +46,12 @@ public class DashboardActionCards extends JPanel {
             public void mouseExited(MouseEvent e) {
                 card.setBackground(Color.WHITE);
             }
-            
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (onActionClick != null) {
+                    onActionClick.accept(action);
+                }
+            }
         });
 
         // Icon panel
