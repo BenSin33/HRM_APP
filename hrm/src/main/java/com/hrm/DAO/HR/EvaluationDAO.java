@@ -13,6 +13,7 @@ import com.hrm.utils.JDBCConection;
 
 public class EvaluationDAO {
 
+
     // ═══════════════════════════════════════════════════════════
     // 1. LẤY DANH SÁCH ĐỢT ĐÁNH GIÁ từ bảng dotdanhgia
     // ═══════════════════════════════════════════════════════════
@@ -73,6 +74,7 @@ public class EvaluationDAO {
         }
         return list;
     }
+
 
     // ═══════════════════════════════════════════════════════════
     // 3. LẤY DANH SÁCH TIÊU CHÍ ĐÁNH GIÁ (cho ComboBox)
@@ -153,6 +155,7 @@ public class EvaluationDAO {
         return list;
     }
 
+
     // ═══════════════════════════════════════════════════════════
     // 5. SUMMARY STATS
     // ═══════════════════════════════════════════════════════════
@@ -205,6 +208,7 @@ public class EvaluationDAO {
         return 0;
     }
 
+
     // ═══════════════════════════════════════════════════════════
     // 6. TẠO ĐỢT ĐÁNH GIÁ MỚI (bảng dotdanhgia)
     // ═══════════════════════════════════════════════════════════
@@ -248,6 +252,7 @@ public class EvaluationDAO {
         } catch (SQLException e) { e.printStackTrace(); }
         return base + "_" + System.currentTimeMillis();
     }
+
 
     // ═══════════════════════════════════════════════════════════
     // 7. THÊM / SỬA / XÓA PHIẾU ĐÁNH GIÁ (bảng phieudanhgia)
@@ -340,6 +345,7 @@ public class EvaluationDAO {
             return false;
         }
     }
+
 
     // ═══════════════════════════════════════════════════════════
     // 8. UTILITY

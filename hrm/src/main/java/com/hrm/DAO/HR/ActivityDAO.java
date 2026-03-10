@@ -6,14 +6,14 @@ import java.util.List;
 import com.hrm.DTO.HR.ActivityDTO;
 
 /**
- * Simple in-memory DAO for managing recent activities on the HR dashboard.
+ * DAO đơn giản trong bộ nhớ để quản lý các hoạt động gần đây trên bảng điều khiển HR.
  */
 public class ActivityDAO {
     private List<ActivityDTO> activities;
 
     public ActivityDAO() {
         activities = new ArrayList<>();
-        // Initialize with default activities
+        
         activities.add(new ActivityDTO("Nguyễn Văn A đã được tuyển dụng vào phòng IT"));
         activities.add(new ActivityDTO("Trần Thị B đã gửi đơn xin nghỉ phép"));
         activities.add(new ActivityDTO("Đã chốt bảng lương tháng 12"));

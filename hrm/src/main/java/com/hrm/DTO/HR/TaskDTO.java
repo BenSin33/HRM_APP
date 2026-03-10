@@ -3,7 +3,7 @@ package com.hrm.DTO.HR;
 import java.time.LocalDateTime;
 
 /**
- * Simple DTO for tasks in the HR dashboard.
+ * DTO đơn giản cho các nhiệm vụ trong bảng điều khiển HR.
  */
 public class TaskDTO {
     private String id;

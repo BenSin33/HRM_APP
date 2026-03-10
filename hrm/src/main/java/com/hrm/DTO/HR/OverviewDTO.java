@@ -3,7 +3,7 @@ package com.hrm.DTO.HR;
 import java.math.BigDecimal;
 
 /**
- * Holds a few aggregate numbers that appear on the HR overview/dashboard screen.
+ * Chứa một số số liệu tổng hợp xuất hiện trên màn hình tổng quan/bảng điều khiển HR.
  */
 public class OverviewDTO {
     private int totalEmployees;

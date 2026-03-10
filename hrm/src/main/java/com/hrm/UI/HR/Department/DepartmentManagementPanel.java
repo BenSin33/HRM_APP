@@ -25,6 +25,7 @@ import javax.swing.event.DocumentListener;
 
 import com.hrm.DTO.HR.DepartmentDTO;
 import com.hrm.Service.DepartmentService;
+import com.hrm.utils.JDBCConection;
 
 public class DepartmentManagementPanel extends JPanel {
 
@@ -225,10 +226,27 @@ public class DepartmentManagementPanel extends JPanel {
         cardsContainer.setOpaque(false);
         cardsContainer.setBorder(new EmptyBorder(24, 0, 0, 0));
 
-        // Load departments from database
+        // Load departments from HR service (đã có tổng số nhân viên)
         List<DepartmentDTO> departments = departmentService.getAllDepartmentsWithEmployeeCount();
         for (DepartmentDTO dept : departments) {
-            cardsContainer.add(createDepartmentCard(dept));
+            ManagerInfo info = getManagerInfo(dept.getMaPhongBan());
+
+            String managerName = info != null && info.name != null && !info.name.isEmpty()
+                    ? info.name
+                    : "Chưa cập nhật";
+            String description = "Mô tả phòng ban sẽ được cập nhật sau";
+            String email = info != null && info.email != null && !info.email.isEmpty() ? info.email : "N/A";
+            String phone = info != null && info.phone != null && !info.phone.isEmpty() ? info.phone : "N/A";
+
+            cardsContainer.add(createDepartmentCard(
+                    dept.getTenPhongBan(),
+                    dept.getMaPhongBan(),
+                    dept.getSoNhanVien(),
+                    managerName,
+                    description,
+                    email,
+                    phone
+            ));
         }
 
         // Bọc grid trong JScrollPane để có thể kéo xuống xem các phòng bên dưới
@@ -243,16 +261,9 @@ public class DepartmentManagementPanel extends JPanel {
     }
 
     // ============== MỘT CARD PHÒNG BAN ==============
-    private JPanel createDepartmentCard(DepartmentDTO dept) {
-        return createDepartmentCard(dept.getTenPhongBan(), dept.getMaPhongBan(), dept.getSoNhanVien(),
-                "Chưa cập nhật", "N/A",
-                "Mô tả phòng ban sẽ được cập nhật sau",
-                "N/A", "N/A", "N/A");
-    }
-
     private JPanel createDepartmentCard(String name, String code, int employees,
-                                        String manager, String managerId, String description,
-                                        String email, String phone, String location) {
+                                        String manager, String description,
+                                        String email, String phone) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
@@ -261,7 +272,7 @@ public class DepartmentManagementPanel extends JPanel {
                 new EmptyBorder(0, 0, 0, 0)
         ));
         // Lưu thông tin phục vụ tìm kiếm
-        String searchText = (name + " " + code + " " + manager + " " + managerId).toLowerCase();
+        String searchText = (name + " " + code + " " + manager).toLowerCase();
         card.putClientProperty("searchText", searchText);
 
         // Header tím
@@ -303,7 +314,7 @@ public class DepartmentManagementPanel extends JPanel {
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBorder(new EmptyBorder(16, 18, 10, 18));
 
-        addInfoBlock(body, "Trưởng phòng", manager, managerId);
+        addInfoBlock(body, "Trưởng phòng", manager, null);
         addInfoBlock(body, "Mô tả", "<html>" + description + "</html>", null);
 
         // Hàng email / điện thoại
@@ -315,8 +326,6 @@ public class DepartmentManagementPanel extends JPanel {
         contactRow.add(phonePanel);
         body.add(contactRow);
         body.add(Box.createVerticalStrut(10));
-
-        addInfoBlock(body, "Vị trí", location, null);
 
         // Thanh action dưới cùng
         JPanel actionsBar = new JPanel(new BorderLayout());
@@ -333,12 +342,11 @@ public class DepartmentManagementPanel extends JPanel {
         viewBtn.addActionListener(e -> JOptionPane.showMessageDialog(
                 null,
                 "<html><b>" + name + " (" + code + ")</b><br/>"
-                        + "Trưởng phòng: " + manager + " - " + managerId + "<br/>"
+                        + "Trưởng phòng: " + manager + "<br/>"
                         + "Số nhân viên: " + employees + "<br/><br/>"
                         + "Mô tả: " + description + "<br/>"
                         + "Email: " + email + "<br/>"
-                        + "Điện thoại: " + phone + "<br/>"
-                        + "Vị trí: " + location + "</html>",
+                        + "Điện thoại: " + phone + "</html>",
                 "Chi tiết phòng ban",
                 JOptionPane.INFORMATION_MESSAGE
         ));
@@ -406,6 +414,42 @@ public class DepartmentManagementPanel extends JPanel {
         card.add(bottomWrapper);
 
         return card;
+    }
+
+    // Thông tin trưởng phòng
+    private static class ManagerInfo {
+        String name;
+        String email;
+        String phone;
+    }
+
+    /**
+     * Lấy thông tin trưởng phòng (tên, email, điện thoại) theo mã phòng ban.
+     * Ưu tiên trưởng phòng có MACHUCVU = 'CV01'; nếu không có thì lấy bất kỳ nhân viên đầu tiên của phòng.
+     */
+    private ManagerInfo getManagerInfo(String maPhongBan) {
+        ManagerInfo info = new ManagerInfo();
+        String sql = "SELECT hoten, email, dienthoai " +
+                "FROM nhanvien " +
+                "WHERE maphongban = ? " +
+                "ORDER BY CASE WHEN machucvu = 'CV01' THEN 0 ELSE 1 END, manv LIMIT 1";
+        try (java.sql.Connection conn = JDBCConection.getConnection();
+             java.sql.PreparedStatement ps = conn != null ? conn.prepareStatement(sql) : null) {
+            if (ps == null) {
+                return info;
+            }
+            ps.setString(1, maPhongBan);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    info.name = rs.getString("hoten");
+                    info.email = rs.getString("email");
+                    info.phone = rs.getString("dienthoai");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return info;
     }
 
     private void addInfoBlock(JPanel parent, String label, String value1, String value2) {
