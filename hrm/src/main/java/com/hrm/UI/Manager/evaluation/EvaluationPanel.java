@@ -1,9 +1,14 @@
 package com.hrm.UI.Manager.evaluation;
+
 import com.hrm.UI.Manager.color.ColorScheme;
+import com.hrm.Service.NhanVienService;  // ← IMPORT SERVICE
 import javax.swing.*;
 import java.awt.*;
 
 public class EvaluationPanel extends JPanel {
+    // ← THÊM SERVICE
+    private NhanVienService nhanVienService;
+    
     private EvaluationHeader header;
     private EvaluationStats stats;
     private EvaluationList list;
@@ -11,6 +16,9 @@ public class EvaluationPanel extends JPanel {
     public EvaluationPanel() {
         setLayout(new BorderLayout());
         setBackground(ColorScheme.MAIN_BG);
+
+        // ← KHỞI TẠO SERVICE
+        nhanVienService = new NhanVienService();
 
         header = new EvaluationHeader();
         stats = new EvaluationStats();
@@ -26,9 +34,16 @@ public class EvaluationPanel extends JPanel {
         contentArea.add(list, BorderLayout.CENTER);
 
         add(contentArea, BorderLayout.CENTER);
+        
+        // ← TỰ ĐỘNG LOAD DATA
+        loadData();
     }
 
-    public void loadData(String quarter, Object[][] data) {
+    // ← METHOD MỚI: TỰ GỌI SERVICE
+    private void loadData() {
+        String quarter = "Q4 2024";
+        Object[][] data = nhanVienService.getTableDataForEvaluation();
+        
         list.setQuarter(quarter);
         list.setData(data);
 
@@ -37,5 +52,10 @@ public class EvaluationPanel extends JPanel {
         int chuaDG = list.getChuaDanhGiaCount();
 
         stats.updateStats(tongNV, daHoan, chuaDG);
+    }
+    
+    // ← GIỮ LẠI METHOD NÀY ĐỂ REFRESH
+    public void refresh() {
+        loadData();
     }
 }

@@ -1,5 +1,4 @@
 package com.hrm.UI.Manager.dashboard;
-import com.hrm.UI.Manager.color.ColorScheme;
 import javax.swing.*;
 import java.awt.*;
 
@@ -35,6 +34,14 @@ public class DashboardTaskPanel extends JPanel {
         tasksList.add(Box.createRigidArea(new Dimension(0, 10)));
         tasksList.revalidate();
         tasksList.repaint();
+    }
+
+    public void clearTasks() {
+        if (tasksList != null) {
+            tasksList.removeAll();
+            tasksList.revalidate();
+            tasksList.repaint();
+        }
     }
 
     private JPanel createTaskRow(String employee, String description, String priority) {

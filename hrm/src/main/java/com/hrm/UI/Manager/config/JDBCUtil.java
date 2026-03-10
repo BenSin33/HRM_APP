@@ -4,7 +4,7 @@ import java.sql.DriverManager;
 import javax.swing.JOptionPane;
 
 public class JDBCUtil {
-    private static final String URL = "jdbc:mysql://localhost:3306/hrm_system_2";
+    private static final String URL = "jdbc:mysql://localhost:3306/hrm_system";
     private static final String USER = "root";      // user mặc định của XAMPP
     private static final String PASSWORD = "";      // mật khẩu mặc định thường để trống
 

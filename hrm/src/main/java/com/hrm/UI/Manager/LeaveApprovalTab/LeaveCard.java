@@ -1,4 +1,6 @@
 package com.hrm.UI.Manager.LeaveApprovalTab;
+
+import com.hrm.Service.NghiPhepService;
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,18 +13,29 @@ public class LeaveCard extends JPanel {
     private String tuNgay;
     private String denNgay;
     private String lyDo;
-    private String ngayGui;
+    private String ngayDuyet;
+    private String maNghiPhep;
+    
+    private NghiPhepService service;
+    private Runnable refreshCallback;
 
-    public LeaveCard(Object[] row) {
-        this.ten = row[0].toString();
-        this.maNV = row[1].toString();
-        this.trangThai = row[2].toString();
-        this.loaiNghi = row[3].toString();
-        this.soNgay = row[4].toString();
-        this.tuNgay = row[5].toString();
-        this.denNgay = row[6].toString();
-        this.lyDo = row[7].toString();
-        this.ngayGui = row[8].toString();
+    public LeaveCard(Object[] row, NghiPhepService service, Runnable refreshCallback) {
+        // Cột theo thứ tự .sql:
+        // [0]=MANGHIPHEP, [1]=MANV, [2]=LOAINGHI, [3]=LYDONGHI, 
+        // [4]=NGAYNGHI, [5]=NGAYLAMLAI, [6]=NGUOIDUYET, [7]=NGAYDUYET, [8]=TRANGTHAI, [9]=LYDOTUCHOI, [10]=TENNV
+        this.maNghiPhep = row[0].toString();      // MANGHIPHEP
+        this.maNV = row[1].toString();            // MANV
+        this.loaiNghi = row[2].toString();        // LOAINGHI
+        this.lyDo = row[3].toString();            // LYDONGHI (lý do nghỉ)
+        this.tuNgay = row[4].toString();          // NGAYNGHI (ngày nghỉ)
+        this.denNgay = row[5].toString();         // NGAYLAMLAI (ngày làm lại)
+        this.soNgay = "";                         // Tính từ tuNgay -> denNgay (tùy chọn)
+        this.trangThai = row[8].toString();       // TRANGTHAI
+        this.ten = row[10].toString();            // TENNV (for display)
+        this.ngayDuyet = "";                      // Không dùng
+        
+        this.service = service;
+        this.refreshCallback = refreshCallback;
 
         initComponent();
     }
@@ -69,8 +82,13 @@ public class LeaveCard extends JPanel {
         topRow.add(namePanel, BorderLayout.WEST);
 
         // Buttons for pending requests
-        if (trangThai.equals("Chờ duyệt")) {
+        System.out.println("[LeaveCard] " + ten + " | Trạng thái: [" + trangThai + "]");
+        
+        if (trangThai != null && trangThai.trim().equals("Chờ duyệt")) {
+            System.out.println("[LeaveCard] → Hiện buttons DUYỆT/TỪ CHỐI");
             topRow.add(createActionButtons(), BorderLayout.EAST);
+        } else {
+            System.out.println("[LeaveCard] → KHÔNG hiện buttons (trạng thái: " + trangThai + ")");
         }
 
         return topRow;
@@ -88,6 +106,7 @@ public class LeaveCard extends JPanel {
         btnDuyet.setBorderPainted(false);
         btnDuyet.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnDuyet.setPreferredSize(new Dimension(120, 38));
+        btnDuyet.addActionListener(e -> handleApprove());
 
         JButton btnTuChoi = new JButton("✗  Từ chối");
         btnTuChoi.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -97,6 +116,7 @@ public class LeaveCard extends JPanel {
         btnTuChoi.setBorderPainted(false);
         btnTuChoi.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnTuChoi.setPreferredSize(new Dimension(120, 38));
+        btnTuChoi.addActionListener(e -> handleReject());
 
         btnPanel.add(btnDuyet);
         btnPanel.add(btnTuChoi);
@@ -115,7 +135,7 @@ public class LeaveCard extends JPanel {
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 
         infoPanel.add(createInfoItem("Loại nghỉ:", loaiNghi, true));
-        infoPanel.add(createInfoItem("Số ngày:", soNgay + " ngày", true));
+        infoPanel.add(createInfoItem("Số ngày:", soNgay, true));
         infoPanel.add(createInfoItem("Từ ngày:", tuNgay, true));
         infoPanel.add(createInfoItem("Đến ngày:", denNgay, true));
 
@@ -138,14 +158,14 @@ public class LeaveCard extends JPanel {
         lyDoPanel.add(lyDoContent, BorderLayout.CENTER);
 
         // Footer
-        JLabel ngayGuiLabel = new JLabel("Gửi đơn: " + ngayGui);
-        ngayGuiLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        ngayGuiLabel.setForeground(new Color(150, 150, 150));
+        JLabel ngayDuyetLabel = new JLabel("Ngày duyệt: " + ngayDuyet);
+        ngayDuyetLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        ngayDuyetLabel.setForeground(new Color(150, 150, 150));
 
         centerPanel.add(infoPanel);
         centerPanel.add(lyDoPanel);
         centerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        centerPanel.add(ngayGuiLabel);
+        centerPanel.add(ngayDuyetLabel);
 
         return centerPanel;
     }
@@ -176,10 +196,73 @@ public class LeaveCard extends JPanel {
                 label.setBackground(new Color(220, 252, 231));
                 label.setForeground(new Color(22, 101, 52));
                 break;
-            case "Từ chối":
-                label.setBackground(new Color(254, 226, 226));
-                label.setForeground(new Color(185, 28, 28));
+            default:
+                label.setBackground(new Color(243, 244, 246));
+                label.setForeground(new Color(107, 114, 128));
                 break;
+        }
+    }
+    
+    private void handleApprove() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Bạn có chắc muốn duyệt đơn nghỉ phép của " + ten + "?",
+            "Xác nhận duyệt",
+            JOptionPane.YES_NO_OPTION
+        );
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            String nguoiDuyet = "Manager"; // TODO: Lấy từ session
+            boolean success = service.duyetDon(maNghiPhep, nguoiDuyet);
+            
+            if (success) {
+                JOptionPane.showMessageDialog(this, 
+                    "Đã duyệt đơn nghỉ phép thành công!", 
+                    "Thành công", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Refresh UI
+                if (refreshCallback != null) {
+                    refreshCallback.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Lỗi khi duyệt đơn!", 
+                    "Lỗi", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private void handleReject() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Bạn có chắc muốn từ chối đơn nghỉ phép của " + ten + "?\n" +
+            "Lưu ý: Đơn sẽ bị xóa người duyệt và trở về trạng thái Chờ duyệt.",
+            "Xác nhận từ chối",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            boolean success = service.tuChoiDon(maNghiPhep, "Manager", "Từ chối đơn nghỉ phép"); // TODO: Lấy lý do từ dialog
+            
+            if (success) {
+                JOptionPane.showMessageDialog(this, 
+                    "Đã từ chối đơn nghỉ phép!", 
+                    "Thành công", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Refresh UI
+                if (refreshCallback != null) {
+                    refreshCallback.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Lỗi khi từ chối đơn!", 
+                    "Lỗi", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -187,4 +270,3 @@ public class LeaveCard extends JPanel {
         return trangThai;
     }
 }
-

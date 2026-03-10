@@ -38,6 +38,8 @@ public class EvaluationList extends JPanel {
         scrollPane.setBorder(null);
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+         scrollPane.getVerticalScrollBar().setUnitIncrement(16);   // Tốc độ khi scroll bằng chuột (mặc định: 1)
+        scrollPane.getVerticalScrollBar().setBlockIncrement(100);
 
         add(listHeader, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);

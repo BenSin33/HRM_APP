@@ -1,59 +1,58 @@
 package com.hrm.UI.Manager.evaluation;
+
 import com.hrm.UI.Manager.color.ColorScheme;
+import com.hrm.UI.Manager.common.ManagerStatCard;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class EvaluationStats extends JPanel {
-    private JLabel lblTongNhanVien;
-    private JLabel lblDaHoanThanh;
-    private JLabel lblChuaDanhGia;
+
+    private final ManagerStatCard cardTongNhanVien;
+    private final ManagerStatCard cardDaHoanThanh;
+    private final ManagerStatCard cardChuaDanhGia;
 
     public EvaluationStats() {
-        setLayout(new GridLayout(1, 3, 20, 0));
+        setLayout(new GridLayout(1, 3, 16, 0));
         setBackground(ColorScheme.MAIN_BG);
-        setPreferredSize(new Dimension(0, 110));
+        setPreferredSize(new Dimension(0, 120));
 
-        lblTongNhanVien = new JLabel("0");
-        lblDaHoanThanh = new JLabel("0");
-        lblChuaDanhGia = new JLabel("0");
+        // Tổng số nhân viên – xanh dương
+        cardTongNhanVien = new ManagerStatCard(
+                "Tổng số nhân viên",
+                "0",
+                new Color(219, 234, 254),   // blue-100
+                ManagerStatCard.makeTextIcon("👥", new Color(37, 99, 235)),
+                new Color(191, 219, 254)    // blue-200
+        );
 
-        add(createStatCard("Tổng số nhân viên", lblTongNhanVien, new Color(99, 102, 241), new Color(99, 102, 241)));
-        add(createStatCard("Đã hoàn thành", lblDaHoanThanh, new Color(34, 197, 94), new Color(34, 197, 94)));
-        add(createStatCard("Chưa đánh giá", lblChuaDanhGia, new Color(251, 191, 36), new Color(251, 191, 36)));
-    }
+        // Đã hoàn thành – xanh lá, icon check
+        cardDaHoanThanh = new ManagerStatCard(
+                "Đã hoàn thành",
+                "0",
+                new Color(220, 252, 231),   // green-100
+                ManagerStatCard.makeTextIcon("✓", new Color(22, 163, 74)),
+                new Color(187, 247, 208)    // green-200
+        );
 
-    private JPanel createStatCard(String label, JLabel valueLabel, Color valueColor, Color borderColor) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 4, 0, 0, borderColor),
-            BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
-            )
-        ));
+        // Chưa đánh giá – cam, icon đồng hồ
+        cardChuaDanhGia = new ManagerStatCard(
+                "Chưa đánh giá",
+                "0",
+                new Color(255, 237, 213),   // orange-100
+                ManagerStatCard.makeTextIcon("⏰", new Color(234, 88, 12)),
+                new Color(254, 215, 170)    // orange-200
+        );
 
-        JLabel labelText = new JLabel(label);
-        labelText.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        labelText.setForeground(new Color(100, 100, 100));
-
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        valueLabel.setForeground(valueColor);
-
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setBackground(Color.WHITE);
-        textPanel.add(labelText);
-        textPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        textPanel.add(valueLabel);
-
-        card.add(textPanel, BorderLayout.CENTER);
-        return card;
+        add(cardTongNhanVien);
+        add(cardDaHoanThanh);
+        add(cardChuaDanhGia);
     }
 
     public void updateStats(int tongNV, int daHoan, int chuaDG) {
-        lblTongNhanVien.setText(String.valueOf(tongNV));
-        lblDaHoanThanh.setText(String.valueOf(daHoan));
-        lblChuaDanhGia.setText(String.valueOf(chuaDG));
+        cardTongNhanVien.setValue(String.valueOf(tongNV));
+        cardDaHoanThanh.setValue(String.valueOf(daHoan));
+        cardChuaDanhGia.setValue(String.valueOf(chuaDG));
     }
 }
+

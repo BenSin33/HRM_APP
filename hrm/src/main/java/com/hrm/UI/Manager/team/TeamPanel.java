@@ -1,9 +1,14 @@
 package com.hrm.UI.Manager.team;
+
 import com.hrm.UI.Manager.color.ColorScheme;
+import com.hrm.Service.NhanVienService;  // ← IMPORT SERVICE
 import javax.swing.*;
 import java.awt.*;
 
 public class TeamPanel extends JPanel {
+    // ← THÊM SERVICE
+    private NhanVienService nhanVienService;
+    
     private TeamHeader header;
     private TeamStats stats;
     private TeamTable table;
@@ -12,6 +17,9 @@ public class TeamPanel extends JPanel {
     public TeamPanel() {
         setLayout(new BorderLayout());
         setBackground(ColorScheme.MAIN_BG);
+
+        // ← KHỞI TẠO SERVICE
+        nhanVienService = new NhanVienService();
 
         header = new TeamHeader();
         stats = new TeamStats();
@@ -34,6 +42,9 @@ public class TeamPanel extends JPanel {
 
         // Setup actions
         setupActions();
+        
+        // ← TỰ ĐỘNG LOAD DATA
+        loadData();
     }
 
     private void setupActions() {
@@ -43,12 +54,21 @@ public class TeamPanel extends JPanel {
         });
     }
 
-    public void loadData(int total, int active, int senior, int junior) {
-        stats.updateStats(total, active, senior, junior);
+    // ← METHOD MỚI: TỰ GỌI SERVICE
+    private void loadData() {
+        stats.updateStats(
+            nhanVienService.countAll(),
+            nhanVienService.countDangHoatDong(),
+            nhanVienService.countSenior(),
+            nhanVienService.countJunior()
+        );
+        
+        table.setData(nhanVienService.getTableDataForTeam());
     }
-
-    public void loadTableData(Object[][] data) {
-        table.setData(data);
+    
+    // ← GIỮ LẠI METHOD NÀY ĐỂ REFRESH
+    public void refresh() {
+        loadData();
     }
 
     public String getSelectedEmployeeId() {

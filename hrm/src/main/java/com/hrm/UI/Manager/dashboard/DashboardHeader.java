@@ -1,6 +1,8 @@
 package com.hrm.UI.Manager.dashboard;
 import javax.swing.*;
 import java.awt.*;
+
+
 public class DashboardHeader extends JPanel {
     
     public DashboardHeader() {
@@ -23,5 +25,9 @@ public class DashboardHeader extends JPanel {
         titlePanel.add(greeting);
 
         add(titlePanel, BorderLayout.WEST);
+        
+        
     }
 }
+
+    
