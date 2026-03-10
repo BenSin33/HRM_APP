@@ -3,7 +3,14 @@ package com.hrm.UI.HR.Attendancetab;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * StartCardPanel – thẻ stat card dùng trong AttenDanceSummary.
+ * Thêm method updateValue() để refresh dữ liệu từ DB.
+ */
 public class StartCardPanel extends JPanel {
+
+    // Tham chiếu để có thể update sau khi load DB
+    private final JLabel valueLabel;
 
     public StartCardPanel(String title, String value,
                           Color iconBg, Icon icon, Color borderColor) {
@@ -11,13 +18,11 @@ public class StartCardPanel extends JPanel {
         setLayout(new BorderLayout(14, 0));
         setOpaque(true);
 
-        // ✅ Card trắng, bo 16px, viền màu nhạt theo loại card
         putClientProperty("FlatLaf.style",
-                "arc:16;" +
-                "background:#FFFFFF;" +
-                "borderWidth:1;" +
-                "borderColor:" + toHex(borderColor) + ";" +
-                "shadow:sm");
+            "arc:16;" +
+            "background:#FFFFFF;" +
+            "border:1,1,1,1," + toHex(borderColor) + ";" +
+            "shadow:sm");
 
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -45,12 +50,12 @@ public class StartCardPanel extends JPanel {
 
         // ── Text ──────────────────────────────────────────────────
         JLabel titleLabel = new JLabel("<html>" + title + "</html>");
-        titleLabel.setForeground(new Color(107, 114, 128));   // gray-500
+        titleLabel.setForeground(new Color(107, 114, 128));
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.PLAIN, 13f));
 
-        JLabel valueLabel = new JLabel(value);
+        valueLabel = new JLabel(value);
         valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 26f));
-        valueLabel.setForeground(new Color(17, 24, 39));      // gray-900
+        valueLabel.setForeground(new Color(17, 24, 39));
 
         JPanel textPanel = new JPanel();
         textPanel.setOpaque(false);
@@ -61,6 +66,16 @@ public class StartCardPanel extends JPanel {
 
         add(iconWrap,  BorderLayout.WEST);
         add(textPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * Cập nhật giá trị hiển thị trên card (phải gọi trên EDT).
+     * @param newValue giá trị mới, VD: "87%", "12", "5"
+     */
+    public void updateValue(String newValue) {
+        valueLabel.setText(newValue);
+        revalidate();
+        repaint();
     }
 
     private String toHex(Color c) {
