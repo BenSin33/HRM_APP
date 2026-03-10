@@ -1,12 +1,12 @@
 package com.hrm.DTO.HR;
 
 /**
- * Simple data transfer object for a department (phòng ban).
+ * Đối tượng chuyển dữ liệu đơn giản cho một phòng ban.
  */
 public class DepartmentDTO {
     private String maPhongBan;
     private String tenPhongBan;
-    private int soNhanVien;    // optional, computed on the fly if needed
+    private int soNhanVien;    
 
     public DepartmentDTO() {
     }

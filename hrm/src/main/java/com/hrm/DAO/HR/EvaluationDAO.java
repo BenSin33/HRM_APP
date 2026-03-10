@@ -13,9 +13,9 @@ import com.hrm.utils.JDBCConection;
 
 public class EvaluationDAO {
 
-    // ═══════════════════════════════════════════════════════════
-    // 1. LẤY DANH SÁCH ĐỢT ĐÁNH GIÁ (Cho JComboBox "Kỳ đánh giá")
-    // ═══════════════════════════════════════════════════════════
+    
+    
+    
 
     public List<EvaluationPeriodDTO> getAllPeriods() {
         List<EvaluationPeriodDTO> list = new ArrayList<>();
@@ -69,9 +69,9 @@ public class EvaluationDAO {
         return labels;
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 2. LẤY DANH SÁCH PHIẾU ĐÁNH GIÁ THEO ĐỢT (Cho JTable)
-    // ═══════════════════════════════════════════════════════════
+    
+    
+    
 
     public List<EvaluationDTO> getEvaluationsByPeriod(String maDot) {
         List<EvaluationDTO> list = new ArrayList<>();
@@ -175,9 +175,9 @@ public class EvaluationDAO {
         return null;
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 3. SUMMARY STATS (Cho EvaluationSummary – 4 stat cards)
-    // ═══════════════════════════════════════════════════════════
+    
+    
+    
 
     public double getAvgScore(String maDot) {
         String sql = "SELECT AVG(TONGDIEM) FROM phieudanhgia WHERE MADOT = ?";
@@ -249,9 +249,9 @@ public class EvaluationDAO {
         return 0;
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 4. TẠO ĐỢT ĐÁNH GIÁ MỚI
-    // ═══════════════════════════════════════════════════════════
+    
+    
+    
 
     public boolean insertPeriod(EvaluationPeriodDTO dto) {
         String sql = "INSERT INTO dotdanhgia (MADOT, TENDOT, KYKY, NAM, NGUOIDANHGIA, TRANGTHAI) " +
@@ -302,9 +302,9 @@ public class EvaluationDAO {
         return base + "_" + System.currentTimeMillis();
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 5. THÊM / SỬA / XÓA PHIẾU ĐÁNH GIÁ
-    // ═══════════════════════════════════════════════════════════
+    
+    
+    
 
     public boolean insertEvaluation(EvaluationDTO dto) {
         String sql = "INSERT INTO phieudanhgia " +
@@ -414,9 +414,9 @@ public class EvaluationDAO {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // 6. UTILITY
-    // ═══════════════════════════════════════════════════════════
+    
+    
+    
 
     public boolean existsEvaluation(String maNV, String maDot) {
         String sql = "SELECT COUNT(*) FROM phieudanhgia WHERE MANV = ? AND MADOT = ?";
