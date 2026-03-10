@@ -60,4 +60,16 @@ public class DepartmentService {
     public int countEmployeesInDepartment(String maPhongBan) {
         return departmentDAO.countEmployees(maPhongBan);
     }
+
+    public List<DepartmentDAO.EmployeeOption> getEmployeesInDepartment(String maPhongBan) {
+        return departmentDAO.getEmployeesInDepartment(maPhongBan);
+    }
+
+    public void setDepartmentHead(String maPhongBan, String manv) {
+        departmentDAO.setDepartmentHead(maPhongBan, manv);
+    }
+
+    public void updateEmployeeContact(String manv, String email, String dienthoai) {
+        departmentDAO.updateEmployeeContact(manv, email, dienthoai);
+    }
 }
