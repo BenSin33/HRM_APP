@@ -1,88 +1,141 @@
 package com.hrm.UI.HR.Leavetab;
 
+import com.hrm.DAO.HR.LeaveDao;
+import com.hrm.DTO.HR.LeaveDTO.LeaveRowDTO;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
+/**
+ * LeaveTable – bảng danh sách đơn nghỉ phép.
+ *
+ * Dữ liệu load từ DB qua LeaveDao.getAllLeaveRows(filter).
+ * Sau khi duyệt / từ chối → ghi DB + gọi onDataChanged để Summary refresh.
+ */
 public class LeaveTable extends JPanel {
 
     // ── Màu ──────────────────────────────────────────────────────
     private static final Color PURPLE      = new Color(124,  58, 237);
-    private static final Color PURPLE_LIGHT= new Color(237, 233, 254);
     private static final Color GRAY900     = new Color( 17,  24,  39);
     private static final Color GRAY500     = new Color(107, 114, 128);
     private static final Color GRAY200     = new Color(229, 231, 235);
     private static final Color ROW_SEP     = new Color(243, 244, 246);
 
-    // Badge màu
-    private static final Color PENDING_BG  = new Color(254, 243, 199);
-    private static final Color PENDING_FG  = new Color(161,  98,   7);
-    private static final Color APPROVED_BG = new Color(220, 252, 231);
-    private static final Color APPROVED_FG = new Color( 21, 128,  61);
-    private static final Color REJECTED_BG = new Color(254, 226, 226);
-    private static final Color REJECTED_FG = new Color(185,  28,  28);
+    private static final Color PENDING_BG  = new Color(254, 243, 199); private static final Color PENDING_FG  = new Color(161,  98,   7);
+    private static final Color APPROVED_BG = new Color(220, 252, 231); private static final Color APPROVED_FG = new Color( 21, 128,  61);
+    private static final Color REJECTED_BG = new Color(254, 226, 226); private static final Color REJECTED_FG = new Color(185,  28,  28);
 
     private DefaultTableModel model;
     private JTable table;
-    private String activeFilter = "all"; // all | pending | approved | rejected
+    private String activeFilter = "all";
 
-    // Dữ liệu mẫu: {id, name, dept, type, from, to, days, reason, status}
-    private final Object[][] fullData = {
-        {"LEAVE001", "Nguyễn Văn A", "IT",          "Nghỉ phép năm",   "1/2/2025",  "3/2/2025",  3, "Du lịch cùng gia đình",        "Chờ duyệt"},
-        {"LEAVE002", "Trần Thị B",   "Kinh doanh",  "Nghỉ ốm",         "25/1/2025", "26/1/2025", 2, "Bệnh cảm cúm",                  "Đã duyệt"},
-        {"LEAVE003", "Lê Văn C",     "Kế toán",     "Nghỉ việc riêng", "10/2/2025", "10/2/2025", 1, "Giải quyết công việc cá nhân",  "Chờ duyệt"},
-    };
+    // Tab buttons – giữ reference để update style & label
+    private JButton btnAll, btnPending, btnApproved, btnRejected;
 
-    public LeaveTable() {
+    private final LeaveDao dao = new LeaveDao();
+    private List<LeaveRowDTO> currentData;
+
+    /**
+     * Callback báo LeaveManagement refresh Summary sau khi duyệt/từ chối.
+     * Truyền vào từ LeaveManagement.
+     */
+    private final Runnable onDataChanged;
+
+    // ─────────────────────────────────────────────────────────────
+    public LeaveTable(Runnable onDataChanged) {
+        this.onDataChanged = onDataChanged;
         setLayout(new BorderLayout(0, 0));
         setOpaque(false);
 
         JPanel card = new JPanel(new BorderLayout(0, 0));
         card.setBackground(Color.WHITE);
         card.putClientProperty("FlatLaf.style",
-                "arc:16; background:#FFFFFF; borderColor:#E5E7EB; borderWidth:1; shadow:sm");
+            "arc:16; background:#FFFFFF; border:1,1,1,1,#E5E7EB; shadow:sm");
 
         card.add(buildFilterTabs(), BorderLayout.NORTH);
         card.add(buildTablePanel(), BorderLayout.CENTER);
 
         add(card, BorderLayout.CENTER);
+
+        // Load lần đầu
+        refreshData();
+    }
+
+    /** Constructor không callback – tương thích ngược */
+    public LeaveTable() { this(null); }
+
+    // ─────────────────────────────────────────────────────────────
+    // PUBLIC API
+    // ─────────────────────────────────────────────────────────────
+    /**
+     * Load lại bảng từ DB theo activeFilter hiện tại.
+     * Gọi từ bên ngoài (LeaveManagement) sau khi dữ liệu thay đổi.
+     */
+    public void refreshData() {
+        new SwingWorker<List<LeaveRowDTO>, Void>() {
+            @Override protected List<LeaveRowDTO> doInBackground() {
+                return dao.getAllLeaveRows(activeFilter);
+            }
+            @Override protected void done() {
+                try {
+                    currentData = get();
+                    rebuildModel(currentData);
+                    refreshTabLabels();
+                } catch (Exception e) {
+                    System.err.println("[LeaveTable] refreshData: " + e.getMessage());
+                }
+            }
+        }.execute();
     }
 
     // ─────────────────────────────────────────────────────────────
-    // FILTER TABS: Tất cả | Chờ duyệt (2) | Đã duyệt | Từ chối
+    // FILTER TABS
     // ─────────────────────────────────────────────────────────────
     private JPanel buildFilterTabs() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 12));
         bar.setBackground(Color.WHITE);
         bar.setBorder(new MatteBorder(0, 0, 1, 0, GRAY200));
 
-        long pending  = countByStatus("Chờ duyệt");
-        long approved = countByStatus("Đã duyệt");
-        long rejected = countByStatus("Từ chối");
-
-        JButton btnAll      = makeTabButton("Tất cả",                  "all",      true);
-        JButton btnPending  = makeTabButton("Chờ duyệt (" + pending + ")", "pending",  false);
-        JButton btnApproved = makeTabButton("Đã duyệt",                "approved", false);
-        JButton btnRejected = makeTabButton("Từ chối",                 "rejected", false);
+        btnAll      = makeTabButton("Tất cả",   "all",      true);
+        btnPending  = makeTabButton("Chờ duyệt","pending",  false);
+        btnApproved = makeTabButton("Đã duyệt", "approved", false);
+        btnRejected = makeTabButton("Từ chối",  "rejected", false);
 
         JButton[] tabs = {btnAll, btnPending, btnApproved, btnRejected};
-
         for (JButton tab : tabs) {
             tab.addActionListener(e -> {
                 activeFilter = tab.getActionCommand();
-                // update style
-                for (JButton t : tabs) {
-                    boolean active = t.getActionCommand().equals(activeFilter);
-                    applyTabStyle(t, active);
-                }
-                filterTable();
+                for (JButton t : tabs) applyTabStyle(t, t.getActionCommand().equals(activeFilter));
+                refreshData();
             });
             bar.add(tab);
         }
-
         return bar;
+    }
+
+    /** Cập nhật số đếm trên label mỗi tab dựa trên toàn bộ data */
+    private void refreshTabLabels() {
+        new SwingWorker<List<LeaveRowDTO>, Void>() {
+            @Override protected List<LeaveRowDTO> doInBackground() {
+                return dao.getAllLeaveRows("all");
+            }
+            @Override protected void done() {
+                try {
+                    List<LeaveRowDTO> all = get();
+                    long pending  = all.stream().filter(d -> "Chờ duyệt".equals(d.trangThai)).count();
+                    long approved = all.stream().filter(d -> "Đã duyệt".equals(d.trangThai)).count();
+                    long rejected = all.stream().filter(d -> "Từ chối".equals(d.trangThai)).count();
+                    btnAll.setText("Tất cả");
+                    btnPending.setText("Chờ duyệt (" + pending + ")");
+                    btnApproved.setText("Đã duyệt (" + approved + ")");
+                    btnRejected.setText("Từ chối (" + rejected + ")");
+                } catch (Exception ignored) {}
+            }
+        }.execute();
     }
 
     private JButton makeTabButton(String text, String cmd, boolean active) {
@@ -99,13 +152,12 @@ public class LeaveTable extends JPanel {
         if (active) {
             btn.setBackground(PURPLE);
             btn.setForeground(Color.WHITE);
-            btn.putClientProperty("FlatLaf.style",
-                    "arc:20; background:#7C3AED; borderWidth:0");
+            btn.putClientProperty("FlatLaf.style", "arc:20; background:#7C3AED; borderWidth:0");
         } else {
             btn.setBackground(Color.WHITE);
             btn.setForeground(GRAY500);
             btn.putClientProperty("FlatLaf.style",
-                    "arc:20; background:#FFFFFF; borderColor:#E5E7EB; borderWidth:1");
+                "arc:20; background:#FFFFFF; border:1,1,1,1,#E5E7EB");
         }
         btn.repaint();
     }
@@ -114,13 +166,11 @@ public class LeaveTable extends JPanel {
     // TABLE
     // ─────────────────────────────────────────────────────────────
     private JScrollPane buildTablePanel() {
-        String[] cols = {"MÃ ĐƠN", "NHÂN VIÊN", "LOẠI NGHỈ", "TỪ NGÀY", "ĐẾN NGÀY", "SỐ NGÀY", "LÝ DO", "TRẠNG THÁI", "THAO TÁC"};
+        String[] cols = {"MÃ ĐƠN","NHÂN VIÊN","LOẠI NGHỈ","TỪ NGÀY","ĐẾN NGÀY","SỐ NGÀY","LÝ DO","TRẠNG THÁI","THAO TÁC"};
 
         model = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-
-        populateModel(fullData);
 
         table = new JTable(model);
         table.setRowHeight(64);
@@ -137,27 +187,23 @@ public class LeaveTable extends JPanel {
         header.setBorder(new MatteBorder(1, 0, 1, 0, GRAY200));
         header.setReorderingAllowed(false);
 
-        // Column widths
         int[] widths = {100, 150, 130, 100, 100, 80, 200, 110, 100};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
-        // Renderers
         table.getColumnModel().getColumn(0).setCellRenderer(new LeaveIdRenderer());
         table.getColumnModel().getColumn(1).setCellRenderer(new EmployeeRenderer());
         table.getColumnModel().getColumn(5).setCellRenderer(new BoldCenterRenderer());
         table.getColumnModel().getColumn(7).setCellRenderer(new StatusBadgeRenderer());
         table.getColumnModel().getColumn(8).setCellRenderer(new ActionRenderer());
 
-        // Default renderer cho các cột còn lại
         DefaultTableCellRenderer defaultRend = new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v,
                     boolean sel, boolean focus, int row, int col) {
                 super.getTableCellRendererComponent(t, v, sel, focus, row, col);
                 setBackground(sel ? new Color(245,243,255) : Color.WHITE);
                 setForeground(GRAY900);
-                setBorder(new MatteBorder(0, 0, 1, 0, ROW_SEP));
-                setHorizontalAlignment(LEFT);
+                setVerticalAlignment(SwingConstants.CENTER);
                 setBorder(new CompoundBorder(
                     new MatteBorder(0, 0, 1, 0, ROW_SEP),
                     BorderFactory.createEmptyBorder(0, 4, 0, 4)));
@@ -166,51 +212,53 @@ public class LeaveTable extends JPanel {
         };
         table.setDefaultRenderer(Object.class, defaultRend);
 
-        // Click approve/reject
+        // ── Click duyệt / từ chối ─────────────────────────────────
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
                 int col = table.columnAtPoint(e.getPoint());
-                if (col != 8 || row < 0) return;
+                if (col != 8 || row < 0 || currentData == null) return;
 
                 String status = (String) model.getValueAt(row, 7);
                 if (!"Chờ duyệt".equals(status)) return;
 
-                // Tính vị trí nút ✓ và ✕ trong cell
-                Rectangle cellRect = table.getCellRect(row, col, false);
-                int relX = e.getX() - cellRect.x;
-                boolean isApprove = relX < cellRect.width / 2;
+                // Lấy mã đơn từ model
+                String maDon = (String) model.getValueAt(row, 0);
+                LeaveRowDTO dto = currentData.stream()
+                        .filter(d -> d.maNghiPhep.equals(maDon))
+                        .findFirst().orElse(null);
+                if (dto == null) return;
 
-                String newStatus = isApprove ? "Đã duyệt" : "Từ chối";
-                String msg = isApprove
-                    ? "Duyệt đơn " + model.getValueAt(row, 0) + "?"
-                    : "Từ chối đơn " + model.getValueAt(row, 0) + "?";
+                // Xác định click ✓ hay ✕ theo vị trí X trong cell
+                Rectangle cellRect  = table.getCellRect(row, col, false);
+                boolean   isApprove = (e.getX() - cellRect.x) < cellRect.width / 2;
 
+                String action = isApprove ? "Duyệt" : "Từ chối";
                 int confirm = JOptionPane.showConfirmDialog(
-                    LeaveTable.this, msg, "Xác nhận", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    // Cập nhật trong fullData
-                    String id = (String) model.getValueAt(row, 0);
-                    for (Object[] d : fullData) {
-                        if (d[0].equals(id)) { d[8] = newStatus; break; }
-                    }
-                    model.setValueAt(newStatus, row, 7);
-                    table.repaint();
+                        LeaveTable.this,
+                        action + " đơn " + maDon + " của " + dto.hoTen + "?",
+                        "Xác nhận", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) return;
+
+                // Ghi DB
+                boolean ok = dao.updateStatus(maDon, isApprove, "HR Admin");
+                if (ok) {
+                    refreshData();
+                    if (onDataChanged != null) onDataChanged.run();
+                } else {
+                    JOptionPane.showMessageDialog(LeaveTable.this,
+                            "Cập nhật thất bại, vui lòng thử lại.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
-            @Override public void mouseMoved(MouseEvent e) {
-                int col = table.columnAtPoint(e.getPoint());
-                table.setCursor(col == 8
-                    ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                    : Cursor.getDefaultCursor());
-            }
         });
+
         table.addMouseMotionListener(new MouseMotionAdapter() {
             @Override public void mouseMoved(MouseEvent e) {
                 int col = table.columnAtPoint(e.getPoint());
                 table.setCursor(col == 8
-                    ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                    : Cursor.getDefaultCursor());
+                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                        : Cursor.getDefaultCursor());
             }
         });
 
@@ -221,51 +269,19 @@ public class LeaveTable extends JPanel {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // FILTER
+    // MODEL HELPERS
     // ─────────────────────────────────────────────────────────────
-    private void filterTable() {
+    private void rebuildModel(List<LeaveRowDTO> data) {
         model.setRowCount(0);
-        for (Object[] row : fullData) {
-            String status = (String) row[8];
-            boolean show;
-            switch (activeFilter) {
-                case "pending":
-                    show = "Chờ duyệt".equals(status);
-                    break;
-                case "approved":
-                    show = "Đã duyệt".equals(status);
-                    break;
-                case "rejected":
-                    show = "Từ chối".equals(status);
-                    break;
-                default:
-                    show = true;
-                    break;
-            }
-            if (show) model.addRow(toRow(row));
-        }
-    }
-
-    private void populateModel(Object[][] data) {
-        for (Object[] row : data) model.addRow(toRow(row));
-    }
-
-    private Object[] toRow(Object[] d) {
-        return new Object[]{d[0], new String[]{(String)d[1],(String)d[2]},
-                d[3], d[4], d[5], d[6], d[7], d[8], d[8]};
-    }
-
-    private long countByStatus(String status) {
-        long count = 0;
-        for (Object[] d : fullData) if (d[8].equals(status)) count++;
-        return count;
+        if (data == null) return;
+        for (LeaveRowDTO dto : data) model.addRow(dto.toTableRow());
     }
 
     // ─────────────────────────────────────────────────────────────
     // CELL RENDERERS
     // ─────────────────────────────────────────────────────────────
 
-    /** Mã đơn in đậm */
+    /** Mã đơn in đậm, căn giữa dọc */
     class LeaveIdRenderer extends DefaultTableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
@@ -273,6 +289,7 @@ public class LeaveTable extends JPanel {
             setText("<html><b>" + v + "</b></html>");
             setForeground(GRAY900);
             setBackground(sel ? new Color(245,243,255) : Color.WHITE);
+            setVerticalAlignment(SwingConstants.CENTER);
             setBorder(new CompoundBorder(
                 new MatteBorder(0,0,1,0,ROW_SEP),
                 BorderFactory.createEmptyBorder(0,16,0,4)));
@@ -280,18 +297,22 @@ public class LeaveTable extends JPanel {
         }
     }
 
-    /** Nhân viên: tên đậm + phòng ban nhỏ xám */
+    /** Nhân viên: tên đậm + phòng ban xám – GridBagLayout căn giữa dọc */
     class EmployeeRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
             String[] arr = (String[]) v;
-            JPanel cell = new JPanel();
+
+            JPanel cell = new JPanel(new GridBagLayout());
             cell.setOpaque(true);
             cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
-            cell.setLayout(new BoxLayout(cell, BoxLayout.Y_AXIS));
             cell.setBorder(new CompoundBorder(
                 new MatteBorder(0,0,1,0,ROW_SEP),
-                BorderFactory.createEmptyBorder(10,4,10,4)));
+                BorderFactory.createEmptyBorder(0,4,0,4)));
+
+            JPanel inner = new JPanel();
+            inner.setOpaque(false);
+            inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
 
             JLabel name = new JLabel(arr[0]);
             name.setFont(name.getFont().deriveFont(Font.BOLD, 13f));
@@ -301,9 +322,10 @@ public class LeaveTable extends JPanel {
             dept.setFont(dept.getFont().deriveFont(Font.PLAIN, 11f));
             dept.setForeground(GRAY500);
 
-            cell.add(name);
-            cell.add(Box.createVerticalStrut(3));
-            cell.add(dept);
+            inner.add(name);
+            inner.add(Box.createVerticalStrut(3));
+            inner.add(dept);
+            cell.add(inner);
             return cell;
         }
     }
@@ -317,12 +339,13 @@ public class LeaveTable extends JPanel {
             setText("<html><b>" + v + "</b></html>");
             setForeground(GRAY900);
             setBackground(sel ? new Color(245,243,255) : Color.WHITE);
+            setVerticalAlignment(SwingConstants.CENTER);
             setBorder(new MatteBorder(0,0,1,0,ROW_SEP));
             return this;
         }
     }
 
-    /** Badge trạng thái: Chờ duyệt / Đã duyệt / Từ chối */
+    /** Badge trạng thái bo tròn – GridBagLayout căn giữa dọc */
     class StatusBadgeRenderer implements TableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v,
                 boolean sel, boolean focus, int row, int col) {
@@ -334,18 +357,9 @@ public class LeaveTable extends JPanel {
 
             Color bg, fg;
             switch (status) {
-                case "Đã duyệt": 
-                    bg = APPROVED_BG; 
-                    fg = APPROVED_FG; 
-                    break;
-                case "Từ chối":  
-                    bg = REJECTED_BG; 
-                    fg = REJECTED_FG; 
-                    break;
-                default:          
-                    bg = PENDING_BG;  
-                    fg = PENDING_FG;  
-                    break;
+                case "Đã duyệt" -> { bg = APPROVED_BG; fg = APPROVED_FG; }
+                case "Từ chối"  -> { bg = REJECTED_BG; fg = REJECTED_FG; }
+                default          -> { bg = PENDING_BG;  fg = PENDING_FG;  }
             }
 
             JLabel badge = new JLabel(status, SwingConstants.CENTER) {
@@ -369,7 +383,14 @@ public class LeaveTable extends JPanel {
         }
     }
 
-    /** Nút thao tác ✓ ✕ (chỉ hiện khi Chờ duyệt) */
+    /**
+     * ActionRenderer – icon ✓ và ✕ căn giữa hoàn toàn.
+     *
+     * FIX căn giữa:
+     *   cell ngoài  → GridBagLayout  (căn giữa theo chiều DỌC)
+     *   iconRow bên trong → FlowLayout CENTER (căn giữa theo chiều NGANG)
+     *   Kết quả: icon nằm đúng trung tâm ô dù row height bao nhiêu.
+     */
     class ActionRenderer implements TableCellRenderer {
         private final Color GREEN_IC = new Color( 22, 163,  74);
         private final Color RED_IC   = new Color(220,  38,  38);
@@ -378,14 +399,21 @@ public class LeaveTable extends JPanel {
                 boolean sel, boolean focus, int row, int col) {
             String status = v == null ? "" : v.toString();
 
-            JPanel cell = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+            // Outer cell: GridBagLayout = căn giữa DỌC tự động
+            JPanel cell = new JPanel(new GridBagLayout());
             cell.setBackground(sel ? new Color(245,243,255) : Color.WHITE);
             cell.setBorder(new MatteBorder(0,0,1,0,ROW_SEP));
 
             if ("Chờ duyệt".equals(status)) {
-                cell.add(makeIconBtn(GREEN_IC, true));
-                cell.add(makeIconBtn(RED_IC,   false));
+                // Inner row: FlowLayout CENTER = căn giữa NGANG
+                JPanel iconRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+                iconRow.setOpaque(false);
+                iconRow.add(makeIconBtn(GREEN_IC, true));   // ✓
+                iconRow.add(makeIconBtn(RED_IC,   false));  // ✕
+                // GridBagLayout không có constraint → đặt iconRow đúng trung tâm
+                cell.add(iconRow);
             }
+
             return cell;
         }
 
@@ -397,14 +425,17 @@ public class LeaveTable extends JPanel {
                     g2.setColor(color);
                     g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     int w = getWidth(), h = getHeight();
+                    // Vòng tròn bao ngoài
                     g2.drawOval(1, 1, w-2, h-2);
                     if (isCheck) {
+                        // Dấu ✓ – tọa độ tính từ tâm vòng tròn
                         g2.drawPolyline(
-                            new int[]{w/2-5, w/2, w/2+7},
-                            new int[]{h/2,   h/2+5, h/2-5}, 3);
+                            new int[]{w/2-5, w/2,   w/2+6},
+                            new int[]{h/2,   h/2+5, h/2-4}, 3);
                     } else {
-                        g2.drawLine(w/2-5, h/2-5, w/2+5, h/2+5);
-                        g2.drawLine(w/2+5, h/2-5, w/2-5, h/2+5);
+                        // Dấu ✕ – tọa độ tính từ tâm vòng tròn
+                        g2.drawLine(w/2-4, h/2-4, w/2+4, h/2+4);
+                        g2.drawLine(w/2+4, h/2-4, w/2-4, h/2+4);
                     }
                     g2.dispose();
                 }

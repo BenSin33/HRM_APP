@@ -13,9 +13,10 @@ import com.hrm.utils.JDBCConection;
 
 public class EvaluationDAO {
 
-    
-    
-    
+
+    // ═══════════════════════════════════════════════════════════
+    // 1. LẤY DANH SÁCH ĐỢT ĐÁNH GIÁ từ bảng dotdanhgia
+    // ═══════════════════════════════════════════════════════════
 
     public List<EvaluationPeriodDTO> getAllPeriods() {
         List<EvaluationPeriodDTO> list = new ArrayList<>();
@@ -23,14 +24,10 @@ public class EvaluationDAO {
                      "FROM dotdanhgia ORDER BY NAM DESC, KYKY DESC";
 
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.getAllPeriods()");
-            return list;
-        }
+        if (conn == null) return list;
         try (conn;
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
                 EvaluationPeriodDTO dto = new EvaluationPeriodDTO();
                 dto.setMaDot(rs.getString("MADOT"));
@@ -47,63 +44,96 @@ public class EvaluationDAO {
         return list;
     }
 
-    public List<String> getPeriodLabels() {
-        List<String> labels = new ArrayList<>();
-        String sql = "SELECT KYKY, NAM FROM dotdanhgia ORDER BY NAM DESC, KYKY DESC";
+    // ═══════════════════════════════════════════════════════════
+    // 2. LẤY DANH SÁCH NHÂN VIÊN (cho ComboBox trong form thêm phiếu)
+    // ═══════════════════════════════════════════════════════════
 
+    public List<String[]> getAllNhanVien() {
+        List<String[]> list = new ArrayList<>();
+        String sql = "SELECT nv.MANV, nv.HOTEN, cv.TENVITRI, pb.TENPHONGBAN " +
+                     "FROM nhanvien nv " +
+                     "JOIN chucvu cv  ON nv.MACHUCVU   = cv.MACHUCVU " +
+                     "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "WHERE nv.TRANGTHAI = 'Đang làm việc' " +
+                     "ORDER BY nv.HOTEN";
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.getPeriodLabels()");
-            return labels;
-        }
+        if (conn == null) return list;
         try (conn;
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
-                labels.add(rs.getString("KYKY") + " " + rs.getInt("NAM"));
+                list.add(new String[]{
+                    rs.getString("MANV"),
+                    rs.getString("HOTEN"),
+                    rs.getString("TENVITRI"),
+                    rs.getString("TENPHONGBAN")
+                });
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return labels;
+        return list;
     }
 
-    
-    
-    
+
+    // ═══════════════════════════════════════════════════════════
+    // 3. LẤY DANH SÁCH TIÊU CHÍ ĐÁNH GIÁ (cho ComboBox)
+    // ═══════════════════════════════════════════════════════════
+
+    public List<String[]> getAllTieuChi() {
+        List<String[]> list = new ArrayList<>();
+        String sql = "SELECT MATIEUCHI, TENTIEUCHI, DIEM FROM tieuchidanhgia ORDER BY MATIEUCHI";
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return list;
+        try (conn;
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new String[]{
+                    rs.getString("MATIEUCHI"),
+                    rs.getString("TENTIEUCHI"),
+                    String.valueOf(rs.getInt("DIEM"))
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 4. LẤY DANH SÁCH PHIẾU ĐÁNH GIÁ THEO ĐỢT
+    // ═══════════════════════════════════════════════════════════
 
     public List<EvaluationDTO> getEvaluationsByPeriod(String maDot) {
         List<EvaluationDTO> list = new ArrayList<>();
+        // JOIN dotdanhgia để lấy NGUOIDANHGIA từ đợt
         String sql = "SELECT " +
                      "  p.MAPHIEU, p.MANV, nv.HOTEN, " +
                      "  cv.TENVITRI AS CHUCVU, pb.TENPHONGBAN AS PHONGBAN, " +
                      "  d.NGUOIDANHGIA, p.TONGDIEM, p.NHANXET, " +
                      "  p.QUYETDINH, p.LOAIQUYETDINH, p.TRANGTHAI_DUYET, " +
-                     "  p.NGAYDANHGIA, tc.TENTIEUCHI " +
+                     "  p.NGAYDANHGIA, tc.TENTIEUCHI, p.MADOT, p.MATIEUCHI " +
                      "FROM phieudanhgia p " +
-                     "JOIN nhanvien nv            ON p.MANV        = nv.MANV " +
-                     "JOIN chucvu cv              ON nv.MACHUCVU   = cv.MACHUCVU " +
-                     "JOIN phongban pb            ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
-                     "LEFT JOIN tieuchidanhgia tc ON p.MATIEUCHI   = tc.MATIEUCHI " +
-                     "LEFT JOIN dotdanhgia d      ON p.MADOT       = d.MADOT " +
+                     "JOIN nhanvien nv             ON p.MANV      = nv.MANV " +
+                     "JOIN chucvu cv               ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "JOIN phongban pb             ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "LEFT JOIN tieuchidanhgia tc  ON p.MATIEUCHI = tc.MATIEUCHI " +
+                     "LEFT JOIN dotdanhgia d       ON p.MADOT     = d.MADOT " +
                      "WHERE p.MADOT = ? " +
                      "ORDER BY p.TONGDIEM DESC";
 
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.getEvaluationsByPeriod()");
-            return list;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        if (conn == null) return list;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maDot);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     EvaluationDTO dto = new EvaluationDTO();
                     dto.setMaPhieu(rs.getString("MAPHIEU"));
                     dto.setMaNV(rs.getString("MANV"));
+                    dto.setMaDot(rs.getString("MADOT"));
+                    dto.setMaTieuChi(rs.getString("MATIEUCHI"));
                     dto.setHoTen(rs.getString("HOTEN"));
                     dto.setChucVu(rs.getString("CHUCVU"));
                     dto.setPhongBan(rs.getString("PHONGBAN"));
@@ -125,76 +155,21 @@ public class EvaluationDAO {
         return list;
     }
 
-    public EvaluationDTO getEvaluationById(String maPhieu) {
-        String sql = "SELECT " +
-                     "  p.MAPHIEU, p.MANV, nv.HOTEN, " +
-                     "  cv.TENVITRI AS CHUCVU, pb.TENPHONGBAN AS PHONGBAN, " +
-                     "  d.NGUOIDANHGIA, p.TONGDIEM, p.NHANXET, " +
-                     "  p.QUYETDINH, p.LOAIQUYETDINH, p.TRANGTHAI_DUYET, " +
-                     "  p.NGAYDANHGIA, tc.TENTIEUCHI " +
-                     "FROM phieudanhgia p " +
-                     "JOIN nhanvien nv            ON p.MANV        = nv.MANV " +
-                     "JOIN chucvu cv              ON nv.MACHUCVU   = cv.MACHUCVU " +
-                     "JOIN phongban pb            ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
-                     "LEFT JOIN tieuchidanhgia tc ON p.MATIEUCHI   = tc.MATIEUCHI " +
-                     "LEFT JOIN dotdanhgia d      ON p.MADOT       = d.MADOT " +
-                     "WHERE p.MAPHIEU = ?";
 
-        Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.getEvaluationById()");
-            return null;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, maPhieu);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    EvaluationDTO dto = new EvaluationDTO();
-                    dto.setMaPhieu(rs.getString("MAPHIEU"));
-                    dto.setMaNV(rs.getString("MANV"));
-                    dto.setHoTen(rs.getString("HOTEN"));
-                    dto.setChucVu(rs.getString("CHUCVU"));
-                    dto.setPhongBan(rs.getString("PHONGBAN"));
-                    dto.setNguoiDanhGia(rs.getString("NGUOIDANHGIA"));
-                    dto.setTongDiem(rs.getInt("TONGDIEM"));
-                    dto.setNhanXet(rs.getString("NHANXET"));
-                    dto.setQuyetDinh(rs.getString("QUYETDINH"));
-                    dto.setLoaiQuyetDinh(rs.getString("LOAIQUYETDINH"));
-                    dto.setTrangThaiDuyet(rs.getString("TRANGTHAI_DUYET"));
-                    dto.setNgayDanhGia(rs.getDate("NGAYDANHGIA"));
-                    dto.setTenTieuChi(rs.getString("TENTIEUCHI"));
-                    dto.setXepLoai(tinhXepLoai(dto.getTongDiem()));
-                    return dto;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    
-    
-    
+    // ═══════════════════════════════════════════════════════════
+    // 5. SUMMARY STATS
+    // ═══════════════════════════════════════════════════════════
 
     public double getAvgScore(String maDot) {
         String sql = "SELECT AVG(TONGDIEM) FROM phieudanhgia WHERE MADOT = ?";
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.getAvgScore()");
-            return 0.0;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return 0.0;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maDot);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getDouble(1);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return 0.0;
     }
 
@@ -206,64 +181,44 @@ public class EvaluationDAO {
             case "Trung bình": minDiem = 60; maxDiem = 74;  break;
             case "Kém":        minDiem = 0;  maxDiem = 59;  break;
         }
-        String sql = "SELECT COUNT(*) FROM phieudanhgia " +
-                     "WHERE MADOT = ? AND TONGDIEM BETWEEN ? AND ?";
-
+        String sql = "SELECT COUNT(*) FROM phieudanhgia WHERE MADOT = ? AND TONGDIEM BETWEEN ? AND ?";
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.countByXepLoai()");
-            return 0;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return 0;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maDot);
             ps.setInt(2, minDiem);
             ps.setInt(3, maxDiem);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return 0;
     }
 
     public int countChoDuyet(String maDot) {
-        String sql = "SELECT COUNT(*) FROM phieudanhgia " +
-                     "WHERE MADOT = ? AND TRANGTHAI_DUYET = 'Chờ duyệt'";
-
+        String sql = "SELECT COUNT(*) FROM phieudanhgia WHERE MADOT = ? AND TRANGTHAI_DUYET = 'Chờ duyệt'";
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.countChoDuyet()");
-            return 0;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return 0;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maDot);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return 0;
     }
 
-    
-    
-    
+
+    // ═══════════════════════════════════════════════════════════
+    // 6. TẠO ĐỢT ĐÁNH GIÁ MỚI (bảng dotdanhgia)
+    // ═══════════════════════════════════════════════════════════
 
     public boolean insertPeriod(EvaluationPeriodDTO dto) {
         String sql = "INSERT INTO dotdanhgia (MADOT, TENDOT, KYKY, NAM, NGUOIDANHGIA, TRANGTHAI) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.insertPeriod()");
-            return false;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return false;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dto.getMaDot());
             ps.setString(2, dto.getTenDot());
             ps.setString(3, dto.getKyKy());
@@ -280,11 +235,9 @@ public class EvaluationDAO {
     public String generateMaDot(String kyKy, int nam) {
         String base = kyKy + "-" + nam;
         String sql = "SELECT COUNT(*) FROM dotdanhgia WHERE MADOT = ?";
-
         Connection conn = JDBCConection.getConnection();
         if (conn == null) return base;
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, base);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next() && rs.getInt(1) == 0) return base;
@@ -296,29 +249,23 @@ public class EvaluationDAO {
                     if (rs.next() && rs.getInt(1) == 0) return candidate;
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return base + "_" + System.currentTimeMillis();
     }
 
-    
-    
-    
+
+    // ═══════════════════════════════════════════════════════════
+    // 7. THÊM / SỬA / XÓA PHIẾU ĐÁNH GIÁ (bảng phieudanhgia)
+    // ═══════════════════════════════════════════════════════════
 
     public boolean insertEvaluation(EvaluationDTO dto) {
         String sql = "INSERT INTO phieudanhgia " +
                      "(MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, " +
                      " NHANXET, QUYETDINH, LOAIQUYETDINH, TRANGTHAI_DUYET, NGAYDANHGIA) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.insertEvaluation()");
-            return false;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return false;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dto.getMaPhieu());
             ps.setString(2, dto.getMaNV());
             ps.setString(3, dto.getMaDot());
@@ -343,14 +290,9 @@ public class EvaluationDAO {
                      "  QUYETDINH = ?, LOAIQUYETDINH = ?, " +
                      "  TRANGTHAI_DUYET = ?, NGAYDANHGIA = ? " +
                      "WHERE MAPHIEU = ?";
-
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.updateEvaluation()");
-            return false;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return false;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dto.getMaTieuChi());
             ps.setInt   (2, dto.getTongDiem());
             ps.setString(3, dto.getNhanXet());
@@ -369,14 +311,9 @@ public class EvaluationDAO {
 
     public boolean approveEvaluation(String maPhieu) {
         String sql = "UPDATE phieudanhgia SET TRANGTHAI_DUYET = 'Đã duyệt' WHERE MAPHIEU = ?";
-
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.approveEvaluation()");
-            return false;
-        }
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (conn == null) return false;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maPhieu);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -387,20 +324,15 @@ public class EvaluationDAO {
 
     public boolean deleteEvaluation(String maPhieu) {
         String checkSql = "SELECT TRANGTHAI_DUYET FROM phieudanhgia WHERE MAPHIEU = ?";
-        String delSql   = "DELETE FROM phieudanhgia WHERE MAPHIEU = ? AND TRANGTHAI_DUYET != 'Đã duyệt'";
-
+        String delSql   = "DELETE FROM phieudanhgia WHERE MAPHIEU = ?";
         Connection conn = JDBCConection.getConnection();
-        if (conn == null) {
-            System.err.println("Lỗi: Không thể kết nối database trong EvaluationDAO.deleteEvaluation()");
-            return false;
-        }
+        if (conn == null) return false;
         try (conn) {
             try (PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
                 checkPs.setString(1, maPhieu);
                 try (ResultSet rs = checkPs.executeQuery()) {
                     if (rs.next() && "Đã duyệt".equals(rs.getString("TRANGTHAI_DUYET"))) {
-                        System.err.println("Không thể xóa phiếu đã duyệt: " + maPhieu);
-                        return false;
+                        return false; // Không cho xóa phiếu đã duyệt
                     }
                 }
             }
@@ -414,24 +346,22 @@ public class EvaluationDAO {
         }
     }
 
-    
-    
-    
+
+    // ═══════════════════════════════════════════════════════════
+    // 8. UTILITY
+    // ═══════════════════════════════════════════════════════════
 
     public boolean existsEvaluation(String maNV, String maDot) {
         String sql = "SELECT COUNT(*) FROM phieudanhgia WHERE MANV = ? AND MADOT = ?";
         Connection conn = JDBCConection.getConnection();
         if (conn == null) return false;
-        try (conn;
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maNV);
             ps.setString(2, maDot);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return false;
     }
 
@@ -453,10 +383,6 @@ public class EvaluationDAO {
         return "DG001";
     }
 
-    /**
-     * Quy tắc xếp loại đồng bộ với badge màu trong EvaluationTable:
-     *   >= 90 → Xuất sắc | >= 75 → Tốt | >= 60 → Trung bình | < 60 → Kém
-     */
     public static String tinhXepLoai(int diem) {
         if (diem >= 90) return "Xuất sắc";
         if (diem >= 75) return "Tốt";
