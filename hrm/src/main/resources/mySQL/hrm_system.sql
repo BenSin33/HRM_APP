@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th3 05, 2026 lúc 02:54 AM
+-- Thời gian đã tạo: Th3 10, 2026 lúc 10:38 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -38,22 +38,23 @@ CREATE TABLE `bangluong` (
   `TONG_KHAUTRU` decimal(18,2) DEFAULT 0.00,
   `NGAYCHOTLUONG` date DEFAULT NULL,
   `THUCLINH` decimal(18,2) DEFAULT NULL,
-  `TRANGTHAI` tinyint(1) DEFAULT 0 COMMENT '0: Chưa khóa (Draft), 1: Đã khóa (Locked)'
+  `TRANGTHAI` tinyint(1) DEFAULT 0 COMMENT '0: Chưa khóa (Draft), 1: Đã khóa (Locked)',
+  `TINH_TRANG_TT` varchar(50) DEFAULT 'Chưa thanh toán'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `bangluong`
 --
 
-INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`) VALUES
-('ML01', 'NV07', 1, 2026, 8000000.00, 26, 0.00, 0.00, NULL, 8500000.00, 0),
-('ML08', 'NV01', 2, 2026, 25000000.00, 22, 2000000.00, 1500000.00, '2026-02-28', 25500000.00, 0),
-('ML09', 'NV02', 2, 2026, 15000000.00, 23, 1000000.00, 800000.00, '2026-02-28', 15200000.00, 0),
-('ML10', 'NV04', 2, 2026, 20000000.00, 24, 1500000.00, 1000000.00, NULL, 20500000.00, 0),
-('ML11', 'NV05', 2, 2026, 18000000.00, 22, 1200000.00, 900000.00, NULL, 18300000.00, 0),
-('ML12', 'NV07', 2, 2026, 8000000.00, 24, 500000.00, 300000.00, NULL, 8200000.00, 0),
-('ML13', 'NV08', 2, 2026, 9000000.00, 24, 500000.00, 300000.00, NULL, 9200000.00, 0),
-('ML14', 'NV09', 2, 2026, 8500000.00, 20, 500000.00, 300000.00, NULL, 8700000.00, 0);
+INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`, `TINH_TRANG_TT`) VALUES
+('ML01', 'NV07', 1, 2026, 8000000.00, 26, 0.00, 0.00, NULL, 8500000.00, 0, 'Chưa thanh toán'),
+('ML08', 'NV01', 2, 2026, 25000000.00, 22, 2000000.00, 1500000.00, '2026-02-28', 25500000.00, 0, 'Chưa thanh toán'),
+('ML09', 'NV02', 2, 2026, 15000000.00, 23, 1000000.00, 800000.00, '2026-02-28', 15200000.00, 0, 'Chưa thanh toán'),
+('ML10', 'NV04', 2, 2026, 20000000.00, 24, 1500000.00, 1000000.00, NULL, 20500000.00, 0, 'Chưa thanh toán'),
+('ML11', 'NV05', 2, 2026, 18000000.00, 22, 1200000.00, 900000.00, NULL, 18300000.00, 0, 'Chưa thanh toán'),
+('ML12', 'NV07', 2, 2026, 8000000.00, 24, 500000.00, 300000.00, NULL, 8200000.00, 0, 'Chưa thanh toán'),
+('ML13', 'NV08', 2, 2026, 9000000.00, 24, 500000.00, 300000.00, NULL, 9200000.00, 0, 'Chưa thanh toán'),
+('ML14', 'NV09', 2, 2026, 8500000.00, 20, 500000.00, 300000.00, NULL, 8700000.00, 0, 'Chưa thanh toán');
 
 -- --------------------------------------------------------
 
@@ -207,6 +208,32 @@ INSERT INTO `danhmuc_phucap` (`MAPHUCAP`, `TENPHUCAP`, `SOTIEN_MACDINH`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `dotdanhgia`
+--
+
+CREATE TABLE `dotdanhgia` (
+  `MADOT` varchar(10) NOT NULL,
+  `TENDOT` varchar(100) DEFAULT NULL,
+  `KYKY` varchar(10) DEFAULT NULL,
+  `NAM` int(11) DEFAULT NULL,
+  `NGUOIDANHGIA` varchar(100) DEFAULT NULL,
+  `TRANGTHAI` varchar(50) DEFAULT 'Đang mở'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `dotdanhgia`
+--
+
+INSERT INTO `dotdanhgia` (`MADOT`, `TENDOT`, `KYKY`, `NAM`, `NGUOIDANHGIA`, `TRANGTHAI`) VALUES
+('Q1-2024', 'Đánh giá Quý 1 năm 2024', 'Q1', 2024, 'Trần Thị B', 'Đã đóng'),
+('Q1-2026', 'Đánh giá Quý 1 năm 2026', 'Q1', 2026, 'Trần Thị B', 'Đang mở'),
+('Q2-2024', 'Đánh giá Quý 2 năm 2024', 'Q2', 2024, 'Trần Thị B', 'Đã đóng'),
+('Q3-2024', 'Đánh giá Quý 3 năm 2024', 'Q3', 2024, 'Trần Thị B', 'Đã đóng'),
+('Q4-2024', 'Đánh giá Quý 4 năm 2024', 'Q4', 2024, 'Trần Thị B', 'Đã đóng');
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `hopdong`
 --
 
@@ -355,16 +382,22 @@ CREATE TABLE `phieudanhgia` (
   `TONGDIEM` int(11) DEFAULT NULL,
   `NHANXET` varchar(255) DEFAULT NULL,
   `QUYETDINH` varchar(100) DEFAULT NULL,
-  `NGAYDANHGIA` date DEFAULT NULL
+  `NGAYDANHGIA` date DEFAULT NULL,
+  `TRANGTHAI_DUYET` varchar(50) DEFAULT 'Chờ duyệt',
+  `LOAIQUYETDINH` varchar(50) DEFAULT 'Không có'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `phieudanhgia`
 --
 
-INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`, `NHANXET`, `QUYETDINH`, `NGAYDANHGIA`) VALUES
-('DG01', 'NV07', 'Q1-2026', 'TC01', 9, 'Nhiệt tình, hoàn thành tốt', 'Giữ nguyên', '2026-01-31'),
-('DG02', 'NV04', 'Q1-2026', 'TC03', 10, 'Lãnh đạo xuất sắc', 'Khen thưởng', '2026-01-31');
+INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`, `NHANXET`, `QUYETDINH`, `NGAYDANHGIA`, `TRANGTHAI_DUYET`, `LOAIQUYETDINH`) VALUES
+('DG01', 'NV07', 'Q1-2026', 'TC01', 90, 'Nhiệt tình, hoàn thành tốt', 'Giữ nguyên', '2026-01-31', 'Đã duyệt', 'Thưởng'),
+('DG02', 'NV04', 'Q1-2026', 'TC03', 100, 'Lãnh đạo xuất sắc', 'Khen thưởng', '2026-01-31', 'Chờ duyệt', 'Tăng lương'),
+('DG03', 'NV01', 'Q4-2024', 'TC01', 95, 'Xuất sắc', 'Tăng lương 10%', '2024-12-31', 'Chờ duyệt', 'Tăng lương'),
+('DG04', 'NV02', 'Q4-2024', 'TC02', 88, 'Phối hợp tốt', 'Thưởng quý', '2024-12-31', 'Đã duyệt', 'Thưởng'),
+('DG06', 'NV07', 'Q4-2024', 'TC01', 75, 'Đạt yêu cầu', 'Giữ nguyên', '2024-12-31', 'Chờ duyệt', 'Không có'),
+('DG07', 'NV08', 'Q4-2024', 'TC02', 45, 'Không đạt KPI', 'Trừ lương tháng', '2024-12-31', 'Chờ duyệt', 'Trừ lương');
 
 -- --------------------------------------------------------
 
@@ -524,6 +557,12 @@ ALTER TABLE `danhmuc_khautru`
 --
 ALTER TABLE `danhmuc_phucap`
   ADD PRIMARY KEY (`MAPHUCAP`);
+
+--
+-- Chỉ mục cho bảng `dotdanhgia`
+--
+ALTER TABLE `dotdanhgia`
+  ADD PRIMARY KEY (`MADOT`);
 
 --
 -- Chỉ mục cho bảng `hopdong`
@@ -692,10 +731,6 @@ ALTER TABLE `phieudanhgia`
 ALTER TABLE `taikhoan`
   ADD CONSTRAINT `fk_tk_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`) ON DELETE CASCADE;
 COMMIT;
-
-ALTER TABLE `bangluong`
-  ADD COLUMN `TINH_TRANG_TT` VARCHAR(50) DEFAULT 'Chưa thanh toán' 
-AFTER `TRANGTHAI`;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
