@@ -354,8 +354,19 @@ CREATE TABLE `phieudanhgia` (
   `MATIEUCHI` varchar(10) DEFAULT NULL,
   `TONGDIEM` int(11) DEFAULT NULL,
   `NHANXET` varchar(255) DEFAULT NULL,
-  `QUYETDINH` varchar(100) DEFAULT NULL,
+  `QUYETDINH` varchar(255) DEFAULT NULL,
   `NGAYDANHGIA` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Chi tiết điểm theo từng tiêu chí (1 phiếu -> nhiều tiêu chí)
+CREATE TABLE `chitietdanhgia` (
+  `MACHITIET` varchar(10) NOT NULL,
+  `MAPHIEU` varchar(10) NOT NULL,
+  `MATIEUCHI` varchar(10) NOT NULL,
+  `DIEM` int(11) NOT NULL,
+  PRIMARY KEY (`MACHITIET`),
+  KEY `idx_ctdg_phieu` (`MAPHIEU`),
+  KEY `idx_ctdg_tc` (`MATIEUCHI`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -448,7 +459,14 @@ CREATE TABLE `tieuchidanhgia` (
 INSERT INTO `tieuchidanhgia` (`MATIEUCHI`, `TENTIEUCHI`, `DIEM`) VALUES
 ('TC01', 'Năng suất làm việc', 10),
 ('TC02', 'Thái độ phối hợp', 10),
-('TC03', 'Kỹ năng chuyên môn', 10);
+('TC03', 'Kỹ năng chuyên môn', 10),
+('TC04', 'Kỹ năng giao tiếp', 10),
+('TC05', 'Tinh thần trách nhiệm', 10),
+('TC06', 'Khả năng làm việc nhóm', 10),
+('TC07', 'Tính sáng tạo và đổi mới', 10),
+('TC08', 'Khả năng giải quyết vấn đề', 10),
+('TC09', 'Quản lý thời gian', 10),
+('TC10', 'Thái độ và văn hóa công ty', 10);
 
 -- --------------------------------------------------------
 

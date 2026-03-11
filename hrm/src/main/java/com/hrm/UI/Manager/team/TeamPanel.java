@@ -2,6 +2,7 @@ package com.hrm.UI.Manager.team;
 
 import com.hrm.UI.Manager.color.ColorScheme;
 import com.hrm.Service.NhanVienService;  // ← IMPORT SERVICE
+import com.hrm.UI.Manager.evaluation.TieuChiDanhGiaDialog;
 import javax.swing.*;
 import java.awt.*;
 
@@ -24,6 +25,7 @@ public class TeamPanel extends JPanel {
         header = new TeamHeader();
         stats = new TeamStats();
         table = new TeamTable();
+        table.setEmployeeClickListener((maNV, hoTen) -> openScoringDialog(maNV, hoTen));
         footer = new TeamFooter();
 
         // Header
@@ -41,18 +43,13 @@ public class TeamPanel extends JPanel {
         add(contentArea, BorderLayout.CENTER);
 
         // Setup actions
-        setupActions();
+       
         
         // ← TỰ ĐỘNG LOAD DATA
         loadData();
     }
 
-    private void setupActions() {
-        header.setAddButtonListener(e -> {
-            // Xử lý thêm nhân viên
-            JOptionPane.showMessageDialog(this, "Chức năng thêm nhân viên");
-        });
-    }
+   
 
     // ← METHOD MỚI: TỰ GỌI SERVICE
     private void loadData() {
@@ -73,5 +70,12 @@ public class TeamPanel extends JPanel {
 
     public String getSelectedEmployeeId() {
         return table.getSelectedEmployeeId();
+    }
+
+    private void openScoringDialog(String maNV, String hoTen) {
+        String maDot = TieuChiDanhGiaDialog.defaultMaDotNow();
+        Window w = SwingUtilities.getWindowAncestor(this);
+        TieuChiDanhGiaDialog dialog = new TieuChiDanhGiaDialog(w, maNV, hoTen, maDot, null);
+        dialog.setVisible(true);
     }
 }

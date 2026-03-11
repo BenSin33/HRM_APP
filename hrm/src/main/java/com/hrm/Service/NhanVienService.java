@@ -1,6 +1,7 @@
 package com.hrm.Service;
 import com.hrm.DTO.Manager.NhanVienDTO;
 import com.hrm.DTO.Manager.ScheduleDTO;
+import com.hrm.DAO.PhieuDanhGiaDAO;
 import com.hrm.DAO.NhanVienDAO;
 import com.hrm.DAO.ScheduleDAO;
 
@@ -12,6 +13,7 @@ import java.util.HashMap;
 public class NhanVienService {
     private NhanVienDAO dao = new NhanVienDAO();
     private ScheduleDAO scheduleDAO = new ScheduleDAO();
+    private PhieuDanhGiaDAO phieuDanhGiaDAO = new PhieuDanhGiaDAO();
 
     // ==================== DASHBOARD ====================
 
@@ -199,6 +201,7 @@ public class NhanVienService {
         List<NhanVienDTO> list = dao.getAll();
         if (list == null || list.isEmpty()) return new Object[0][5];
 
+        String maDot = defaultMaDotNow();
         Object[][] data = new Object[list.size()][5];
         for (int i = 0; i < list.size(); i++) {
             NhanVienDTO nv = list.get(i);
@@ -206,12 +209,19 @@ public class NhanVienService {
             data[i][1] = nv.getManv();
             data[i][2] = nv.getMachucvu();
             data[i][3] = nv.getMaphongban();
-            data[i][4] = "Chưa đánh giá"; // thực tế lấy từ bảng danhgia
+            boolean daDanhGia = phieuDanhGiaDAO.hasEvaluation(nv.getManv(), maDot);
+            data[i][4] = daDanhGia ? "Đã hoàn thành" : "Chưa đánh giá";
         }
         return data;
     }
 
     public int countDaHoanThanhDanhGia() {
         return 0; // thực tế query từ bảng danhgia
+    }
+
+    private String defaultMaDotNow() {
+        LocalDate now = LocalDate.now();
+        int q = ((now.getMonthValue() - 1) / 3) + 1;
+        return "Q" + q + "-" + now.getYear();
     }
 }

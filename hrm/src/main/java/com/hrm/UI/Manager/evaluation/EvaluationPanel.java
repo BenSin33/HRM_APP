@@ -1,60 +1,131 @@
 package com.hrm.UI.Manager.evaluation;
 
 import com.hrm.UI.Manager.color.ColorScheme;
-import com.hrm.Service.NhanVienService;  // ← IMPORT SERVICE
+import com.hrm.Service.NhanVienService;
+import com.hrm.DTO.Manager.TieuChiDanhGiaDTO;
+import com.hrm.DAO.TieuChiDanhGiaDAO;
+import com.hrm.DAO.PhieuDanhGiaDAO;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
+import java.util.Map;
 
 public class EvaluationPanel extends JPanel {
-    // ← THÊM SERVICE
     private NhanVienService nhanVienService;
+    private TieuChiDanhGiaDAO tieuChiDAO;
+    private PhieuDanhGiaDAO phieuDAO;
+    
+    private CardLayout cardLayout;
+    private JPanel cardPanel;
     
     private EvaluationHeader header;
     private EvaluationStats stats;
-    private EvaluationList list;
+    private EvaluationList listPanel;           // Panel danh sách
+    private EvaluationDetailPanel detailPanel;   // Panel chi tiết mới
+    
+    private String currentMaNV;
+    private String currentHoTen;
+    private String currentMaDot;
 
     public EvaluationPanel() {
         setLayout(new BorderLayout());
         setBackground(ColorScheme.MAIN_BG);
 
-        // ← KHỞI TẠO SERVICE
+        // Khởi tạo Service và DAO
         nhanVienService = new NhanVienService();
+        tieuChiDAO = new TieuChiDanhGiaDAO();
+        phieuDAO = new PhieuDanhGiaDAO();
+        
+        currentMaDot = TieuChiDanhGiaDialog.defaultMaDotNow();
 
+        // Header (luôn hiển thị)
         header = new EvaluationHeader();
-        stats = new EvaluationStats();
-        list = new EvaluationList();
-
         add(header, BorderLayout.NORTH);
 
+        // Content Area với CardLayout
         JPanel contentArea = new JPanel(new BorderLayout(0, 20));
         contentArea.setBackground(ColorScheme.MAIN_BG);
         contentArea.setBorder(BorderFactory.createEmptyBorder(20, 30, 30, 30));
 
+        // Stats (luôn hiển thị phía trên)
+        stats = new EvaluationStats();
         contentArea.add(stats, BorderLayout.NORTH);
-        contentArea.add(list, BorderLayout.CENTER);
 
+        // CardLayout cho 2 panel
+        cardLayout = new CardLayout();
+        cardPanel = new JPanel(cardLayout);
+        cardPanel.setOpaque(false);
+        
+        // Panel danh sách
+        listPanel = new EvaluationList();
+        listPanel.setEmployeeClickListener(this::showDetailPanel);
+        
+        // Panel chi tiết (sẽ tạo sau)
+        detailPanel = new EvaluationDetailPanel(this::backToList, this::saveEvaluation);
+        
+        cardPanel.add(listPanel, "LIST");
+        cardPanel.add(detailPanel, "DETAIL");
+        
+        contentArea.add(cardPanel, BorderLayout.CENTER);
         add(contentArea, BorderLayout.CENTER);
         
-        // ← TỰ ĐỘNG LOAD DATA
+        // Load dữ liệu ban đầu
         loadData();
     }
 
-    // ← METHOD MỚI: TỰ GỌI SERVICE
     private void loadData() {
-        String quarter = "Q4 2024";
         Object[][] data = nhanVienService.getTableDataForEvaluation();
         
-        list.setQuarter(quarter);
-        list.setData(data);
+        listPanel.setQuarter(currentMaDot);
+        listPanel.setData(data);
 
         int tongNV = data.length;
-        int daHoan = list.getDaHoanThanhCount();
-        int chuaDG = list.getChuaDanhGiaCount();
+        int daHoan = listPanel.getDaHoanThanhCount();
+        int chuaDG = listPanel.getChuaDanhGiaCount();
 
         stats.updateStats(tongNV, daHoan, chuaDG);
     }
-    
-    // ← GIỮ LẠI METHOD NÀY ĐỂ REFRESH
+
+    private void showDetailPanel(String maNV, String hoTen) {
+        this.currentMaNV = maNV;
+        this.currentHoTen = hoTen;
+        
+        // Lấy danh sách tiêu chí
+        List<TieuChiDanhGiaDTO> criteria = tieuChiDAO.getAll();
+        
+        // Kiểm tra đã có đánh giá chưa
+        boolean isLocked = phieuDAO.hasEvaluation(maNV, currentMaDot);
+        Map<String, Integer> savedScores = null;
+        String nhanXet = "";
+        
+        if (isLocked) {
+            savedScores = phieuDAO.getScoresByCriteria(maNV, currentMaDot);
+            nhanXet = phieuDAO.getNhanXet(maNV, currentMaDot);
+        }
+        
+        // Cập nhật panel chi tiết
+        detailPanel.setData(maNV, hoTen, currentMaDot, criteria, savedScores, nhanXet, isLocked);
+        
+        // Chuyển sang panel chi tiết
+        cardLayout.show(cardPanel, "DETAIL");
+    }
+
+    private void backToList() {
+        cardLayout.show(cardPanel, "LIST");
+        loadData(); // Refresh dữ liệu
+    }
+
+    private void saveEvaluation(Map<String, Integer> scores, String nhanXet) {
+        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet);
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Lưu điểm thành công!");
+            backToList();
+        } else {
+            JOptionPane.showMessageDialog(this, "Lưu điểm thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     public void refresh() {
         loadData();
     }

@@ -6,6 +6,11 @@ import java.awt.*;
 public class TeamTable extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
+    private EmployeeClickListener employeeClickListener;
+
+    public interface EmployeeClickListener {
+        void onEmployeeClicked(String maNV, String hoTen);
+    }
 
     public TeamTable() {
         setLayout(new BorderLayout());
@@ -29,6 +34,19 @@ public class TeamTable extends JPanel {
         table.setBackground(Color.WHITE);
         table.setSelectionBackground(new Color(245, 245, 255));
         table.setFocusable(false);
+
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (employeeClickListener == null) return;
+                if (e.getClickCount() < 2) return; // double-click
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                String maNV = tableModel.getValueAt(row, 0).toString();
+                String hoTen = tableModel.getValueAt(row, 1).toString();
+                employeeClickListener.onEmployeeClicked(maNV, hoTen);
+            }
+        });
 
         // Table Header
         JTableHeader tableHeader = table.getTableHeader();
@@ -85,6 +103,10 @@ public class TeamTable extends JPanel {
             return tableModel.getValueAt(row, 0).toString();
         }
         return null;
+    }
+
+    public void setEmployeeClickListener(EmployeeClickListener listener) {
+        this.employeeClickListener = listener;
     }
 
     // Renderer classes

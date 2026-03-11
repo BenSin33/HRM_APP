@@ -1,5 +1,4 @@
 package com.hrm.UI.Manager.evaluation;
-import com.hrm.UI.Manager.color.ColorScheme;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -9,6 +8,11 @@ public class EvaluationList extends JPanel {
     private JPanel listPanel;
     private JLabel lblQuarter;
     private List<EvaluationRow> rows;
+    private EmployeeClickListener employeeClickListener;
+
+    public interface EmployeeClickListener {
+        void onEmployeeClicked(String maNV, String hoTen);
+    }
 
     public EvaluationList() {
         rows = new ArrayList<>();
@@ -54,7 +58,13 @@ public class EvaluationList extends JPanel {
         rows.clear();
 
         for (Object[] row : data) {
-            EvaluationRow evalRow = new EvaluationRow(row);
+            final String hoTen = row[0] != null ? row[0].toString() : "";
+            final String maNV = row[1] != null ? row[1].toString() : "";
+            EvaluationRow evalRow = new EvaluationRow(row, () -> {
+                if (employeeClickListener != null) {
+                    employeeClickListener.onEmployeeClicked(maNV, hoTen);
+                }
+            });
             rows.add(evalRow);
             listPanel.add(evalRow);
             listPanel.add(createDivider());
@@ -89,5 +99,9 @@ public class EvaluationList extends JPanel {
             }
         }
         return count;
+    }
+
+    public void setEmployeeClickListener(EmployeeClickListener listener) {
+        this.employeeClickListener = listener;
     }
 }

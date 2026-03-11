@@ -3,7 +3,6 @@ package com.hrm.UI.HR.SalaryTab;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.time.YearMonth;
 
 public class SalaryHeader extends JPanel {
     private JButton btnCalculate;

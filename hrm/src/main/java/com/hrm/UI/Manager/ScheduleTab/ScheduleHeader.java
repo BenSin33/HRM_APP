@@ -1,5 +1,4 @@
 package com.hrm.UI.Manager.ScheduleTab;
-import com.hrm.UI.Manager.color.ColorScheme;
 import javax.swing.*;
 import java.awt.*;
 
@@ -34,15 +33,7 @@ public class ScheduleHeader extends JPanel {
         leftPanel.add(icon, BorderLayout.WEST);
         leftPanel.add(titlePanel, BorderLayout.CENTER);
 
-       JButton btnEdit = new JButton("  📅  Chỉnh sửa lịch");
-        btnEdit.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnEdit.setBackground(new Color(99, 102, 241));
-        btnEdit.setForeground(Color.WHITE);
-        btnEdit.setFocusPainted(false);
-        btnEdit.setBorderPainted(false);
-        btnEdit.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnEdit.setPreferredSize(new Dimension(180, 45));
+       
         add(leftPanel, BorderLayout.WEST);
-        add(btnEdit, BorderLayout.EAST);
     }
 }

@@ -8,13 +8,15 @@ public class EvaluationRow extends JPanel {
     private String chucVu;
     private String team;
     private String trangThai;
+    private Runnable onClick;
 
-    public EvaluationRow(Object[] row) {
+    public EvaluationRow(Object[] row, Runnable onClick) {
         this.ten = row[0].toString();
         this.maNV = row[1].toString();
         this.chucVu = row[2].toString();
         this.team = row[3].toString();
         this.trangThai = row[4].toString();
+        this.onClick = onClick;
 
         initComponent();
     }
@@ -94,6 +96,10 @@ public class EvaluationRow extends JPanel {
                 avatarWrapper.setBackground(Color.WHITE);
                 rightPanel.setBackground(Color.WHITE);
             }
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (onClick != null) onClick.run();
+            }
         });
     }
 
@@ -113,5 +119,13 @@ public class EvaluationRow extends JPanel {
 
     public String getTrangThai() {
         return trangThai;
+    }
+
+    public String getMaNV() {
+        return maNV;
+    }
+
+    public String getTen() {
+        return ten;
     }
 }
