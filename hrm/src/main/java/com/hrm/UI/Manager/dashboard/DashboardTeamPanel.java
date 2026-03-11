@@ -1,6 +1,6 @@
 package com.hrm.UI.Manager.dashboard;
 
-import com.hrm.UI.Manager.color.ColorScheme;
+
 import javax.swing.*;
 import java.awt.*;
 

@@ -1,5 +1,4 @@
 package com.hrm.UI.Manager.ScheduleTab;
-import com.hrm.UI.Manager.color.ColorScheme;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;

@@ -16,7 +16,6 @@ import com.hrm.UI.HR.EmployeeTab.EmployeeManagementPanel;
 import com.hrm.UI.HR.Evaluationtab.EvaluationManagement;
 import com.hrm.UI.HR.Leavetab.LeaveManagement;
 import com.hrm.UI.HR.Overview.DashboardOverview;
-import com.hrm.UI.component.*;
 import com.hrm.UI.HR.CategoryTab.*;
 import com.hrm.UI.HR.PermissionTab.MainPermissionPanel;
 import com.hrm.UI.HR.SalaryTab.SalaryManagement;

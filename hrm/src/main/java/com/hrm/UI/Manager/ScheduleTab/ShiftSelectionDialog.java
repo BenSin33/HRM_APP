@@ -1,13 +1,11 @@
 package com.hrm.UI.Manager.ScheduleTab;
 
 import com.hrm.DTO.Manager.ScheduleDTO;
-import com.hrm.UI.Manager.color.ColorScheme;
 
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ShiftSelectionDialog extends JDialog {
