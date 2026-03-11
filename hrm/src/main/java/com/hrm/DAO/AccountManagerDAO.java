@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.hrm.DTO.AccountManagerDTO;
 import com.hrm.utils.JDBCConection;
+import com.hrm.utils.PasswordUtil;
 
 public class AccountManagerDAO {
     
@@ -127,7 +128,7 @@ public class AccountManagerDAO {
             
             ps.setString(1, account.maNV);
             ps.setString(2, account.roleId);
-            ps.setString(3, "123"); // Mật khẩu mặc định
+            ps.setString(3, PasswordUtil.hashPassword("123")); // Mật khẩu mặc định
             ps.setInt(4, account.status);
             
             return ps.executeUpdate() > 0;
@@ -177,7 +178,7 @@ public class AccountManagerDAO {
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setString(1, newPassword);
+            ps.setString(1, PasswordUtil.hashPassword(newPassword));
             ps.setString(2, maNV);
             
             return ps.executeUpdate() > 0;
@@ -193,7 +194,7 @@ public class AccountManagerDAO {
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, newPassword);
+            ps.setString(1, PasswordUtil.hashPassword(newPassword));
             ps.setString(2, manv);
 
             return ps.executeUpdate() > 0;
@@ -201,6 +202,55 @@ public class AccountManagerDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // Tự động tạo tài khoản cho nhân viên chưa có tài khoản
+    public List<String> createAccountsForEmployeesWithoutAccount() {
+        List<String> createdEmployees = new ArrayList<>();
+        String selectSql = "SELECT nv.MANV, nv.HOTEN " +
+                           "FROM nhanvien nv " +
+                           "LEFT JOIN taikhoan tk ON nv.MANV = tk.MANV " +
+                           "WHERE tk.MANV IS NULL " +
+                           "ORDER BY nv.HOTEN ASC";
+        String insertSql = "INSERT INTO taikhoan (MANV, ROLEID, PASSWORD, STATUS) VALUES (?, ?, ?, ?)";
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement selectPs = conn.prepareStatement(selectSql);
+                 ResultSet rs = selectPs.executeQuery();
+                 PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+
+                while (rs.next()) {
+                    String maNV = rs.getString("MANV");
+                    String hoTen = rs.getString("HOTEN");
+
+                    insertPs.setString(1, maNV);
+                    insertPs.setString(2, "R3"); // Mặc định Employee
+                    insertPs.setString(3, PasswordUtil.hashPassword("123"));
+                    insertPs.setInt(4, 1);
+                    insertPs.addBatch();
+
+                    createdEmployees.add(maNV + " - " + hoTen);
+                }
+
+                if (!createdEmployees.isEmpty()) {
+                    insertPs.executeBatch();
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            createdEmployees.clear();
+        }
+
+        return createdEmployees;
     }
 
     // Kích hoạt/Vô hiệu hóa tài khoản

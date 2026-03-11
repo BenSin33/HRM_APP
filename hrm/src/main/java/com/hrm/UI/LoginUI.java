@@ -113,11 +113,14 @@ public class LoginUI extends JFrame{
         UserDTO userInfo = authService.authenticateByMaNV(manv, pass);
 
         if(userInfo != null){
+            // Nếu mật khẩu hiện còn dạng plain-text thì mã hoá ngay sau đăng nhập thành công
+            authService.upgradePasswordIfLegacy(manv, pass);
+
             if(authService.isAdmin(userInfo)){
                 new HRDashboard();
                 JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + userInfo.getManv());
             } else if(authService.isManager(userInfo)){
-                ManagerDashboard dashboard = new ManagerDashboard();      // Tạo giao diện   
+                new ManagerDashboard();      // Tạo giao diện   
                 JOptionPane.showMessageDialog(this, "Xin chào quản lý: " + userInfo.getManv());
             } else if(authService.isEmployee(userInfo)){
                 new EDashboard(userInfo.getManv());

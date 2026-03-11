@@ -21,10 +21,10 @@ public class CategoryPanel extends JPanel {
         tabbedPane.putClientProperty(FlatClientProperties.STYLE, "arrowType: chevron");
 
         // Thêm các tab cho các danh mục khác nhau
-        //tabbedPane.addTab("Phòng ban", new DepartmentTab());
+        tabbedPane.addTab("Phòng ban", new DepartmentTab());
         tabbedPane.addTab("Chức vụ", new PositionTab());
-        tabbedPane.addTab("Loại hợp đồng", new ContractTypeTab());
-        tabbedPane.addTab("Loại nghỉ phép", new LeaveTypeTab());
+        tabbedPane.addTab("Trình độ", new TrinhDoTab());
+        tabbedPane.addTab("Tiêu chí đánh giá", new EvaluationCriteriaTab());
         tabbedPane.addTab("Phụ cấp", new AllowanceTab());
         tabbedPane.addTab("Khấu trừ", new DeductionTab());
 

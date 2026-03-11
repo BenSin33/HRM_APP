@@ -1,8 +1,8 @@
 package com.hrm.UI.HR.CategoryTab;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.hrm.DAO.PositionDAO;
-import com.hrm.DTO.PositionDTO;
+import com.hrm.DAO.DepartmentCategoryDAO;
+import com.hrm.DTO.DepartmentCategoryDTO;
 import com.hrm.UI.component.CRUDDialog;
 
 import javax.swing.*;
@@ -12,21 +12,21 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Tab quản lý Chức vụ
+ * Tab quản lý phòng ban
  */
-public class PositionTab extends JPanel {
+public class DepartmentTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
-    private PositionDAO positionDAO;
+    private DepartmentCategoryDAO departmentDAO;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
 
-    public PositionTab() {
+    public DepartmentTab() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
-        positionDAO = new PositionDAO();
+        departmentDAO = new DepartmentCategoryDAO();
 
         add(createButtonPanel(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
@@ -54,7 +54,7 @@ public class PositionTab extends JPanel {
     }
 
     private JScrollPane createTablePanel() {
-        String[] columns = {"Mã chức vụ", "Tên vị trí", "Phụ cấp chức vụ", "Thao tác"};
+        String[] columns = {"Mã phòng ban", "Tên phòng ban", "Thao tác"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -66,7 +66,7 @@ public class PositionTab extends JPanel {
             @Override
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
                 Component c = super.prepareRenderer(renderer, row, column);
-                if (column == 3 && renderer instanceof CategoryActionRenderer) {
+                if (column == 2 && renderer instanceof CategoryActionRenderer) {
                     ((CategoryActionRenderer) renderer).setHovered(row == hoveredRow);
                 }
                 return c;
@@ -74,17 +74,17 @@ public class PositionTab extends JPanel {
         };
         table.setRowHeight(36);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getColumnModel().getColumn(3).setPreferredWidth(140);
+        table.getColumnModel().getColumn(2).setPreferredWidth(140);
 
         actionRenderer = new CategoryActionRenderer();
-        table.getColumnModel().getColumn(3).setCellRenderer(actionRenderer);
+        table.getColumnModel().getColumn(2).setCellRenderer(actionRenderer);
 
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = table.rowAtPoint(evt.getPoint());
                 int col = table.columnAtPoint(evt.getPoint());
-                if (row >= 0 && col == 3) {
+                if (row >= 0 && col == 2) {
                     handleTableAction(row, evt.getPoint().x);
                 }
             }
@@ -101,7 +101,7 @@ public class PositionTab extends JPanel {
             public void mouseMoved(java.awt.event.MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
                 int col = table.columnAtPoint(e.getPoint());
-                if (row != -1 && col == 3) {
+                if (row != -1 && col == 2) {
                     if (hoveredRow != row) {
                         hoveredRow = row;
                         table.repaint();
@@ -119,8 +119,8 @@ public class PositionTab extends JPanel {
     private void handleTableAction(int row, int pointX) {
         if (row < 0 || row >= tableModel.getRowCount()) return;
 
-        int rectX = table.getCellRect(row, 3, true).x;
-        int cellWidth = table.getCellRect(row, 3, true).width;
+        int rectX = table.getCellRect(row, 2, true).x;
+        int cellWidth = table.getCellRect(row, 2, true).width;
 
         if (pointX < rectX + cellWidth / 2) {
             handleEdit(row);
@@ -130,28 +130,29 @@ public class PositionTab extends JPanel {
     }
 
     private void handleAdd() {
-        PositionEditForm form = new PositionEditForm();
-        form.setMaChucVu(positionDAO.generateNextMaChucVu());
+        DepartmentEditForm form = new DepartmentEditForm();
+        form.setMaPhongBan(departmentDAO.generateNextMaPhongBan());
 
-        CRUDDialog<PositionDTO> dialog = new CRUDDialog<>(
+        CRUDDialog<DepartmentCategoryDTO> dialog = new CRUDDialog<>(
                 (JFrame) SwingUtilities.getWindowAncestor(this),
-                "Thêm chức vụ",
+                "Thêm phòng ban",
                 form,
                 null
         );
         dialog.setVisible(true);
 
-        PositionDTO result = dialog.getResult();
+        DepartmentCategoryDTO result = dialog.getResult();
         if (result != null) {
-            if (result.getMaChucVu() == null || result.getMaChucVu().trim().isEmpty()) {
-                result.setMaChucVu(positionDAO.generateNextMaChucVu());
+            if (result.getMaPhongBan() == null || result.getMaPhongBan().trim().isEmpty()) {
+                result.setMaPhongBan(departmentDAO.generateNextMaPhongBan());
             }
-            if (positionDAO.addPosition(result)) {
+
+            if (departmentDAO.addDepartment(result)) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Thêm chức vụ thành công!");
+                JOptionPane.showMessageDialog(this, "Thêm phòng ban thành công!");
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Thêm chức vụ thất bại!",
+                        "Thêm phòng ban thất bại!",
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
             }
@@ -159,27 +160,27 @@ public class PositionTab extends JPanel {
     }
 
     private void handleEdit(int row) {
-        String maChucVu = String.valueOf(tableModel.getValueAt(row, 0));
-        PositionDTO dto = positionDAO.getPositionById(maChucVu);
+        String maPhongBan = String.valueOf(tableModel.getValueAt(row, 0));
+        DepartmentCategoryDTO dto = departmentDAO.getDepartmentById(maPhongBan);
 
         if (dto != null) {
-            PositionEditForm form = new PositionEditForm();
-            CRUDDialog<PositionDTO> dialog = new CRUDDialog<>(
+            DepartmentEditForm form = new DepartmentEditForm();
+            CRUDDialog<DepartmentCategoryDTO> dialog = new CRUDDialog<>(
                     (JFrame) SwingUtilities.getWindowAncestor(this),
-                    "Chỉnh sửa chức vụ",
+                    "Chỉnh sửa phòng ban",
                     form,
                     dto
             );
             dialog.setVisible(true);
 
-            PositionDTO result = dialog.getResult();
+            DepartmentCategoryDTO result = dialog.getResult();
             if (result != null) {
-                if (positionDAO.updatePosition(result)) {
+                if (departmentDAO.updateDepartment(result)) {
                     loadData();
-                    JOptionPane.showMessageDialog(this, "Cập nhật chức vụ thành công!");
+                    JOptionPane.showMessageDialog(this, "Cập nhật phòng ban thành công!");
                 } else {
                     JOptionPane.showMessageDialog(this,
-                            "Cập nhật chức vụ thất bại!",
+                            "Cập nhật phòng ban thất bại!",
                             "Lỗi",
                             JOptionPane.ERROR_MESSAGE);
                 }
@@ -188,19 +189,19 @@ public class PositionTab extends JPanel {
     }
 
     private void handleDelete(int row) {
-        String maChucVu = String.valueOf(tableModel.getValueAt(row, 0));
+        String maPhongBan = String.valueOf(tableModel.getValueAt(row, 0));
         int option = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc chắn muốn xóa chức vụ này?",
+                "Bạn có chắc chắn muốn xóa phòng ban này?",
                 "Xác nhận",
                 JOptionPane.YES_NO_OPTION);
 
         if (option == JOptionPane.YES_OPTION) {
-            if (positionDAO.deletePosition(maChucVu)) {
+            if (departmentDAO.deleteDepartment(maPhongBan)) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Xóa chức vụ thành công!");
+                JOptionPane.showMessageDialog(this, "Xóa phòng ban thành công!");
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Xóa chức vụ thất bại! Có thể chức vụ đang được sử dụng.",
+                        "Xóa phòng ban thất bại! Có thể phòng ban đang được sử dụng.",
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
             }
@@ -209,13 +210,12 @@ public class PositionTab extends JPanel {
 
     private void loadData() {
         tableModel.setRowCount(0);
-        List<PositionDTO> positions = positionDAO.getAllPositions();
+        List<DepartmentCategoryDTO> list = departmentDAO.getAllDepartments();
 
-        for (PositionDTO position : positions) {
+        for (DepartmentCategoryDTO item : list) {
             tableModel.addRow(new Object[]{
-                    position.getMaChucVu(),
-                    position.getTenViTri(),
-                    String.format("%,.0f VND", position.getPhuCapChucVu() != null ? position.getPhuCapChucVu().doubleValue() : 0d),
+                    item.getMaPhongBan(),
+                    item.getTenPhongBan(),
                     ""
             });
         }

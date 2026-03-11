@@ -4,7 +4,6 @@ import com.hrm.DTO.DeductionDTO;
 import com.hrm.utils.JDBCConection;
 
 import java.sql.*;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 

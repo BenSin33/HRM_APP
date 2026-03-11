@@ -75,6 +75,23 @@ public class AuthenticationService {
     }
 
     /**
+     * Nếu mật khẩu tài khoản còn ở dạng plain-text thì mã hoá ngay sau khi đăng nhập thành công.
+     * @param manv Mã nhân viên
+     * @param rawPassword Mật khẩu người dùng vừa nhập
+     */
+    public void upgradePasswordIfLegacy(String manv, String rawPassword) {
+        if (manv == null || manv.trim().isEmpty() || rawPassword == null || rawPassword.isEmpty()) {
+            return;
+        }
+
+        try {
+            userDAO.upgradePasswordIfLegacy(manv, rawPassword);
+        } catch (Exception e) {
+            System.err.println("Không thể tự động mã hoá mật khẩu legacy cho MANV=" + manv + ": " + e.getMessage());
+        }
+    }
+
+    /**
      * Kiểm tra xem người dùng có phải admin (HR) hay không
      * @param user UserDTO của người dùng
      * @return true nếu là admin, false nếu không
