@@ -1,15 +1,21 @@
 package com.hrm.UI.HR.Attendancetab;
 
+import com.hrm.DAO.HR.AttenDanceDao;
+import com.hrm.DTO.HR.AttenDanceDTO.EmployeeRowDTO;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Bảng danh sách nhân viên chấm công.
- * Nhận Consumer<Object[]> onDetailClick – gọi khi user bấm "Chi tiết".
+ * AttenDanceTable – bảng danh sách nhân viên chấm công.
+ *
+ * Dữ liệu được load từ DB qua AttenDanceDao.getEmployeeRows(month, year).
+ * Gọi refreshData(month, year) khi người dùng đổi tháng/năm.
  */
 public class AttenDanceTable extends JPanel {
 
@@ -17,24 +23,16 @@ public class AttenDanceTable extends JPanel {
     private DefaultTableModel model;
     private JTextField searchField;
 
-    // Toàn bộ dữ liệu để filter
-    private final Object[][] fullData = {
-        {"Nguyễn Văn A",  "NV001", "Senior Dev",    "Kỹ thuật",   10, 5, 2},
-        {"Trần Thị B",    "NV002", "HR Manager",    "Nhân sự",    12, 4, 1},
-        {"Lê Văn C",      "NV003", "Sales Lead",    "Kinh doanh", 13, 5, 1},
-        {"Phạm Thị D",    "NV004", "Accountant",    "Tài chính",  11, 2, 0},
-        {"Hoàng Văn E",   "NV005", "Backend Dev",   "Kỹ thuật",   14, 1, 0},
-        {"Ngô Thị F",     "NV006", "Recruiter",     "Nhân sự",     9, 6, 3},
-        {"Đặng Văn G",    "NV007", "Sales Rep",     "Kinh doanh", 12, 3, 1},
-    };
+    // Lưu data đang hiển thị để filter
+    private List<EmployeeRowDTO> currentData;
 
+    private final AttenDanceDao dao          = new AttenDanceDao();
     private final Consumer<Object[]> onDetailClick;
 
     // ─── Màu ─────────────────────────────────────────────────────
     private static final Color ORANGE  = new Color(249, 115,  22);
     private static final Color BLUE    = new Color( 59, 130, 246);
     private static final Color RED     = new Color(239,  68,  68);
-    private static final Color PURPLE  = new Color(124,  58, 237);
     private static final Color GRAY500 = new Color(107, 114, 128);
     private static final Color GRAY900 = new Color( 17,  24,  39);
     private static final Color BORDER  = new Color(229, 231, 235);
@@ -49,17 +47,45 @@ public class AttenDanceTable extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(Color.WHITE);
         card.putClientProperty("FlatLaf.style",
-                "arc:16; background:#FFFFFF; borderColor:#E5E7EB; borderWidth:1; shadow:sm");
+            "arc:16; background:#FFFFFF; border:1,1,1,1,#E5E7EB; shadow:sm");
 
         card.add(buildToolbar(),    BorderLayout.NORTH);
         card.add(buildTablePanel(), BorderLayout.CENTER);
 
         add(card, BorderLayout.CENTER);
+
+        // Load tháng hiện tại
+        java.time.LocalDate now = java.time.LocalDate.now();
+        refreshData(now.getMonthValue(), now.getYear());
     }
 
-    /** Constructor không callback – tương thích ngược */
-    public AttenDanceTable() {
-        this(null);
+    public AttenDanceTable() { this(null); }
+
+    // ─────────────────────────────────────────────────────────────
+    // PUBLIC API – gọi từ AttenDanceHeader khi đổi tháng
+    // ─────────────────────────────────────────────────────────────
+    /**
+     * Load lại bảng nhân viên theo tháng/năm mới.
+     * Chạy DB query trên background thread.
+     */
+    public void refreshData(int month, int year) {
+        SwingWorker<List<EmployeeRowDTO>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<EmployeeRowDTO> doInBackground() {
+                return dao.getEmployeeRows(month, year);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    currentData = get();
+                    rebuildModel(currentData);
+                } catch (Exception e) {
+                    System.err.println("[AttenDanceTable] refreshData: " + e.getMessage());
+                }
+            }
+        };
+        worker.execute();
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -74,7 +100,7 @@ public class AttenDanceTable extends JPanel {
 
         searchField = new JTextField();
         searchField.putClientProperty("FlatLaf.style",
-                "arc:20; background:#F9FAFB; borderColor:#E5E7EB");
+            "arc:20; background:#F9FAFB; border:1,1,1,1,#E5E7EB; focusWidth:1; innerFocusWidth:0");
         searchField.setPreferredSize(new Dimension(320, 36));
 
         String placeholder = "  🔍  Tìm kiếm nhân viên...";
@@ -87,7 +113,7 @@ public class AttenDanceTable extends JPanel {
                 }
             }
             @Override public void focusLost(FocusEvent e) {
-                if (searchField.getText().isEmpty()) {
+                if (searchField.getText().isBlank()) {
                     searchField.setText(placeholder); searchField.setForeground(GRAY500);
                 }
             }
@@ -123,15 +149,12 @@ public class AttenDanceTable extends JPanel {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
-        populateModel(fullData);
-
         table = new JTable(model);
         table.setRowHeight(72);
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setBackground(Color.WHITE);
         table.setFocusable(false);
-        table.setCursor(Cursor.getDefaultCursor());
 
         JTableHeader header = table.getTableHeader();
         header.setBackground(Color.WHITE);
@@ -150,7 +173,6 @@ public class AttenDanceTable extends JPanel {
         table.getColumnModel().getColumn(5).setCellRenderer(new ColoredNumberRenderer(RED));
         table.getColumnModel().getColumn(6).setCellRenderer(new ActionCellRenderer());
 
-        // Default renderer cho cột không custom
         DefaultTableCellRenderer centerRend = new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v,
                     boolean sel, boolean focus, int row, int col) {
@@ -163,27 +185,23 @@ public class AttenDanceTable extends JPanel {
         };
         table.setDefaultRenderer(Object.class, centerRend);
 
-        // Click vào "Chi tiết"
+        // Click "Chi tiết"
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
                 int col = table.columnAtPoint(e.getPoint());
-                if (col == 6 && row >= 0 && onDetailClick != null) {
-                    // Tìm row trong fullData theo model row
+                if (col == 6 && row >= 0 && onDetailClick != null && currentData != null) {
+                    // Lấy MANV từ cell (String[] {hoTen, manv})
                     String[] nameId = (String[]) model.getValueAt(row, 0);
-                    for (Object[] d : fullData) {
-                        if (d[0].equals(nameId[0])) {
-                            onDetailClick.accept(d);
+                    String manv = nameId[1];
+                    // Tìm đúng DTO
+                    for (EmployeeRowDTO dto : currentData) {
+                        if (dto.manv.equals(manv)) {
+                            onDetailClick.accept(dto.toObjectArray());
                             break;
                         }
                     }
                 }
-            }
-            @Override public void mouseMoved(MouseEvent e) {
-                int col = table.columnAtPoint(e.getPoint());
-                table.setCursor(col == 6
-                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                        : Cursor.getDefaultCursor());
             }
         });
         table.addMouseMotionListener(new MouseMotionAdapter() {
@@ -202,30 +220,44 @@ public class AttenDanceTable extends JPanel {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // FILTER
+    // MODEL HELPERS
     // ─────────────────────────────────────────────────────────────
-    private void filterTable() {
-        String q = searchField.getText().toLowerCase().trim();
+    private void rebuildModel(List<EmployeeRowDTO> data) {
         model.setRowCount(0);
-        for (Object[] row : fullData) {
-            if (q.isEmpty()
-                    || ((String)row[0]).toLowerCase().contains(q)
-                    || ((String)row[1]).toLowerCase().contains(q)
-                    || ((String)row[3]).toLowerCase().contains(q)) {
-                populateModelRow(row);
-            }
+        if (data == null) return;
+        for (EmployeeRowDTO dto : data) {
+            model.addRow(new Object[]{
+                new String[]{dto.hoTen, dto.manv},
+                dto.phongBan,
+                dto.workDays,
+                dto.lateDays,
+                dto.leaveDays,
+                dto.absentDays,
+                "Chi tiết"
+            });
         }
     }
 
-    private void populateModel(Object[][] data) {
-        for (Object[] row : data) populateModelRow(row);
-    }
-
-    private void populateModelRow(Object[] d) {
-        model.addRow(new Object[]{
-            new String[]{(String)d[0], (String)d[1]},   // name + id
-            d[3], d[4], d[5], d[6], 0 /*nghỉ phép mock*/, "Chi tiết"
-        });
+    private void filterTable() {
+        if (currentData == null) return;
+        String q = searchField.getText().toLowerCase().trim();
+        model.setRowCount(0);
+        for (EmployeeRowDTO dto : currentData) {
+            if (q.isEmpty()
+                    || dto.hoTen.toLowerCase().contains(q)
+                    || dto.manv.toLowerCase().contains(q)
+                    || (dto.phongBan != null && dto.phongBan.toLowerCase().contains(q))) {
+                model.addRow(new Object[]{
+                    new String[]{dto.hoTen, dto.manv},
+                    dto.phongBan,
+                    dto.workDays,
+                    dto.lateDays,
+                    dto.leaveDays,
+                    dto.absentDays,
+                    "Chi tiết"
+                });
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -248,7 +280,7 @@ public class AttenDanceTable extends JPanel {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // CELL RENDERERS
+    // CELL RENDERERS (giữ nguyên từ phiên bản cũ)
     // ─────────────────────────────────────────────────────────────
     static class EmployeeCellRenderer implements TableCellRenderer {
         private static final Color[] COLORS = {

@@ -6,58 +6,70 @@ import com.hrm.DAO.HR.DepartmentDAO;
 import com.hrm.DTO.HR.DepartmentDTO;
 
 /**
- * Service class for department management.
+ * Service class cho phần HR sử dụng DepartmentDAO/DepartmentDTO trong package HR.
  */
 public class DepartmentService {
 
-    private DepartmentDAO departmentDAO = new DepartmentDAO();
+    private final DepartmentDAO departmentDAO = new DepartmentDAO();
 
     /**
-     * Get all departments with employee count.
+     * Lấy tất cả phòng ban kèm số lượng nhân viên.
      */
     public List<DepartmentDTO> getAllDepartmentsWithEmployeeCount() {
         return departmentDAO.getAllWithEmployeeCount();
     }
 
     /**
-     * Get all departments.
+     * Lấy tất cả phòng ban.
      */
     public List<DepartmentDTO> getAllDepartments() {
         return departmentDAO.getAll();
     }
 
     /**
-     * Find department by ID.
+     * Tìm phòng ban theo mã.
      */
     public DepartmentDTO findDepartmentById(String maPhongBan) {
         return departmentDAO.findById(maPhongBan);
     }
 
     /**
-     * Add a new department.
+     * Thêm phòng ban.
      */
     public void addDepartment(DepartmentDTO dto) {
         departmentDAO.add(dto);
     }
 
     /**
-     * Update a department.
+     * Cập nhật phòng ban.
      */
     public void updateDepartment(DepartmentDTO dto) {
         departmentDAO.update(dto);
     }
 
     /**
-     * Delete a department.
+     * Xóa phòng ban.
      */
     public void deleteDepartment(String maPhongBan) {
         departmentDAO.delete(maPhongBan);
     }
 
     /**
-     * Count employees in a department.
+     * Đếm số nhân viên trong 1 phòng ban.
      */
     public int countEmployeesInDepartment(String maPhongBan) {
         return departmentDAO.countEmployees(maPhongBan);
+    }
+
+    public List<DepartmentDAO.EmployeeOption> getEmployeesInDepartment(String maPhongBan) {
+        return departmentDAO.getEmployeesInDepartment(maPhongBan);
+    }
+
+    public void setDepartmentHead(String maPhongBan, String manv) {
+        departmentDAO.setDepartmentHead(maPhongBan, manv);
+    }
+
+    public void updateEmployeeContact(String manv, String email, String dienthoai) {
+        departmentDAO.updateEmployeeContact(manv, email, dienthoai);
     }
 }

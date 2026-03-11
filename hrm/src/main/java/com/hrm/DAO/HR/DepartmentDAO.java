@@ -115,6 +115,91 @@ public class DepartmentDAO {
     }
 
     /**
+     * Lấy danh sách nhân viên trong phòng ban.
+     */
+    public List<EmployeeOption> getEmployeesInDepartment(String maPhongBan) {
+        List<EmployeeOption> list = new ArrayList<>();
+        String sql = "SELECT manv, hoten, email, dienthoai FROM nhanvien WHERE maphongban = ? ORDER BY hoten";
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return list;
+        try (conn;
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maPhongBan);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new EmployeeOption(
+                            rs.getString("manv"),
+                            rs.getString("hoten"),
+                            rs.getString("email"),
+                            rs.getString("dienthoai")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Đặt nhân viên làm trưởng phòng (CV01). Các nhân viên khác trong phòng chuyển thành CV02.
+     */
+    public void setDepartmentHead(String maPhongBan, String manv) {
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return;
+        try (conn) {
+            try (PreparedStatement ps1 = conn.prepareStatement("UPDATE nhanvien SET machucvu = 'CV02' WHERE maphongban = ?")) {
+                ps1.setString(1, maPhongBan);
+                ps1.executeUpdate();
+            }
+            try (PreparedStatement ps2 = conn.prepareStatement("UPDATE nhanvien SET machucvu = 'CV01' WHERE manv = ? AND maphongban = ?")) {
+                ps2.setString(1, manv);
+                ps2.setString(2, maPhongBan);
+                ps2.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Cập nhật email và điện thoại của nhân viên (trưởng phòng).
+     */
+    public void updateEmployeeContact(String manv, String email, String dienthoai) {
+        String sql = "UPDATE nhanvien SET email = ?, dienthoai = ? WHERE manv = ?";
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return;
+        try (conn;
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email != null ? email : "");
+            ps.setString(2, dienthoai != null ? dienthoai : "");
+            ps.setString(3, manv);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static class EmployeeOption {
+        public final String manv;
+        public final String hoten;
+        public final String email;
+        public final String dienthoai;
+
+        public EmployeeOption(String manv, String hoten, String email, String dienthoai) {
+            this.manv = manv != null ? manv : "";
+            this.hoten = hoten != null ? hoten : "";
+            this.email = email != null ? email : "";
+            this.dienthoai = dienthoai != null ? dienthoai : "";
+        }
+
+        @Override
+        public String toString() {
+            return hoten;
+        }
+    }
+
+    /**
      * Utility that counts number of employees in a given department.
      */
     public int countEmployees(String maPhongBan) {

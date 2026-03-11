@@ -1,54 +1,94 @@
 package com.hrm.UI.HR.Attendancetab;
 
+import com.hrm.DAO.HR.AttenDanceDao;
+import com.hrm.DTO.HR.AttenDanceDTO.SummaryDTO;
+
 import javax.swing.*;
 import java.awt.*;
 
+
 public class AttenDanceSummary extends JPanel {
 
-    public AttenDanceSummary(){
+    private final AttenDanceDao dao = new AttenDanceDao();
+
+    // Tham chiếu các StartCardPanel để update label
+    private StartCardPanel cardOnTime;
+    private StartCardPanel cardLate;
+    private StartCardPanel cardLeave;
+    private StartCardPanel cardAbsent;
+
+    public AttenDanceSummary() {
         setLayout(new GridLayout(1, 4, 16, 0));
         setOpaque(false);
-        // padding top/bottom nhỏ hơn để sát hơn như ảnh
         setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        // ✅ Icon + màu khớp với ảnh
-        // Card 1 – Đi làm đúng giờ: xanh lá nhạt, icon ✓ tròn xanh
-        add(new StartCardPanel(
-            "Đi làm đúng giờ", "85%",
-            new Color(220, 252, 231),   // iconBg  – green-100
+        // Khởi tạo card với dữ liệu mặc định
+        cardOnTime = new StartCardPanel(
+            "Đi làm đúng giờ", "--",
+            new Color(220, 252, 231),
             makeTextIcon("✓", new Color(22, 163, 74)),
-            new Color(187, 247, 208)    // borderColor – green-200
-        ));
-
-        // Card 2 – Đi muộn: vàng cam nhạt, icon đồng hồ
-        add(new StartCardPanel(
-            "Đi muộn (tháng này)", "12",
-            new Color(255, 237, 213),   // orange-100
+            new Color(187, 247, 208)
+        );
+        cardLate = new StartCardPanel(
+            "Đi muộn (tháng này)", "--",
+            new Color(255, 237, 213),
             makeTextIcon("⏰", new Color(234, 88, 12)),
-            new Color(254, 215, 170)    // orange-200
-        ));
-
-        // Card 3 – Nghỉ có phép: xanh dương nhạt, icon lịch
-        add(new StartCardPanel(
-            "Nghỉ có phép", "5",
-            new Color(219, 234, 254),   // blue-100
+            new Color(254, 215, 170)
+        );
+        cardLeave = new StartCardPanel(
+            "Nghỉ có phép", "--",
+            new Color(219, 234, 254),
             makeTextIcon("📅", new Color(37, 99, 235)),
-            new Color(191, 219, 254)    // blue-200
-        ));
-
-        // Card 4 – Vắng không phép: đỏ nhạt, icon ✕ tròn đỏ
-        add(new StartCardPanel(
-            "Vắng không phép", "2",
-            new Color(254, 226, 226),   // red-100
+            new Color(191, 219, 254)
+        );
+        cardAbsent = new StartCardPanel(
+            "Vắng không phép", "--",
+            new Color(254, 226, 226),
             makeTextIcon("✕", new Color(220, 38, 38)),
-            new Color(254, 202, 202)    // red-200
-        ));
+            new Color(254, 202, 202)
+        );
+
+        add(cardOnTime);
+        add(cardLate);
+        add(cardLeave);
+        add(cardAbsent);
+
+        // Load tháng hiện tại ngay khi khởi tạo
+        java.time.LocalDate now = java.time.LocalDate.now();
+        refreshData(now.getMonthValue(), now.getYear());
     }
 
     /**
-     * Tạo icon chữ/emoji đơn giản để hiển thị trong card.
-     * Dùng JLabel render ra Icon thực sự.
+     * Load lại dữ liệu theo tháng/năm được chọn.
+     * Gọi từ AttenDanceHeader khi user bấm ◀ ▶.
+     *
+     * @param month tháng (1–12)
+     * @param year  năm
      */
+    public void refreshData(int month, int year) {
+        // Chạy trên background thread để không block UI
+        SwingWorker<SummaryDTO, Void> worker = new SwingWorker<>() {
+            @Override
+            protected SummaryDTO doInBackground() {
+                return dao.getSummary(month, year);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    SummaryDTO dto = get();
+                    cardOnTime.updateValue(dto.onTimeRate);
+                    cardLate.updateValue(String.valueOf(dto.lateDays));
+                    cardLeave.updateValue(String.valueOf(dto.leaveDays));
+                    cardAbsent.updateValue(String.valueOf(dto.absentDays));
+                } catch (Exception e) {
+                    System.err.println("[AttenDanceSummary] refreshData: " + e.getMessage());
+                }
+            }
+        };
+        worker.execute();
+    }
+
     private Icon makeTextIcon(String text, Color color) {
         JLabel lbl = new JLabel(text);
         lbl.setForeground(color);

@@ -14,6 +14,33 @@ import com.hrm.utils.JDBCConection;
  * DAO cho Phòng ban (Department)
  */
 public class DepartmentDAO {
+        // Lấy thông tin trưởng phòng cho từng phòng ban
+        public List<DepartmentDTO> getDepartmentsWithManagerInfo() {
+            List<DepartmentDTO> list = new ArrayList<>();
+            String sql = "SELECT pb.MAPHONGBAN, pb.TENPHONGBAN, pb.MOTA, nv.HOTEN AS TRUONGPHONG, nv.DIENTHOAI, cv.TENVITRI, nv.EMAIL "
+                       + "FROM phongban pb "
+                       + "LEFT JOIN nhanvien nv ON pb.MAPHONGBAN = nv.MAPHONGBAN AND nv.MACHUCVU = 'CV01' "
+                       + "LEFT JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU "
+                       + "ORDER BY pb.TENPHONGBAN ASC";
+            try (Connection conn = JDBCConection.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    DepartmentDTO dept = new DepartmentDTO();
+                    dept.setMaphongban(rs.getString("MAPHONGBAN"));
+                    dept.setTenphongban(rs.getString("TENPHONGBAN"));
+                    dept.setMota(rs.getString("MOTA"));
+                    dept.setTruongPhong(rs.getString("TRUONGPHONG"));
+                    dept.setDienThoai(rs.getString("DIENTHOAI"));
+                    dept.setViTri(rs.getString("TENVITRI"));
+                    dept.setEmail(rs.getString("EMAIL"));
+                    list.add(dept);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return list;
+        }
     
     // Lấy tất cả phòng ban
     public List<DepartmentDTO> getAllDepartments() {

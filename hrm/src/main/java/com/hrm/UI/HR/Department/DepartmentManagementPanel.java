@@ -14,6 +14,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -23,8 +24,10 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import com.hrm.DAO.HR.DepartmentDAO.EmployeeOption;
 import com.hrm.DTO.HR.DepartmentDTO;
 import com.hrm.Service.DepartmentService;
+import com.hrm.utils.JDBCConection;
 
 public class DepartmentManagementPanel extends JPanel {
 
@@ -225,10 +228,27 @@ public class DepartmentManagementPanel extends JPanel {
         cardsContainer.setOpaque(false);
         cardsContainer.setBorder(new EmptyBorder(24, 0, 0, 0));
 
-        // Load departments from database
+        // Load departments from HR service (đã có tổng số nhân viên)
         List<DepartmentDTO> departments = departmentService.getAllDepartmentsWithEmployeeCount();
         for (DepartmentDTO dept : departments) {
-            cardsContainer.add(createDepartmentCard(dept));
+            ManagerInfo info = getManagerInfo(dept.getMaPhongBan());
+
+            String managerName = info != null && info.name != null && !info.name.isEmpty()
+                    ? info.name
+                    : "Chưa cập nhật";
+            String description = "Mô tả phòng ban sẽ được cập nhật sau";
+            String email = info != null && info.email != null && !info.email.isEmpty() ? info.email : "N/A";
+            String phone = info != null && info.phone != null && !info.phone.isEmpty() ? info.phone : "N/A";
+
+            cardsContainer.add(createDepartmentCard(
+                    dept.getTenPhongBan(),
+                    dept.getMaPhongBan(),
+                    dept.getSoNhanVien(),
+                    managerName,
+                    description,
+                    email,
+                    phone
+            ));
         }
 
         // Bọc grid trong JScrollPane để có thể kéo xuống xem các phòng bên dưới
@@ -243,16 +263,9 @@ public class DepartmentManagementPanel extends JPanel {
     }
 
     // ============== MỘT CARD PHÒNG BAN ==============
-    private JPanel createDepartmentCard(DepartmentDTO dept) {
-        return createDepartmentCard(dept.getTenPhongBan(), dept.getMaPhongBan(), dept.getSoNhanVien(),
-                "Chưa cập nhật", "N/A",
-                "Mô tả phòng ban sẽ được cập nhật sau",
-                "N/A", "N/A", "N/A");
-    }
-
     private JPanel createDepartmentCard(String name, String code, int employees,
-                                        String manager, String managerId, String description,
-                                        String email, String phone, String location) {
+                                        String manager, String description,
+                                        String email, String phone) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
@@ -261,7 +274,7 @@ public class DepartmentManagementPanel extends JPanel {
                 new EmptyBorder(0, 0, 0, 0)
         ));
         // Lưu thông tin phục vụ tìm kiếm
-        String searchText = (name + " " + code + " " + manager + " " + managerId).toLowerCase();
+        String searchText = (name + " " + code + " " + manager).toLowerCase();
         card.putClientProperty("searchText", searchText);
 
         // Header tím
@@ -303,7 +316,7 @@ public class DepartmentManagementPanel extends JPanel {
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBorder(new EmptyBorder(16, 18, 10, 18));
 
-        addInfoBlock(body, "Trưởng phòng", manager, managerId);
+        addInfoBlock(body, "Trưởng phòng", manager, null);
         addInfoBlock(body, "Mô tả", "<html>" + description + "</html>", null);
 
         // Hàng email / điện thoại
@@ -315,8 +328,6 @@ public class DepartmentManagementPanel extends JPanel {
         contactRow.add(phonePanel);
         body.add(contactRow);
         body.add(Box.createVerticalStrut(10));
-
-        addInfoBlock(body, "Vị trí", location, null);
 
         // Thanh action dưới cùng
         JPanel actionsBar = new JPanel(new BorderLayout());
@@ -333,12 +344,11 @@ public class DepartmentManagementPanel extends JPanel {
         viewBtn.addActionListener(e -> JOptionPane.showMessageDialog(
                 null,
                 "<html><b>" + name + " (" + code + ")</b><br/>"
-                        + "Trưởng phòng: " + manager + " - " + managerId + "<br/>"
+                        + "Trưởng phòng: " + manager + "<br/>"
                         + "Số nhân viên: " + employees + "<br/><br/>"
                         + "Mô tả: " + description + "<br/>"
                         + "Email: " + email + "<br/>"
-                        + "Điện thoại: " + phone + "<br/>"
-                        + "Vị trí: " + location + "</html>",
+                        + "Điện thoại: " + phone + "</html>",
                 "Chi tiết phòng ban",
                 JOptionPane.INFORMATION_MESSAGE
         ));
@@ -354,12 +364,7 @@ public class DepartmentManagementPanel extends JPanel {
         editBtn.setContentAreaFilled(false);
         editBtn.setBorder(BorderFactory.createEmptyBorder());
         editBtn.setToolTipText("Sửa phòng ban");
-        editBtn.addActionListener(e -> JOptionPane.showMessageDialog(
-                null,
-                "Màn hình sửa phòng ban \"" + name + "\" sẽ được phát triển.",
-                "Sửa phòng ban",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        editBtn.addActionListener(e -> openEditDepartmentForm(code, name, manager, email, phone));
 
         // Nút "Xóa" dạng text, không dùng icon
         JButton deleteBtn = new JButton("Xóa");
@@ -369,19 +374,7 @@ public class DepartmentManagementPanel extends JPanel {
         deleteBtn.setContentAreaFilled(false);
         deleteBtn.setBorder(BorderFactory.createEmptyBorder());
         deleteBtn.setToolTipText("Xóa phòng ban");
-        deleteBtn.addActionListener(e -> {
-            int rs = JOptionPane.showConfirmDialog(
-                    null,
-                    "Bạn có chắc muốn xóa phòng \"" + name + "\"?",
-                    "Xác nhận xóa",
-                    JOptionPane.YES_NO_OPTION
-            );
-            if (rs == JOptionPane.YES_OPTION) {
-                cardsContainer.remove(card);
-                cardsContainer.revalidate();
-                cardsContainer.repaint();
-            }
-        });
+        deleteBtn.addActionListener(e -> handleDeleteDepartment(code, name, card));
 
         iconButtons.add(editBtn);
         iconButtons.add(deleteBtn);
@@ -406,6 +399,42 @@ public class DepartmentManagementPanel extends JPanel {
         card.add(bottomWrapper);
 
         return card;
+    }
+
+    // Thông tin trưởng phòng
+    private static class ManagerInfo {
+        String name;
+        String email;
+        String phone;
+    }
+
+    /**
+     * Lấy thông tin trưởng phòng (tên, email, điện thoại) theo mã phòng ban.
+     * Ưu tiên trưởng phòng có MACHUCVU = 'CV01'; nếu không có thì lấy bất kỳ nhân viên đầu tiên của phòng.
+     */
+    private ManagerInfo getManagerInfo(String maPhongBan) {
+        ManagerInfo info = new ManagerInfo();
+        String sql = "SELECT hoten, email, dienthoai " +
+                "FROM nhanvien " +
+                "WHERE maphongban = ? " +
+                "ORDER BY CASE WHEN machucvu = 'CV01' THEN 0 ELSE 1 END, manv LIMIT 1";
+        try (java.sql.Connection conn = JDBCConection.getConnection();
+             java.sql.PreparedStatement ps = conn != null ? conn.prepareStatement(sql) : null) {
+            if (ps == null) {
+                return info;
+            }
+            ps.setString(1, maPhongBan);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    info.name = rs.getString("hoten");
+                    info.email = rs.getString("email");
+                    info.phone = rs.getString("dienthoai");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return info;
     }
 
     private void addInfoBlock(JPanel parent, String label, String value1, String value2) {
@@ -463,6 +492,117 @@ public class DepartmentManagementPanel extends JPanel {
 
         cardsContainer.revalidate();
         cardsContainer.repaint();
+    }
+
+    /**
+     * Xử lý xóa phòng ban: xóa trong database rồi refresh giao diện.
+     */
+    private void handleDeleteDepartment(String maPhongBan, String tenPhongBan, JPanel card) {
+        int confirm = JOptionPane.showConfirmDialog(
+                null,
+                "Bạn có chắc muốn xóa phòng \"" + tenPhongBan + "\"?",
+                "Xác nhận xóa",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // Kiểm tra phòng ban có nhân viên không
+        int empCount = departmentService.countEmployeesInDepartment(maPhongBan);
+        if (empCount > 0) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Không thể xóa phòng ban vì còn " + empCount + " nhân viên. Vui lòng chuyển nhân viên sang phòng khác trước.",
+                    "Không thể xóa",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        departmentService.deleteDepartment(maPhongBan);
+        refreshPanel();
+        JOptionPane.showMessageDialog(null, "Đã xóa phòng ban thành công!");
+    }
+
+    /**
+     * Mở form sửa phòng ban. Sửa được: Tên phòng ban, Trưởng phòng, Email, Điện thoại. Không sửa Mô tả.
+     */
+    private void openEditDepartmentForm(String maPhongBan, String tenPhongBanHienTai,
+                                        String managerName, String emailHienTai, String phoneHienTai) {
+        JTextField nameField = new JTextField(tenPhongBanHienTai, 25);
+        JLabel codeLabel = new JLabel(maPhongBan);
+
+        List<EmployeeOption> employees = departmentService.getEmployeesInDepartment(maPhongBan);
+        JComboBox<EmployeeOption> managerCombo = new JComboBox<>();
+        managerCombo.addItem(new EmployeeOption("", "-- Chọn trưởng phòng --", "", ""));
+        EmployeeOption currentHead = null;
+        for (EmployeeOption emp : employees) {
+            managerCombo.addItem(emp);
+            if (emp.hoten.equals(managerName)) {
+                currentHead = emp;
+            }
+        }
+        if (currentHead != null) {
+            managerCombo.setSelectedItem(currentHead);
+        }
+
+        String emailVal = (emailHienTai != null && !"N/A".equals(emailHienTai)) ? emailHienTai : "";
+        String phoneVal = (phoneHienTai != null && !"N/A".equals(phoneHienTai)) ? phoneHienTai : "";
+        JTextField emailField = new JTextField(emailVal, 25);
+        JTextField phoneField = new JTextField(phoneVal, 25);
+
+        managerCombo.addActionListener(ev -> {
+            Object sel = managerCombo.getSelectedItem();
+            if (sel instanceof EmployeeOption) {
+                EmployeeOption emp = (EmployeeOption) sel;
+                if (!emp.manv.isEmpty()) {
+                    emailField.setText(emp.email);
+                    phoneField.setText(emp.dienthoai);
+                }
+            }
+        });
+
+        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+        form.add(new JLabel("Mã phòng ban:"));
+        form.add(codeLabel);
+        form.add(new JLabel("Tên phòng ban:"));
+        form.add(nameField);
+        form.add(new JLabel("Trưởng phòng:"));
+        form.add(managerCombo);
+        form.add(new JLabel("Email:"));
+        form.add(emailField);
+        form.add(new JLabel("Điện thoại:"));
+        form.add(phoneField);
+
+        int result = JOptionPane.showConfirmDialog(
+                null,
+                form,
+                "Sửa phòng ban (trừ Mô tả)",
+                JOptionPane.OK_CANCEL_OPTION
+        );
+
+        if (result == JOptionPane.OK_OPTION) {
+            String tenPhongBanMoi = nameField.getText().trim();
+            if (tenPhongBanMoi.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Vui lòng nhập tên phòng ban!");
+                return;
+            }
+
+            departmentService.updateDepartment(new DepartmentDTO(maPhongBan, tenPhongBanMoi));
+
+            Object sel = managerCombo.getSelectedItem();
+            if (sel instanceof EmployeeOption) {
+                EmployeeOption emp = (EmployeeOption) sel;
+                if (!emp.manv.isEmpty()) {
+                    departmentService.setDepartmentHead(maPhongBan, emp.manv);
+                    departmentService.updateEmployeeContact(emp.manv, emailField.getText().trim(), phoneField.getText().trim());
+                }
+            }
+
+            refreshPanel();
+            JOptionPane.showMessageDialog(null, "Cập nhật phòng ban thành công!");
+        }
     }
 
     // ============== FORM THÊM PHÒNG BAN ==============

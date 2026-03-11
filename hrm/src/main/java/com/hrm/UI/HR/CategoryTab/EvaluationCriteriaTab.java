@@ -1,8 +1,8 @@
 package com.hrm.UI.HR.CategoryTab;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.hrm.DAO.PositionDAO;
-import com.hrm.DTO.PositionDTO;
+import com.hrm.DAO.EvaluationCriteriaDAO;
+import com.hrm.DTO.EvaluationCriteriaDTO;
 import com.hrm.UI.component.CRUDDialog;
 
 import javax.swing.*;
@@ -12,21 +12,21 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Tab quản lý Chức vụ
+ * Tab quản lý tiêu chí đánh giá
  */
-public class PositionTab extends JPanel {
+public class EvaluationCriteriaTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
-    private PositionDAO positionDAO;
+    private EvaluationCriteriaDAO criteriaDAO;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
 
-    public PositionTab() {
+    public EvaluationCriteriaTab() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
-        positionDAO = new PositionDAO();
+        criteriaDAO = new EvaluationCriteriaDAO();
 
         add(createButtonPanel(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
@@ -54,7 +54,7 @@ public class PositionTab extends JPanel {
     }
 
     private JScrollPane createTablePanel() {
-        String[] columns = {"Mã chức vụ", "Tên vị trí", "Phụ cấp chức vụ", "Thao tác"};
+        String[] columns = {"Mã tiêu chí", "Tên tiêu chí", "Điểm", "Thao tác"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -130,28 +130,28 @@ public class PositionTab extends JPanel {
     }
 
     private void handleAdd() {
-        PositionEditForm form = new PositionEditForm();
-        form.setMaChucVu(positionDAO.generateNextMaChucVu());
+        EvaluationCriteriaEditForm form = new EvaluationCriteriaEditForm();
+        form.setMaTieuChi(criteriaDAO.generateNextMaTieuChi());
 
-        CRUDDialog<PositionDTO> dialog = new CRUDDialog<>(
+        CRUDDialog<EvaluationCriteriaDTO> dialog = new CRUDDialog<>(
                 (JFrame) SwingUtilities.getWindowAncestor(this),
-                "Thêm chức vụ",
+                "Thêm tiêu chí đánh giá",
                 form,
                 null
         );
         dialog.setVisible(true);
 
-        PositionDTO result = dialog.getResult();
+        EvaluationCriteriaDTO result = dialog.getResult();
         if (result != null) {
-            if (result.getMaChucVu() == null || result.getMaChucVu().trim().isEmpty()) {
-                result.setMaChucVu(positionDAO.generateNextMaChucVu());
+            if (result.getMaTieuChi() == null || result.getMaTieuChi().trim().isEmpty()) {
+                result.setMaTieuChi(criteriaDAO.generateNextMaTieuChi());
             }
-            if (positionDAO.addPosition(result)) {
+            if (criteriaDAO.addCriteria(result)) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Thêm chức vụ thành công!");
+                JOptionPane.showMessageDialog(this, "Thêm tiêu chí đánh giá thành công!");
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Thêm chức vụ thất bại!",
+                        "Thêm tiêu chí đánh giá thất bại!",
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
             }
@@ -159,27 +159,27 @@ public class PositionTab extends JPanel {
     }
 
     private void handleEdit(int row) {
-        String maChucVu = String.valueOf(tableModel.getValueAt(row, 0));
-        PositionDTO dto = positionDAO.getPositionById(maChucVu);
+        String maTieuChi = String.valueOf(tableModel.getValueAt(row, 0));
+        EvaluationCriteriaDTO dto = criteriaDAO.getCriteriaById(maTieuChi);
 
         if (dto != null) {
-            PositionEditForm form = new PositionEditForm();
-            CRUDDialog<PositionDTO> dialog = new CRUDDialog<>(
+            EvaluationCriteriaEditForm form = new EvaluationCriteriaEditForm();
+            CRUDDialog<EvaluationCriteriaDTO> dialog = new CRUDDialog<>(
                     (JFrame) SwingUtilities.getWindowAncestor(this),
-                    "Chỉnh sửa chức vụ",
+                    "Chỉnh sửa tiêu chí đánh giá",
                     form,
                     dto
             );
             dialog.setVisible(true);
 
-            PositionDTO result = dialog.getResult();
+            EvaluationCriteriaDTO result = dialog.getResult();
             if (result != null) {
-                if (positionDAO.updatePosition(result)) {
+                if (criteriaDAO.updateCriteria(result)) {
                     loadData();
-                    JOptionPane.showMessageDialog(this, "Cập nhật chức vụ thành công!");
+                    JOptionPane.showMessageDialog(this, "Cập nhật tiêu chí đánh giá thành công!");
                 } else {
                     JOptionPane.showMessageDialog(this,
-                            "Cập nhật chức vụ thất bại!",
+                            "Cập nhật tiêu chí đánh giá thất bại!",
                             "Lỗi",
                             JOptionPane.ERROR_MESSAGE);
                 }
@@ -188,19 +188,19 @@ public class PositionTab extends JPanel {
     }
 
     private void handleDelete(int row) {
-        String maChucVu = String.valueOf(tableModel.getValueAt(row, 0));
+        String maTieuChi = String.valueOf(tableModel.getValueAt(row, 0));
         int option = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc chắn muốn xóa chức vụ này?",
+                "Bạn có chắc chắn muốn xóa tiêu chí đánh giá này?",
                 "Xác nhận",
                 JOptionPane.YES_NO_OPTION);
 
         if (option == JOptionPane.YES_OPTION) {
-            if (positionDAO.deletePosition(maChucVu)) {
+            if (criteriaDAO.deleteCriteria(maTieuChi)) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Xóa chức vụ thành công!");
+                JOptionPane.showMessageDialog(this, "Xóa tiêu chí đánh giá thành công!");
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Xóa chức vụ thất bại! Có thể chức vụ đang được sử dụng.",
+                        "Xóa tiêu chí đánh giá thất bại! Có thể tiêu chí đang được sử dụng.",
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
             }
@@ -209,13 +209,13 @@ public class PositionTab extends JPanel {
 
     private void loadData() {
         tableModel.setRowCount(0);
-        List<PositionDTO> positions = positionDAO.getAllPositions();
+        List<EvaluationCriteriaDTO> list = criteriaDAO.getAllCriteria();
 
-        for (PositionDTO position : positions) {
+        for (EvaluationCriteriaDTO item : list) {
             tableModel.addRow(new Object[]{
-                    position.getMaChucVu(),
-                    position.getTenViTri(),
-                    String.format("%,.0f VND", position.getPhuCapChucVu() != null ? position.getPhuCapChucVu().doubleValue() : 0d),
+                    item.getMaTieuChi(),
+                    item.getTenTieuChi(),
+                    item.getDiem(),
                     ""
             });
         }

@@ -46,4 +46,8 @@ public class AccountManagerService {
     public boolean setAccountStatus(String maNV, int status) {
         return accountDAO.setAccountStatus(maNV, status);
     }
+
+    public List<String> createAccountsForEmployeesWithoutAccount() {
+        return accountDAO.createAccountsForEmployeesWithoutAccount();
+    }
 }

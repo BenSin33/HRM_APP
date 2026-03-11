@@ -13,7 +13,7 @@ public class TaskDAO {
 
     public TaskDAO() {
         tasks = new ArrayList<>();
-        // Initialize with default tasks
+        
         tasks.add(new TaskDTO("Duyệt 5 đơn xin nghỉ phép"));
         tasks.add(new TaskDTO("Chốt bảng lương tháng 1"));
         tasks.add(new TaskDTO("Tạo đợt đánh giá Q1 2025"));
