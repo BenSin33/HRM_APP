@@ -8,6 +8,8 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -52,6 +54,17 @@ public class DepartmentManagementPanel extends JPanel {
 
         add(topSection, BorderLayout.NORTH);
         add(createCardsArea(), BorderLayout.CENTER);
+
+        // Khi chuyển sang tab Quản lý phòng ban, tải lại dữ liệu từ DB để số nhân viên theo phòng
+        // phản ánh đúng thay đổi (vd: đã sửa mã phòng ban trong Quản lý nhân viên).
+        addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                    refreshPanel();
+                }
+            }
+        });
     }
 
     // ============== TITLE ==============
