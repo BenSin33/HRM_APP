@@ -3,6 +3,8 @@ package com.hrm.UI.HR.EmployeeTab;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -29,6 +31,10 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import com.hrm.DTO.HR.DepartmentDTO;
+import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.Service.DepartmentService;
+
 public class EmployeeManagementPanel extends JPanel {
 
     private JTable table;
@@ -37,7 +43,7 @@ public class EmployeeManagementPanel extends JPanel {
     private JTextField searchField;
     private JComboBox<String> filterBox;
     private String currentKeyword = "";
-    private String currentDept = "Tất cả phòng ban";
+    private String currentDeptFilter = null; // null = "Tất cả phòng ban", else mã phòng ban (PB01, PB02...)
 
     private Icon viewIcon;
     private Icon editIcon;
@@ -45,6 +51,7 @@ public class EmployeeManagementPanel extends JPanel {
 
     private com.hrm.DAO.HR.NhanVienHRDAO nhanVienHRDAO = new com.hrm.DAO.HR.NhanVienHRDAO();
     private com.hrm.DAO.HR.ChucVuHRDAO chucVuDAO = new com.hrm.DAO.HR.ChucVuHRDAO();
+    private DepartmentService departmentService = new DepartmentService();
 
     public EmployeeManagementPanel() {
         setLayout(new BorderLayout());
@@ -91,9 +98,30 @@ public class EmployeeManagementPanel extends JPanel {
         right.setOpaque(false);
 
         searchField = new JTextField(20);
-        final String SEARCH_PLACEHOLDER = "Tìm kiếm theo tên, mã NV, email...";
-        searchField.setText("");
-        filterBox = new JComboBox<>(new String[]{"Tất cả phòng ban", "IT", "Kinh doanh", "Kế toán"});
+        final String SEARCH_PLACEHOLDER = "Tìm kiếm theo họ tên và mã nhân viên";
+        searchField.setText(SEARCH_PLACEHOLDER);
+        searchField.setForeground(new Color(150, 150, 150));
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (SEARCH_PLACEHOLDER.equals(searchField.getText())) {
+                    searchField.setText("");
+                    searchField.setForeground(Color.BLACK);
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().trim().isEmpty()) {
+                    searchField.setText(SEARCH_PLACEHOLDER);
+                    searchField.setForeground(new Color(150, 150, 150));
+                }
+            }
+        });
+        filterBox = new JComboBox<>();
+        filterBox.addItem("Tất cả phòng ban");
+        for (DepartmentDTO d : departmentService.getAllDepartments()) {
+            filterBox.addItem(d.getMaPhongBan() + " - " + d.getTenPhongBan());
+        }
         JButton addBtn = new JButton("+ Thêm nhân viên");
         addBtn.setBackground(new Color(88, 63, 191));
         addBtn.setForeground(Color.WHITE);
@@ -107,19 +135,19 @@ public class EmployeeManagementPanel extends JPanel {
                 String text = searchField.getText().trim();
                 if (SEARCH_PLACEHOLDER.equals(text)) text = "";
                 currentKeyword = text.toLowerCase();
-                currentDept = (String) filterBox.getSelectedItem();
-                refreshTableFromMaster(currentKeyword, currentDept);
+                currentDeptFilter = getSelectedDeptCode();
+                refreshTableFromMaster(currentKeyword, currentDeptFilter);
             }
             @Override public void insertUpdate(DocumentEvent e) { update(); }
             @Override public void removeUpdate(DocumentEvent e) { update(); }
             @Override public void changedUpdate(DocumentEvent e) { update(); }
         });
 
-        // Action lọc phòng ban
+        // Action lọc phòng ban: khi chọn phòng ban thì chỉ hiện nhân viên thuộc phòng đó
         filterBox.addActionListener(e -> {
-            currentDept = (String) filterBox.getSelectedItem();
+            currentDeptFilter = getSelectedDeptCode();
             currentKeyword = searchField.getText().trim().toLowerCase();
-            refreshTableFromMaster(currentKeyword, currentDept);
+            refreshTableFromMaster(currentKeyword, currentDeptFilter);
         });
 
         right.add(searchField);
@@ -169,8 +197,8 @@ public class EmployeeManagementPanel extends JPanel {
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        // initial fill
-        refreshTableFromMaster("", "Tất cả phòng ban");
+        // initial fill (Tất cả phòng ban)
+        refreshTableFromMaster("", null);
 
         JScrollPane scroll = new JScrollPane(table);
         panel.add(scroll, BorderLayout.CENTER);
@@ -178,7 +206,41 @@ public class EmployeeManagementPanel extends JPanel {
         return panel;
     }
 
-    private void refreshTableFromMaster(String keyword, String dept) {
+    /** Tải lại masterData từ database (sau khi thêm/sửa/xóa để dữ liệu còn sau khi đăng xuất/đăng nhập). */
+    private void loadMasterDataFromDb() {
+        masterData.clear();
+        java.util.List<NhanVienDTO> dsNhanVien = nhanVienHRDAO.getAll();
+        for (NhanVienDTO nv : dsNhanVien) {
+            String tenChucVu = chucVuDAO.getTenChucVu(nv.getMachucvu());
+            Object[] row = {
+                    nv.getManv(),
+                    nv.getHoten(),
+                    nv.getEmail(),
+                    nv.getMaphongban(),
+                    tenChucVu,
+                    nv.getTrangthai()
+            };
+            masterData.add(row);
+        }
+    }
+
+    /** Chuẩn hóa trạng thái từ form sang DB. */
+    private String normalizeTrangThai(String formStatus) {
+        if (formStatus == null) return "Đang làm việc";
+        if (formStatus.startsWith("Đang làm") || formStatus.equals("Đang làm việc")) return "Đang làm việc";
+        return formStatus;
+    }
+
+    /** Lấy mã phòng ban từ item đã chọn: "Tất cả phòng ban" -> null, "PB01 - Nhân sự" -> "PB01". */
+    private String getSelectedDeptCode() {
+        Object sel = filterBox.getSelectedItem();
+        if (sel == null || "Tất cả phòng ban".equals(sel)) return null;
+        String s = sel.toString();
+        if (s.contains(" - ")) return s.substring(0, s.indexOf(" - ")).trim();
+        return s;
+    }
+
+    private void refreshTableFromMaster(String keyword, String deptCode) {
         String[] columns = {"MÃ NV", "HỌ VÀ TÊN", "EMAIL", "PHÒNG BAN", "CHỨC VỤ", "TRẠNG THÁI", "THAO TÁC"};
         DefaultTableModel newModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -194,7 +256,7 @@ public class EmployeeManagementPanel extends JPanel {
             String department = String.valueOf(r[3]);
 
             boolean matchKeyword = (keyword == null || keyword.isEmpty()) || id.contains(keyword) || name.contains(keyword) || email.contains(keyword);
-            boolean matchDept = (dept == null || dept.equals("Tất cả phòng ban")) || department.equals(dept);
+            boolean matchDept = (deptCode == null || deptCode.isEmpty()) || department.equals(deptCode);
 
             if (matchKeyword && matchDept) {
                 Object[] row = new Object[7];
@@ -241,16 +303,30 @@ public class EmployeeManagementPanel extends JPanel {
                 "Thêm nhân viên mới", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
-            Object[] newRow = new Object[]{
-                    idField.getText(),
-                    nameField.getText(),
-                    emailField.getText(),
-                    deptField.getText(),
-                    posField.getText(),
-                    String.valueOf(statusBox.getSelectedItem())
-            };
-            masterData.add(newRow);
-            refreshTableFromMaster(currentKeyword, currentDept);
+            String manv = idField.getText().trim();
+            String hoten = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String maphongban = deptField.getText().trim();
+            String machucvu = chucVuDAO.getMaChucVuByTen(posField.getText().trim());
+            String trangthai = normalizeTrangThai(String.valueOf(statusBox.getSelectedItem()));
+
+            if (manv.isEmpty() || hoten.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Vui lòng nhập Mã NV và Họ tên!");
+                return;
+            }
+            if (nhanVienHRDAO.findById(manv) != null) {
+                JOptionPane.showMessageDialog(null, "Mã NV đã tồn tại!");
+                return;
+            }
+
+            NhanVienDTO dto = new NhanVienDTO(manv, maphongban, machucvu, "TD01", hoten, null, null, null, email, null, 12, trangthai);
+            if (nhanVienHRDAO.insert(dto)) {
+                loadMasterDataFromDb();
+                refreshTableFromMaster(currentKeyword, currentDeptFilter);
+                JOptionPane.showMessageDialog(null, "Thêm nhân viên thành công!");
+            } else {
+                JOptionPane.showMessageDialog(null, "Lỗi khi lưu vào database.");
+            }
         }
     }
 
@@ -371,11 +447,13 @@ public class EmployeeManagementPanel extends JPanel {
 
     private void deleteEmployeeByViewRow(int viewRow) {
         if (viewRow < 0 || viewRow >= table.getRowCount()) return;
-        String id = String.valueOf(table.getModel().getValueAt(viewRow, 0));
-        int idx = findMasterIndexById(id);
-        if (idx >= 0) {
-            masterData.remove(idx);
-            refreshTableFromMaster(currentKeyword, currentDept);
+        String manv = String.valueOf(table.getModel().getValueAt(viewRow, 0));
+        if (nhanVienHRDAO.delete(manv)) {
+            loadMasterDataFromDb();
+            refreshTableFromMaster(currentKeyword, currentDeptFilter);
+            JOptionPane.showMessageDialog(null, "Đã xóa nhân viên.");
+        } else {
+            JOptionPane.showMessageDialog(null, "Lỗi khi xóa (có thể nhân viên đã được tham chiếu ở bảng khác).");
         }
     }
 
@@ -406,13 +484,22 @@ public class EmployeeManagementPanel extends JPanel {
     private void openEditEmployeeForm(int masterIndex) {
         if (masterIndex < 0 || masterIndex >= masterData.size()) return;
         Object[] r = masterData.get(masterIndex);
-        JTextField idField = new JTextField(String.valueOf(r[0]));
-        JTextField nameField = new JTextField(String.valueOf(r[1]));
-        JTextField emailField = new JTextField(String.valueOf(r[2]));
-        JTextField deptField = new JTextField(String.valueOf(r[3]));
-        JTextField posField = new JTextField(String.valueOf(r[4]));
-        JComboBox<String> statusBox = new JComboBox<>(new String[]{"Đang làm", "Nghỉ việc"});
-        statusBox.setSelectedItem(String.valueOf(r[5]));
+        String manv = String.valueOf(r[0]);
+        NhanVienDTO nv = nhanVienHRDAO.findById(manv);
+        if (nv == null) {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy nhân viên trong database.");
+            return;
+        }
+
+        JTextField idField = new JTextField(nv.getManv());
+        idField.setEditable(false);
+        JTextField nameField = new JTextField(nv.getHoten());
+        JTextField emailField = new JTextField(nv.getEmail());
+        JTextField deptField = new JTextField(nv.getMaphongban() != null ? nv.getMaphongban() : "");
+        String tenChucVu = chucVuDAO.getTenChucVu(nv.getMachucvu());
+        JTextField posField = new JTextField(tenChucVu != null ? tenChucVu : nv.getMachucvu());
+        JComboBox<String> statusBox = new JComboBox<>(new String[]{"Đang làm việc", "Nghỉ việc"});
+        statusBox.setSelectedItem(nv.getTrangthai() != null ? nv.getTrangthai() : "Đang làm việc");
 
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
         form.add(new JLabel("Mã NV:"));
@@ -432,13 +519,19 @@ public class EmployeeManagementPanel extends JPanel {
                 "Sửa nhân viên", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
-            r[0] = idField.getText();
-            r[1] = nameField.getText();
-            r[2] = emailField.getText();
-            r[3] = deptField.getText();
-            r[4] = posField.getText();
-            r[5] = String.valueOf(statusBox.getSelectedItem());
-            refreshTableFromMaster(currentKeyword, currentDept);
+            nv.setHoten(nameField.getText().trim());
+            nv.setEmail(emailField.getText().trim());
+            nv.setMaphongban(deptField.getText().trim());
+            nv.setMachucvu(chucVuDAO.getMaChucVuByTen(posField.getText().trim()));
+            nv.setTrangthai(normalizeTrangThai(String.valueOf(statusBox.getSelectedItem())));
+
+            if (nhanVienHRDAO.update(nv)) {
+                loadMasterDataFromDb();
+                refreshTableFromMaster(currentKeyword, currentDeptFilter);
+                JOptionPane.showMessageDialog(null, "Cập nhật nhân viên thành công!");
+            } else {
+                JOptionPane.showMessageDialog(null, "Lỗi khi lưu vào database.");
+            }
         }
     }
 
