@@ -5,10 +5,17 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,13 +33,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import com.hrm.DAO.PositionDAO;
+import com.hrm.DAO.TrinhDoDAO;
 import com.hrm.DTO.HR.DepartmentDTO;
 import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.DTO.PositionDTO;
+import com.hrm.DTO.TrinhDoDTO;
 import com.hrm.Service.DepartmentService;
 
 public class EmployeeManagementPanel extends JPanel {
@@ -40,10 +49,12 @@ public class EmployeeManagementPanel extends JPanel {
     private JTable table;
     private DefaultTableModel model;
     private List<Object[]> masterData = new ArrayList<>();
-    private JTextField searchField;
     private JComboBox<String> filterBox;
+    private JTextField searchField;
     private String currentKeyword = "";
     private String currentDeptFilter = null; // null = "Tất cả phòng ban", else mã phòng ban (PB01, PB02...)
+
+    private static final String SEARCH_PLACEHOLDER = "Tìm kiếm nhân viên theo tên hoặc mã nhân viên";
 
     private Icon viewIcon;
     private Icon editIcon;
@@ -51,6 +62,8 @@ public class EmployeeManagementPanel extends JPanel {
 
     private com.hrm.DAO.HR.NhanVienHRDAO nhanVienHRDAO = new com.hrm.DAO.HR.NhanVienHRDAO();
     private com.hrm.DAO.HR.ChucVuHRDAO chucVuDAO = new com.hrm.DAO.HR.ChucVuHRDAO();
+    private TrinhDoDAO trinhDoDAO = new TrinhDoDAO();
+    private PositionDAO positionDAO = new PositionDAO();
     private DepartmentService departmentService = new DepartmentService();
 
     public EmployeeManagementPanel() {
@@ -64,6 +77,19 @@ public class EmployeeManagementPanel extends JPanel {
 
         add(createHeader(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
+
+        // Mỗi khi chuyển sang tab Quản lý nhân viên, tải lại toàn bộ dữ liệu từ bảng nhanvien trong database.
+        addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                    loadMasterDataFromDb();
+                    currentDeptFilter = getSelectedDeptCode();
+                    currentKeyword = "";
+                    refreshTableFromMaster(currentKeyword, currentDeptFilter);
+                }
+            }
+        });
     }
 
     private Icon loadIcon(String path) {
@@ -97,10 +123,10 @@ public class EmployeeManagementPanel extends JPanel {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setOpaque(false);
 
-        searchField = new JTextField(20);
-        final String SEARCH_PLACEHOLDER = "Tìm kiếm theo họ tên và mã nhân viên";
+        searchField = new JTextField(35);
         searchField.setText(SEARCH_PLACEHOLDER);
-        searchField.setForeground(new Color(150, 150, 150));
+        searchField.setForeground(Color.GRAY);
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         searchField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -109,14 +135,28 @@ public class EmployeeManagementPanel extends JPanel {
                     searchField.setForeground(Color.BLACK);
                 }
             }
+
             @Override
             public void focusLost(FocusEvent e) {
                 if (searchField.getText().trim().isEmpty()) {
                     searchField.setText(SEARCH_PLACEHOLDER);
-                    searchField.setForeground(new Color(150, 150, 150));
+                    searchField.setForeground(Color.GRAY);
                 }
             }
         });
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                String text = searchField.getText().trim();
+                if (SEARCH_PLACEHOLDER.equals(searchField.getText())) {
+                    currentKeyword = "";
+                } else {
+                    currentKeyword = text.toLowerCase();
+                }
+                refreshTableFromMaster(currentKeyword, currentDeptFilter);
+            }
+        });
+
         filterBox = new JComboBox<>();
         filterBox.addItem("Tất cả phòng ban");
         for (DepartmentDTO d : departmentService.getAllDepartments()) {
@@ -129,24 +169,12 @@ public class EmployeeManagementPanel extends JPanel {
         // Action mở form thêm nhân viên
         addBtn.addActionListener(e -> openAddEmployeeForm());
 
-        // Live search (DocumentListener)
-        searchField.getDocument().addDocumentListener(new DocumentListener() {
-            private void update() {
-                String text = searchField.getText().trim();
-                if (SEARCH_PLACEHOLDER.equals(text)) text = "";
-                currentKeyword = text.toLowerCase();
-                currentDeptFilter = getSelectedDeptCode();
-                refreshTableFromMaster(currentKeyword, currentDeptFilter);
-            }
-            @Override public void insertUpdate(DocumentEvent e) { update(); }
-            @Override public void removeUpdate(DocumentEvent e) { update(); }
-            @Override public void changedUpdate(DocumentEvent e) { update(); }
-        });
-
-        // Action lọc phòng ban: khi chọn phòng ban thì chỉ hiện nhân viên thuộc phòng đó
+        // Lọc phòng ban: khi chọn phòng ban thì chỉ hiện nhân viên thuộc phòng đó
         filterBox.addActionListener(e -> {
             currentDeptFilter = getSelectedDeptCode();
-            currentKeyword = searchField.getText().trim().toLowerCase();
+            currentKeyword = "";
+            searchField.setText(SEARCH_PLACEHOLDER);
+            searchField.setForeground(Color.GRAY);
             refreshTableFromMaster(currentKeyword, currentDeptFilter);
         });
 
@@ -166,21 +194,33 @@ public class EmployeeManagementPanel extends JPanel {
         panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
-        String[] columns = {"MÃ NV", "HỌ VÀ TÊN", "EMAIL", "PHÒNG BAN", "CHỨC VỤ", "TRẠNG THÁI", "THAO TÁC"};
+        String[] columns = {"MÃ NV", "HỌ VÀ TÊN", "GIỚI TÍNH", "EMAIL", "ĐIỆN THOẠI", "ĐỊA CHỈ", "PHÒNG BAN", "CHỨC VỤ", "TRÌNH ĐỘ", "NGÀY VÀO LÀM", "SỐ NGÀY PHÉP", "TRẠNG THÁI", "THAO TÁC"};
 
-        // Lấy dữ liệu từ database HR (JDBCConection / HRM_System), không dùng NhanVienDAO (JDBCUtil)
+        // Đổ toàn bộ dữ liệu từ bảng nhanvien trong database vào bảng quản lý nhân viên.
         masterData.clear();
         java.util.List<com.hrm.DTO.Manager.NhanVienDTO> dsNhanVien = nhanVienHRDAO.getAll();
         for (com.hrm.DTO.Manager.NhanVienDTO nv : dsNhanVien) {
-            String maChucVu = nv.getMachucvu();
-            String tenChucVu = chucVuDAO.getTenChucVu(maChucVu);
+            String tenChucVu = chucVuDAO.getTenChucVu(nv.getMachucvu());
+            String tenPhongBan = departmentService.findDepartmentById(nv.getMaphongban()) != null
+                    ? departmentService.findDepartmentById(nv.getMaphongban()).getTenPhongBan() : "";
+            String tenTrinhDo = "";
+            if (nv.getMatrinhdo() != null) {
+                var td = trinhDoDAO.getTrinhDoById(nv.getMatrinhdo());
+                tenTrinhDo = td != null && td.getTrinhDo() != null ? td.getTrinhDo() : nv.getMatrinhdo();
+            }
             Object[] row = {
-                nv.getManv(),
-                nv.getHoten(),
-                nv.getEmail(),
-                nv.getMaphongban(), // Nếu có DAO phòng ban thì lấy tên
-                tenChucVu,          // Hiển thị tên chức vụ
-                nv.getTrangthai()
+                str(nv.getManv()),
+                str(nv.getHoten()),
+                str(nv.getGioitinh()),
+                str(nv.getEmail()),
+                str(nv.getDienthoai()),
+                str(nv.getDiachi()),
+                tenPhongBan,
+                str(tenChucVu),
+                tenTrinhDo,
+                str(nv.getNgayvaolam()),
+                nv.getSongayphep(),
+                str(nv.getTrangthai()) != null && !str(nv.getTrangthai()).isEmpty() ? str(nv.getTrangthai()) : "Đang làm việc"
             };
             masterData.add(row);
         }
@@ -188,7 +228,7 @@ public class EmployeeManagementPanel extends JPanel {
         model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 6; // chỉ cột thao tác có thể chứa nút
+                return column == 12; // chỉ cột thao tác có thể chứa nút
             }
         };
 
@@ -206,19 +246,37 @@ public class EmployeeManagementPanel extends JPanel {
         return panel;
     }
 
-    /** Tải lại masterData từ database (sau khi thêm/sửa/xóa để dữ liệu còn sau khi đăng xuất/đăng nhập). */
+    /** Trả về chuỗi hiển thị, NULL trong DB hiển thị thành rỗng. */
+    private static String str(Object o) {
+        return o != null ? o.toString() : "";
+    }
+
+    /** Tải lại toàn bộ dữ liệu từ bảng nhanvien trong database vào quản lý nhân viên. */
     private void loadMasterDataFromDb() {
         masterData.clear();
         java.util.List<NhanVienDTO> dsNhanVien = nhanVienHRDAO.getAll();
         for (NhanVienDTO nv : dsNhanVien) {
             String tenChucVu = chucVuDAO.getTenChucVu(nv.getMachucvu());
+            String tenPhongBan = departmentService.findDepartmentById(nv.getMaphongban()) != null
+                    ? departmentService.findDepartmentById(nv.getMaphongban()).getTenPhongBan() : "";
+            String tenTrinhDo = "";
+            if (nv.getMatrinhdo() != null) {
+                var td = trinhDoDAO.getTrinhDoById(nv.getMatrinhdo());
+                tenTrinhDo = td != null && td.getTrinhDo() != null ? td.getTrinhDo() : nv.getMatrinhdo();
+            }
             Object[] row = {
-                    nv.getManv(),
-                    nv.getHoten(),
-                    nv.getEmail(),
-                    nv.getMaphongban(),
-                    tenChucVu,
-                    nv.getTrangthai()
+                    str(nv.getManv()),
+                    str(nv.getHoten()),
+                    str(nv.getGioitinh()),
+                    str(nv.getEmail()),
+                    str(nv.getDienthoai()),
+                    str(nv.getDiachi()),
+                    tenPhongBan,
+                    str(tenChucVu),
+                    tenTrinhDo,
+                    str(nv.getNgayvaolam()),
+                    nv.getSongayphep(),
+                    str(nv.getTrangthai()) != null && !str(nv.getTrangthai()).isEmpty() ? str(nv.getTrangthai()) : "Đang làm việc"
             };
             masterData.add(row);
         }
@@ -241,27 +299,31 @@ public class EmployeeManagementPanel extends JPanel {
     }
 
     private void refreshTableFromMaster(String keyword, String deptCode) {
-        String[] columns = {"MÃ NV", "HỌ VÀ TÊN", "EMAIL", "PHÒNG BAN", "CHỨC VỤ", "TRẠNG THÁI", "THAO TÁC"};
+        String[] columns = {"MÃ NV", "HỌ VÀ TÊN", "GIỚI TÍNH", "EMAIL", "ĐIỆN THOẠI", "ĐỊA CHỈ", "PHÒNG BAN", "CHỨC VỤ", "TRÌNH ĐỘ", "NGÀY VÀO LÀM", "SỐ NGÀY PHÉP", "TRẠNG THÁI", "THAO TÁC"};
         DefaultTableModel newModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 6;
+                return column == 12; // chỉ cột THAO TÁC
             }
         };
+
+        String filterDeptName = (deptCode != null && !deptCode.isEmpty())
+                && departmentService.findDepartmentById(deptCode) != null
+                ? departmentService.findDepartmentById(deptCode).getTenPhongBan() : null;
 
         for (Object[] r : masterData) {
             String id = String.valueOf(r[0]).toLowerCase();
             String name = String.valueOf(r[1]).toLowerCase();
-            String email = String.valueOf(r[2]).toLowerCase();
-            String department = String.valueOf(r[3]);
+            String email = String.valueOf(r[3]).toLowerCase();
+            String tenPhongBan = r.length > 6 ? String.valueOf(r[6]) : "";
 
             boolean matchKeyword = (keyword == null || keyword.isEmpty()) || id.contains(keyword) || name.contains(keyword) || email.contains(keyword);
-            boolean matchDept = (deptCode == null || deptCode.isEmpty()) || department.equals(deptCode);
+            boolean matchDept = (deptCode == null || deptCode.isEmpty()) || (filterDeptName != null && filterDeptName.equals(tenPhongBan));
 
             if (matchKeyword && matchDept) {
-                Object[] row = new Object[7];
-                System.arraycopy(r, 0, row, 0, Math.min(r.length, 6));
-                row[6] = ""; // placeholder for action column
+                Object[] row = new Object[13];
+                System.arraycopy(r, 0, row, 0, Math.min(r.length, 12));
+                row[12] = ""; // placeholder for action column
                 newModel.addRow(row);
             }
         }
@@ -278,11 +340,36 @@ public class EmployeeManagementPanel extends JPanel {
 
     // ================= FORM THÊM NHÂN VIÊN =================
     private void openAddEmployeeForm() {
-        JTextField idField = new JTextField();
-        JTextField nameField = new JTextField();
-        JTextField emailField = new JTextField();
-        JTextField deptField = new JTextField();
-        JTextField posField = new JTextField();
+        JTextField idField = new JTextField(20);
+        JTextField nameField = new JTextField(20);
+        JComboBox<String> genderBox = new JComboBox<>(new String[]{"Nam", "Nữ"});
+        JTextField emailField = new JTextField(20);
+        JTextField phoneField = new JTextField(20);
+        JTextField addressField = new JTextField(20);
+
+        JComboBox<String> deptBox = new JComboBox<>();
+        deptBox.addItem("-- Chọn phòng ban --");
+        for (DepartmentDTO d : departmentService.getAllDepartments()) {
+            deptBox.addItem(d.getMaPhongBan() + " - " + d.getTenPhongBan());
+        }
+
+        List<PositionDTO> positions = positionDAO.getAllPositions();
+        JComboBox<String> posBox = new JComboBox<>();
+        posBox.addItem("-- Chọn chức vụ --");
+        for (PositionDTO p : positions) {
+            posBox.addItem(p.getTenViTri() != null ? p.getTenViTri() : p.getMaChucVu());
+        }
+
+        List<TrinhDoDTO> trinhDoList = trinhDoDAO.getAllTrinhDo();
+        JComboBox<String> trinhDoBox = new JComboBox<>();
+        trinhDoBox.addItem("-- Chọn trình độ --");
+        for (TrinhDoDTO td : trinhDoList) {
+            trinhDoBox.addItem(td.getTrinhDo() != null ? td.getTrinhDo() : td.getMaTrinhDo());
+        }
+
+        JTextField ngayVaoLamField = new JTextField(20);
+        ngayVaoLamField.setToolTipText("yyyy-MM-dd (ví dụ: 2024-01-15)");
+        JTextField soNgayPhepField = new JTextField("12", 10);
         JComboBox<String> statusBox = new JComboBox<>(new String[]{"Đang làm", "Nghỉ việc"});
 
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
@@ -290,12 +377,24 @@ public class EmployeeManagementPanel extends JPanel {
         form.add(idField);
         form.add(new JLabel("Họ và tên:"));
         form.add(nameField);
+        form.add(new JLabel("Giới tính:"));
+        form.add(genderBox);
         form.add(new JLabel("Email:"));
         form.add(emailField);
+        form.add(new JLabel("Điện thoại:"));
+        form.add(phoneField);
+        form.add(new JLabel("Địa chỉ:"));
+        form.add(addressField);
         form.add(new JLabel("Phòng ban:"));
-        form.add(deptField);
+        form.add(deptBox);
         form.add(new JLabel("Chức vụ:"));
-        form.add(posField);
+        form.add(posBox);
+        form.add(new JLabel("Trình độ:"));
+        form.add(trinhDoBox);
+        form.add(new JLabel("Ngày vào làm:"));
+        form.add(ngayVaoLamField);
+        form.add(new JLabel("Số ngày phép:"));
+        form.add(soNgayPhepField);
         form.add(new JLabel("Trạng thái:"));
         form.add(statusBox);
 
@@ -305,9 +404,44 @@ public class EmployeeManagementPanel extends JPanel {
         if (result == JOptionPane.OK_OPTION) {
             String manv = idField.getText().trim();
             String hoten = nameField.getText().trim();
+            String gioitinh = String.valueOf(genderBox.getSelectedItem());
             String email = emailField.getText().trim();
-            String maphongban = deptField.getText().trim();
-            String machucvu = chucVuDAO.getMaChucVuByTen(posField.getText().trim());
+            String dienthoai = phoneField.getText().trim();
+            String diachi = addressField.getText().trim();
+
+            Object deptSel = deptBox.getSelectedItem();
+            String maphongban = null;
+            if (deptSel != null && !"-- Chọn phòng ban --".equals(deptSel.toString())) {
+                String s = deptSel.toString();
+                maphongban = s.contains(" - ") ? s.substring(0, s.indexOf(" - ")).trim() : s;
+            }
+
+            int posIdx = posBox.getSelectedIndex();
+            String machucvu = (posIdx > 0 && posIdx <= positions.size()) ? positions.get(posIdx - 1).getMaChucVu() : "CV02";
+
+            int tdIdx = trinhDoBox.getSelectedIndex();
+            String matrinhdo = (tdIdx > 0 && tdIdx <= trinhDoList.size()) ? trinhDoList.get(tdIdx - 1).getMaTrinhDo() : "TD01";
+
+            LocalDate ngayvaolam = null;
+            String ngayStr = ngayVaoLamField.getText().trim();
+            if (!ngayStr.isEmpty()) {
+                try {
+                    ngayvaolam = LocalDate.parse(ngayStr, DateTimeFormatter.ISO_LOCAL_DATE);
+                } catch (DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(null, "Ngày vào làm không hợp lệ. Dùng định dạng yyyy-MM-dd.");
+                    return;
+                }
+            }
+
+            int songayphep = 12;
+            try {
+                String sp = soNgayPhepField.getText().trim();
+                if (!sp.isEmpty()) songayphep = Integer.parseInt(sp);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(null, "Số ngày phép phải là số nguyên.");
+                return;
+            }
+
             String trangthai = normalizeTrangThai(String.valueOf(statusBox.getSelectedItem()));
 
             if (manv.isEmpty() || hoten.isEmpty()) {
@@ -319,7 +453,7 @@ public class EmployeeManagementPanel extends JPanel {
                 return;
             }
 
-            NhanVienDTO dto = new NhanVienDTO(manv, maphongban, machucvu, "TD01", hoten, null, null, null, email, null, 12, trangthai);
+            NhanVienDTO dto = new NhanVienDTO(manv, maphongban, machucvu, matrinhdo, hoten, gioitinh, diachi, dienthoai, email, ngayvaolam, songayphep, trangthai);
             if (nhanVienHRDAO.insert(dto)) {
                 loadMasterDataFromDb();
                 refreshTableFromMaster(currentKeyword, currentDeptFilter);
@@ -471,13 +605,17 @@ public class EmployeeManagementPanel extends JPanel {
         Object[] r = masterData.get(masterIndex);
         String id = String.valueOf(r[0]);
         String name = String.valueOf(r[1]);
-        String email = String.valueOf(r[2]);
-        String dept = String.valueOf(r[3]);
-        String pos = String.valueOf(r[4]);
-        String status = String.valueOf(r[5]);
+        String email = r.length > 3 ? String.valueOf(r[3]) : "";
+        String dept = r.length > 6 ? String.valueOf(r[6]) : "";
+        String pos = r.length > 7 ? String.valueOf(r[7]) : "";
+        String trinhDo = r.length > 8 ? String.valueOf(r[8]) : "";
+        String ngayVaoLam = r.length > 9 ? String.valueOf(r[9]) : "";
+        String soNgayPhep = r.length > 10 ? String.valueOf(r[10]) : "";
+        String status = r.length > 11 ? String.valueOf(r[11]) : "";
 
-        String message = String.format("Mã NV: %s\nHọ và tên: %s\nEmail: %s\nPhòng ban: %s\nChức vụ: %s\nTrạng thái: %s",
-                id, name, email, dept, pos, status);
+        String message = String.format(
+                "Mã NV: %s\nHọ và tên: %s\nEmail: %s\nPhòng ban: %s\nChức vụ: %s\nTrình độ: %s\nNgày vào làm: %s\nSố ngày phép: %s\nTrạng thái: %s",
+                id, name, email, dept, pos, trinhDo, ngayVaoLam, soNgayPhep, status);
         JOptionPane.showMessageDialog(null, message, "Chi tiết nhân viên", JOptionPane.INFORMATION_MESSAGE);
     }
 
