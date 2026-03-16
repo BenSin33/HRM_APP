@@ -236,11 +236,18 @@ public class EmployeeManagementPanel extends JPanel {
         table.setRowHeight(40);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        // Tắt tự co cột để cột không bị ép nhỏ gây cắt chữ; dùng thanh kéo ngang xem hết
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         // initial fill (Tất cả phòng ban)
         refreshTableFromMaster("", null);
 
+        // Độ rộng ưu tiên từng cột để nội dung đủ hiển thị, kéo ngang xem hết
+        setTableColumnPreferredWidths();
+
         JScrollPane scroll = new JScrollPane(table);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         panel.add(scroll, BorderLayout.CENTER);
 
         return panel;
@@ -332,10 +339,27 @@ public class EmployeeManagementPanel extends JPanel {
         table.setModel(newModel);
         table.getColumn("THAO TÁC").setCellRenderer(new ButtonRenderer());
         table.getColumn("THAO TÁC").setCellEditor(new ButtonEditor(new JCheckBox()));
+        setTableColumnPreferredWidths();
+    }
+
+    /** Đặt độ rộng ưu tiên từng cột để nội dung không bị cắt, kéo ngang xem hết. */
+    private void setTableColumnPreferredWidths() {
         try {
+            table.getColumn("MÃ NV").setPreferredWidth(70);
+            table.getColumn("HỌ VÀ TÊN").setPreferredWidth(160);
+            table.getColumn("GIỚI TÍNH").setPreferredWidth(75);
+            table.getColumn("EMAIL").setPreferredWidth(200);
+            table.getColumn("ĐIỆN THOẠI").setPreferredWidth(110);
+            table.getColumn("ĐỊA CHỈ").setPreferredWidth(220);
+            table.getColumn("PHÒNG BAN").setPreferredWidth(100);
+            table.getColumn("CHỨC VỤ").setPreferredWidth(110);
+            table.getColumn("TRÌNH ĐỘ").setPreferredWidth(90);
+            table.getColumn("NGÀY VÀO LÀM").setPreferredWidth(110);
+            table.getColumn("SỐ NGÀY PHÉP").setPreferredWidth(90);
+            table.getColumn("TRẠNG THÁI").setPreferredWidth(120);
             table.getColumn("THAO TÁC").setMinWidth(110);
             table.getColumn("THAO TÁC").setPreferredWidth(130);
-        } catch (Exception ex) { }
+        } catch (Exception ignored) { }
     }
 
     // ================= FORM THÊM NHÂN VIÊN =================
@@ -444,12 +468,37 @@ public class EmployeeManagementPanel extends JPanel {
 
             String trangthai = normalizeTrangThai(String.valueOf(statusBox.getSelectedItem()));
 
-            if (manv.isEmpty() || hoten.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Vui lòng nhập Mã NV và Họ tên!");
+            // ========== Kiểm tra dữ liệu đầu vào ==========
+            if (manv.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã NV không được trống!");
                 return;
             }
             if (nhanVienHRDAO.findById(manv) != null) {
-                JOptionPane.showMessageDialog(null, "Mã NV đã tồn tại!");
+                JOptionPane.showMessageDialog(null, "Mã NV đã tồn tại (không trùng)!");
+                return;
+            }
+            if (hoten.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Họ tên không được trống!");
+                return;
+            }
+            if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._-]+@company\\.com$")) {
+                JOptionPane.showMessageDialog(null, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)");
+                return;
+            }
+            if (!dienthoai.isEmpty() && !dienthoai.matches("^\\d{10}$")) {
+                JOptionPane.showMessageDialog(null, "Điện thoại phải là đúng 10 chữ số!");
+                return;
+            }
+            if (maphongban == null || maphongban.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Phải chọn Phòng ban!");
+                return;
+            }
+            if (posIdx <= 0) {
+                JOptionPane.showMessageDialog(null, "Phải chọn Chức vụ!");
+                return;
+            }
+            if (tdIdx <= 0) {
+                JOptionPane.showMessageDialog(null, "Phải chọn Trình độ!");
                 return;
             }
 
