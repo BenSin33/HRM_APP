@@ -12,6 +12,60 @@ import java.util.*;
 /**
  * Utility class for importing data from Excel files
  * Support for flexible column mapping
+ * 
+ * HƯỚNG DẪN SỬ DỤNG:
+ * ==================
+ * Lớp này cung cấp các phương thức để nhập dữ liệu từ tệp Excel (.xlsx)
+ * với các tính năng: kiểm tra header, ánh xạ cột linh hoạt, xử lý các kiểu dữ liệu khác nhau
+ * 
+ * CÁC PHƯƠNG THỨC CHÍNH:
+ * 
+ * 1. importFromExcelWithDialog() - Nhập Excel với hộp thoại chọn file
+ *    Ưu điểm: Cho phép người dùng chọn file, tự động kiểm tra header
+ *    
+ *    Cách sử dụng:
+ *    String[] expectedHeaders = {"Mã NV", "Tên", "Phòng", "Lương"};
+ *    Map<String, Object> result = ExcelImporter.importFromExcelWithDialog(expectedHeaders, parentComponent);
+ *    
+ *    if (result != null) {
+ *        List<Object[]> data = (List<Object[]>) result.get("data");
+ *        // Xử lý dữ liệu
+ *    }
+ * 
+ * 2. importFromExcel() - Nhập Excel với đường dẫn cụ thể và kiểm tra header
+ *    Ưu điểm: Có thể nhập file trực tiếp, kiểm tra dữ liệu chính xác
+ *    
+ *    Cách sử dụng:
+ *    String filePath = "C:/input/nhanvien.xlsx";
+ *    String[] expectedHeaders = {"Mã NV", "Tên", "Phòng", "Lương"};
+ *    Map<String, Object> result = ExcelImporter.importFromExcel(filePath, expectedHeaders, true);
+ *    
+ *    Tham số thứ 3 (true): Bỏ qua hàng đầu tiên (coi đó là header)
+ * 
+ * 3. importFromExcel(String filePath) - Nhập đơn giản mà không kiểm tra header
+ *    Ưu điểm: Nhanh, áp dụng cho file có định dạng đã biết
+ *    
+ *    Cách sử dụng:
+ *    List<Object[]> data = ExcelImporter.importFromExcel("C:/input/nhanvien.xlsx");
+ * 
+ * 4. getExcelHeaders() - Lấy danh sách header từ file Excel
+ *    Ưu điểm: Kiểm tra định dạng file trước khi nhập
+ *    
+ *    Cách sử dụng:
+ *    String[] headers = ExcelImporter.getExcelHeaders("C:/input/nhanvien.xlsx");
+ * 
+ * 5. getRowCount() - Lấy số dòng trong tệp Excel
+ *    Ưu điểm: Kiểm tra số lượng dữ liệu trong file
+ *    
+ *    Cách sử dụng:
+ *    int rowCount = ExcelImporter.getRowCount("C:/input/nhanvien.xlsx");
+ * 
+ * LƯU Ý:
+ * - Dữ liệu được trả về dạng List<Object[]>, mỗi hàng là một mảng Object
+ * - Các kiểu dữ liệu được hỗ trợ: String, Number, Boolean, Date
+ * - Header phải khớp với expectedHeaders (tên cột có thể ở vị trí khác nhau)
+ * - Kiểm tra header không phân biệt chữ hoa/thường
+ * - Nếu file không có dữ liệu hoặc lỗi, sẽ hiển thị thông báo lỗi
  */
 public class ExcelImporter {
 
