@@ -137,4 +137,42 @@ public class NhanVienDAO {
         }
         return 0;
     }
+
+    /**
+     * Lấy danh sách nhân viên theo chức vụ
+     * @param machucvu - mã chức vụ (CV01, CV02, CV03)
+     * @return danh sách nhân viên
+     */
+    public List<NhanVienDTO> getEmployeesByChucVu(String machucvu) {
+        List<NhanVienDTO> dsNhanVien = new ArrayList<>();
+        String sql = "SELECT * FROM nhanvien WHERE machucvu = ? AND trangthai = 'Hoạt động'";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, machucvu);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    java.sql.Date sqlDate = rs.getDate("ngayvaolam");
+                    NhanVienDTO nv = new NhanVienDTO(
+                        rs.getString("manv"),
+                        rs.getString("maphongban"),
+                        rs.getString("machucvu"),
+                        rs.getString("matrinhdo"),
+                        rs.getString("hoten"),
+                        rs.getString("gioitinh"),
+                        rs.getString("diachi"),
+                        rs.getString("dienthoai"),
+                        rs.getString("email"),
+                        sqlDate != null ? sqlDate.toLocalDate() : null,
+                        rs.getInt("songayphep"),
+                        rs.getString("trangthai")
+                    );
+                    dsNhanVien.add(nv);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return dsNhanVien;
+    }
 }

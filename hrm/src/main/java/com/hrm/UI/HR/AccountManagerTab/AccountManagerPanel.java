@@ -2,8 +2,9 @@ package com.hrm.UI.HR.AccountManagerTab;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.Service.AccountManagerService;
+import com.hrm.utils.AccountExcelHelper;
+
 import javax.swing.*;
-import java.awt.*;
 import java.util.List;
 
 public class AccountManagerPanel extends JPanel {
@@ -13,7 +14,7 @@ public class AccountManagerPanel extends JPanel {
 
     public AccountManagerPanel() {
         this.accountManagerService = new AccountManagerService();
-        setLayout(new BorderLayout(0, 20));
+        setLayout(new java.awt.BorderLayout(0, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
@@ -23,20 +24,20 @@ public class AccountManagerPanel extends JPanel {
             e -> handleImportAccounts(),
             e -> handleExportAccounts()
         );
-        this.add(header, BorderLayout.NORTH);
+        this.add(header, java.awt.BorderLayout.NORTH);
 
         // 2. Nội dung chính
-        JPanel content = new JPanel(new BorderLayout(0, 20));
+        javax.swing.JPanel content = new javax.swing.JPanel(new java.awt.BorderLayout(0, 20));
         content.setOpaque(false);
 
         // Phần A: Thống kê tài khoản (Summary)
-        content.add(new AccountSummary(), BorderLayout.NORTH);
+        content.add(new AccountSummary(), java.awt.BorderLayout.NORTH);
 
         // Phần B: Bảng dữ liệu tài khoản
         accountTableContent = new AccountTable();
-        content.add(accountTableContent, BorderLayout.CENTER);
+        content.add(accountTableContent, java.awt.BorderLayout.CENTER);
 
-        this.add(content, BorderLayout.CENTER);
+        this.add(content, java.awt.BorderLayout.CENTER);
     }
 
     private void handleAddAccount() {
@@ -71,11 +72,11 @@ public class AccountManagerPanel extends JPanel {
     }
 
     private void handleImportAccounts() {
-        JOptionPane.showMessageDialog(this, "Nhập khẩu tài khoản từ file!");
+        AccountExcelHelper.handleAccountImport(accountTableContent.getAccountTable(), this);
     }
 
     private void handleExportAccounts() {
-        JOptionPane.showMessageDialog(this, "Xuất khẩu danh sách tài khoản!");
+        AccountExcelHelper.handleAccountExport(accountTableContent.getAccountTable(), this);
     }
 }
 

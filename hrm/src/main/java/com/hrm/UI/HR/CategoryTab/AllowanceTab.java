@@ -3,6 +3,7 @@ package com.hrm.UI.HR.CategoryTab;
 import com.hrm.DAO.AllowanceDAO;
 import com.hrm.DTO.AllowanceDTO;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.utils.CategoryExcelHelper;
 import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.*;
@@ -20,7 +21,7 @@ public class AllowanceTab extends JPanel {
     private AllowanceDAO allowanceDAO;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
-    private JButton btnAdd, btnRefresh;
+    private JButton btnAdd, btnRefresh, btnExport, btnImport;
 
     public AllowanceTab() {
         setLayout(new BorderLayout(10, 10));
@@ -54,8 +55,23 @@ public class AllowanceTab extends JPanel {
         btnRefresh.putClientProperty(FlatClientProperties.STYLE, "background: #2196F3; foreground: #ffffff");
         btnRefresh.addActionListener(e -> loadData());
 
+        btnExport = new JButton("Xuất Excel");
+        btnExport.putClientProperty(FlatClientProperties.STYLE, "background: #059669; foreground: #ffffff");
+        btnExport.addActionListener(e -> handleExport());
+
+        btnImport = new JButton("Nhập Excel");
+        btnImport.putClientProperty(FlatClientProperties.STYLE, "background: #0891b2; foreground: #ffffff");
+        btnImport.addActionListener(e -> handleImport());
+
         panel.add(btnAdd);
         panel.add(btnRefresh);
+        panel.add(new JSeparator(JSeparator.VERTICAL) {
+            {
+                setPreferredSize(new Dimension(1, 30));
+            }
+        });
+        panel.add(btnExport);
+        panel.add(btnImport);
 
         return panel;
     }
@@ -198,6 +214,18 @@ public class AllowanceTab extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Xóa phụ cấp thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void handleExport() {
+        CategoryExcelHelper.handleCategoryExport(table, this, "Phucap");
+    }
+
+    private void handleImport() {
+        var result = com.hrm.utils.ExcelImporter.importFromExcelWithDialog(CategoryExcelHelper.ALLOWANCE_HEADERS, this);
+        if (result != null) {
+            com.hrm.utils.ExcelDataManager.loadImportedDataToTable(table, result);
+            loadData();
         }
     }
 

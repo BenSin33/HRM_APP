@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import com.hrm.DTO.PermissionDTO;
 import com.hrm.Service.PermissionService;
+import java.awt.*;
 import java.util.List;
 
 public class PermissionTable extends JTable {
@@ -13,7 +14,7 @@ public class PermissionTable extends JTable {
     private String currentRoleId;
 
     public PermissionTable(){
-        String[] columnNames = {"Chức năng (Module)", "Xem", "Thêm", "Sửa", "Xóa"};
+        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa"};
         
         // Dữ liệu mẫu ban đầu
         Object[][] data = {};
@@ -33,17 +34,23 @@ public class PermissionTable extends JTable {
         };
 
         this.setModel(model);
-        this.setRowHeight(45);
+        this.setRowHeight(40);
         this.setShowVerticalLines(false);
+        this.setGridColor(new Color(220, 220, 220));
         this.getTableHeader().setReorderingAllowed(false);
+        this.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        
+        // Tùy chỉnh header
+        this.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+        this.getTableHeader().setBackground(new Color(248, 249, 250));
+        this.getTableHeader().setForeground(new Color(75, 85, 99));
+        this.getTableHeader().setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         
         permissionService = new PermissionService();
     }
     
     /**
      * Cập nhật dữ liệu bảng từ danh sách PermissionDTO
-     * @param permissions Danh sách quyền từ database
-     * @param roleId ID của vai trò hiện tại
      */
     public void updateData(List<PermissionDTO> permissions, String roleId) {
         this.currentRoleId = roleId;
@@ -85,15 +92,22 @@ public class PermissionTable extends JTable {
     }
     
     /**
+     * Lấy mã chức năng từ tên chức năng
+     */
+    private String getMachucNang(int rowIndex) {
+        String[] machucNangs = {"CN01", "CN02", "CN03", "CN04", "CN05", "CN06", "CN07"};
+        return rowIndex < machucNangs.length ? machucNangs[rowIndex] : "";
+    }
+    
+    /**
      * Lưu các thay đổi quyền vào database
      */
     public boolean saveChanges() {
         try {
             int rowCount = model.getRowCount();
-            String[] machucNangs = {"CN01", "CN02", "CN03", "CN04", "CN05", "CN06", "CN07"};
             
-            for (int i = 0; i < rowCount && i < machucNangs.length; i++) {
-                String machucNang = machucNangs[i];
+            for (int i = 0; i < rowCount; i++) {
+                String machucNang = getMachucNang(i);
                 boolean quyenXem = (boolean) model.getValueAt(i, 1);
                 boolean quyenThem = (boolean) model.getValueAt(i, 2);
                 boolean quyenSua = (boolean) model.getValueAt(i, 3);

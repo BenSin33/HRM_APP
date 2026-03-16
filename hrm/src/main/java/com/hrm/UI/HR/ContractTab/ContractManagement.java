@@ -5,6 +5,7 @@ import java.awt.*;
 import com.hrm.DTO.ContractDTO;
 import com.hrm.DAO.ContractDAO;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.utils.ContractExcelHelper;
 
 /**
  * ContractManagement - Giao diện quản lý hợp đồng
@@ -30,9 +31,11 @@ public class ContractManagement extends JPanel {
         // Padding cho toàn bộ panel
         setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
 
-        // 1. Header: Title + Stats Cards + Nút thêm
+        // 1. Header: Title + Stats Cards + Nút thêm + Export/Import
         header = new ContractHeader();
         header.setOnAddCallback(() -> handleAddContract());
+        header.setOnExportCallback(() -> handleExportContract());
+        header.setOnImportCallback(() -> handleImportContract());
         this.add(header, BorderLayout.NORTH);
 
         // 2. Center Panel: Filter + Table
@@ -85,6 +88,15 @@ public class ContractManagement extends JPanel {
                 JOptionPane.showMessageDialog(this, "Lỗi khi thêm hợp đồng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void handleExportContract() {
+        ContractExcelHelper.handleContractExport(contractTable.getContractTable(), this);
+    }
+
+    private void handleImportContract() {
+        ContractExcelHelper.handleContractImport(contractTable.getContractTable(), this);
+        refreshData();
     }
 
     public void refreshData() {

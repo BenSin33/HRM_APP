@@ -8,6 +8,9 @@ public class SalaryHeader extends JPanel {
     private JButton btnCalculate;
     private JButton btnUnlock;
     private JButton btnLock;
+    private JButton btnExport;
+    private JButton btnImport;
+    private JButton btnRefresh;
 
     public SalaryHeader(ActionListener lockListener, ActionListener unlockListener, 
                        ActionListener calculateListener) {
@@ -43,9 +46,26 @@ public class SalaryHeader extends JPanel {
         btnLock.putClientProperty("FlatLaf.style", "background: #9333ea; foreground: #fff; arc: 10");
         btnLock.addActionListener(lockListener);
 
+        btnExport = new JButton("Xuất Excel");
+        btnExport.putClientProperty("FlatLaf.style", "background: #059669; foreground: #fff; arc: 10");
+
+        btnImport = new JButton("Nhập Excel");
+        btnImport.putClientProperty("FlatLaf.style", "background: #0891b2; foreground: #fff; arc: 10");
+
+        btnRefresh = new JButton("Làm mới");
+        btnRefresh.putClientProperty("FlatLaf.style", "background: #6b7280; foreground: #fff; arc: 10");
+
         btnPanel.add(btnCalculate);
         btnPanel.add(btnUnlock);
         btnPanel.add(btnLock);
+        btnPanel.add(new JSeparator(JSeparator.VERTICAL) {
+            {
+                setPreferredSize(new Dimension(1, 30));
+            }
+        });
+        btnPanel.add(btnExport);
+        btnPanel.add(btnImport);
+        btnPanel.add(btnRefresh);
 
         this.add(titlePanel, BorderLayout.WEST);
         this.add(btnPanel, BorderLayout.EAST);
@@ -65,5 +85,17 @@ public class SalaryHeader extends JPanel {
 
     public JButton getLockButton() {
         return btnLock;
+    }
+
+    public JButton getExportButton() {
+        return btnExport;
+    }
+
+    public JButton getImportButton() {
+        return btnImport;
+    }
+
+    public JButton getRefreshButton() {
+        return btnRefresh;
     }
 }
