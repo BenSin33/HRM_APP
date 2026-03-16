@@ -13,6 +13,36 @@ import java.util.List;
 
 /**
  * Utility class for exporting data to Excel files
+ * 
+ * HƯỚNG DẪN SỬ DỤNG:
+ * ==================
+ * Lớp này cung cấp các phương thức để xuất dữ liệu sang tệp Excel (.xlsx)
+ * với các tính năng như: định dạng header, tự động điều chỉnh kích thước cột, v.v.
+ * 
+ * CÁC PHƯƠNG THỨC CHÍNH:
+ * 
+ * 1. exportToExcelWithDialog() - Xuất Excel với hộp thoại chọn file
+ *    Ưu điểm: Cho phép người dùng chọn nơi lưu file
+ *    
+ *    Cách sử dụng:
+ *    String[] headers = {"Mã NV", "Tên", "Phòng", "Lương"};
+ *    List<Object[]> data = new ArrayList<>();
+ *    data.add(new Object[]{"NV001", "Nguyễn Văn A", "IT", 10000000});
+ *    data.add(new Object[]{"NV002", "Trần Thị B", "HR", 8000000});
+ *    ExcelExporter.exportToExcelWithDialog(headers, data, parentComponent, "nhanvien");
+ * 
+ * 2. exportToExcel() - Xuất Excel với đường dẫn cụ thể
+ *    Ưu điểm: Có thể xuất file trực tiếp mà không cần hộp thoại
+ *    
+ *    Cách sử dụng:
+ *    String filePath = "C:/output/nhanvien.xlsx";
+ *    ExcelExporter.exportToExcel(headers, data, filePath);
+ * 
+ * LƯU Ý:
+ * - Dữ liệu được truyền vào dạng List<Object[]>, mỗi hàng là một mảng Object
+ * - Các kiểu dữ liệu được hỗ trợ: String, Number, Boolean, Date
+ * - Header sẽ được định dạng với nền xanh, chữ trắng, in đậm
+ * - Các cột sẽ tự động điều chỉnh kích thước theo nội dung
  */
 public class ExcelExporter {
 
