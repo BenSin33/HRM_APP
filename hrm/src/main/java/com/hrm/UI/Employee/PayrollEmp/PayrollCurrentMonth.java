@@ -30,6 +30,7 @@ public class PayrollCurrentMonth extends JPanel {
             int thang = (Integer) currentPayroll.get("thang");
             int nam = (Integer) currentPayroll.get("nam");
             double luongcb = (Double) currentPayroll.get("luongcb");
+            double songaycong = currentPayroll.get("songaycong") != null ? ((Number) currentPayroll.get("songaycong")).doubleValue() : 0;
             double tong_phucap = (Double) currentPayroll.get("tong_phucap");
             double tong_khautru = (Double) currentPayroll.get("tong_khautru");
             double thuclinh = (Double) currentPayroll.get("thuclinh");
@@ -38,8 +39,8 @@ public class PayrollCurrentMonth extends JPanel {
             JPanel summaryPanel = createSummaryPanel(thang, nam, luongcb, tong_phucap, tong_khautru, thuclinh);
             add(summaryPanel, BorderLayout.NORTH);
 
-            // Panel chi tiết các khoản
-            JPanel detailPanel = createDetailPanel(maluong);
+            // Panel chi tiết các khoản - dạng bảng rõ ràng
+            JPanel detailPanel = createDetailPanel(maluong, luongcb, songaycong, tong_phucap, tong_khautru, thuclinh);
             add(detailPanel, BorderLayout.CENTER);
         } else {
             // Nếu không có dữ liệu tháng trước
@@ -85,66 +86,143 @@ public class PayrollCurrentMonth extends JPanel {
         return item;
     }
 
-    private JPanel createDetailPanel(String maluong) {
+    private JPanel createDetailPanel(String maluong, double luongcb, double songaycong, double tongPhucap, double tongKhautru, double thuclinh) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(new Color(248, 249, 250));
 
         // Tiêu đề
-        JLabel lblTitle = new JLabel("Chi tiết các khoản");
+        JLabel lblTitle = new JLabel("Chi tiết bảng lương");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblTitle.setBorder(new EmptyBorder(0, 0, 10, 0));
         panel.add(lblTitle, BorderLayout.NORTH);
 
         // Panel chứa các dòng chi tiết
-        JPanel detailsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
-        detailsPanel.setBackground(new Color(248, 249, 250));
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setBackground(Color.WHITE);
+        listPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(230, 230, 230)),
+            new EmptyBorder(10, 15, 10, 15)
+        ));
 
+        // === PHẦN LƯƠNG CƠ BẢN ===
+        listPanel.add(createSectionHeader("LƯƠNG CƠ BẢN"));
+        listPanel.add(createDetailRow("Lương cơ bản (hợp đồng)", String.format("%,.0f đ", luongcb), new Color(33, 37, 41)));
+        listPanel.add(createDetailRow("Số ngày công thực tế", String.format("%.1f ngày", songaycong), new Color(33, 37, 41)));
+        double luongTheoNgayCong = (songaycong > 0) ? luongcb * songaycong / 26.0 : luongcb;
+        listPanel.add(createDetailRow("Lương theo ngày công (÷26 ngày)", String.format("%,.0f đ", luongTheoNgayCong), new Color(59, 130, 246)));
+        listPanel.add(createDivider());
+
+        // Lấy chi tiết từ DB
         PayrollDAO dao = new PayrollDAO();
         List<Map<String, Object>> items = dao.getPayrollDetailItems(maluong);
 
-        if (items != null && !items.isEmpty()) {
+        // === PHẦN PHỤ CẤP (CỘNG) ===
+        listPanel.add(createSectionHeader("CÁC KHOẢN PHỤ CẤP (+)"));
+        boolean hasPhucap = false;
+        if (items != null) {
             for (Map<String, Object> item : items) {
-                detailsPanel.add(createDetailCard(item));
+                if ("CONG".equals(item.get("loai"))) {
+                    String ten = (String) item.get("tenkhoan");
+                    double sotien = (Double) item.get("sotien");
+                    listPanel.add(createDetailRow(ten, String.format("+%,.0f đ", sotien), new Color(34, 197, 94)));
+                    hasPhucap = true;
+                }
             }
         }
+        if (!hasPhucap) {
+            listPanel.add(createDetailRow("(Không có khoản phụ cấp)", "", Color.GRAY));
+        }
+        listPanel.add(createDetailRow("Tổng phụ cấp", String.format("+%,.0f đ", tongPhucap), new Color(34, 197, 94)));
+        listPanel.add(createDivider());
 
-        JScrollPane scrollPane = new JScrollPane(detailsPanel);
+        // === PHẦN KHẤU TRỪ ===
+        listPanel.add(createSectionHeader("CÁC KHOẢN KHẤU TRỪ (-)"));
+        boolean hasKhautru = false;
+        if (items != null) {
+            for (Map<String, Object> item : items) {
+                if ("TRU".equals(item.get("loai"))) {
+                    String ten = (String) item.get("tenkhoan");
+                    double sotien = (Double) item.get("sotien");
+                    listPanel.add(createDetailRow(ten, String.format("-%,.0f đ", sotien), new Color(239, 68, 68)));
+                    hasKhautru = true;
+                }
+            }
+        }
+        if (!hasKhautru) {
+            listPanel.add(createDetailRow("(Không có khoản khấu trừ)", "", Color.GRAY));
+        }
+        listPanel.add(createDetailRow("Tổng khấu trừ", String.format("-%,.0f đ", tongKhautru), new Color(239, 68, 68)));
+        listPanel.add(createDivider());
+
+        // === THỰC LĨNH ===
+        listPanel.add(createTotalRow("THỰC LĨNH", String.format("%,.0f đ", thuclinh)));
+
+        JScrollPane scrollPane = new JScrollPane(listPanel);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
-    
-    private JPanel createDetailCard(Map<String, Object> item) {
-        String tenkhoan = (String) item.get("tenkhoan");
-        String loai = (String) item.get("loai");
-        double sotien = (Double) item.get("sotien");
-        Color bgColor = "CONG".equals(loai) ? new Color(209, 250, 229) : new Color(254, 226, 226);
-        Color textColor = "CONG".equals(loai) ? new Color(34, 197, 94) : new Color(239, 68, 68);
-        String sotiendisplay = "CONG".equals(loai) ? String.format("+%,.0f đ", sotien) : String.format("-%,.0f đ", sotien);
 
-        JPanel card = new JPanel(new GridLayout(2, 1, 0, 5));
-        card.setBackground(bgColor);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(textColor),
-            new EmptyBorder(10, 10, 10, 10)
-        ));
-        card.setPreferredSize(new Dimension(100, 90));
-        
-        JLabel lblName = new JLabel(tenkhoan);
-        lblName.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblName.setForeground(Color.BLACK);
-        lblName.setHorizontalAlignment(JLabel.CENTER);
-        
-        JLabel lblAmount = new JLabel(sotiendisplay);
-        lblAmount.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblAmount.setForeground(textColor);
-        lblAmount.setHorizontalAlignment(JLabel.CENTER);
-        
-        card.add(lblName);
-        card.add(lblAmount);
-        
-        return card;
+    private JPanel createSectionHeader(String text) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setBackground(new Color(243, 244, 246));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        row.setBorder(new EmptyBorder(6, 10, 6, 10));
+
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lbl.setForeground(new Color(75, 85, 99));
+        row.add(lbl, BorderLayout.WEST);
+        return row;
+    }
+
+    private JPanel createDetailRow(String label, String value, Color valueColor) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setBackground(Color.WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        row.setBorder(new EmptyBorder(4, 20, 4, 20));
+
+        JLabel lblName = new JLabel(label);
+        lblName.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblName.setForeground(new Color(55, 65, 81));
+
+        JLabel lblValue = new JLabel(value);
+        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblValue.setForeground(valueColor);
+        lblValue.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        row.add(lblName, BorderLayout.WEST);
+        row.add(lblValue, BorderLayout.EAST);
+        return row;
+    }
+
+    private JPanel createTotalRow(String label, String value) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setBackground(new Color(238, 242, 255));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        row.setBorder(new EmptyBorder(8, 15, 8, 15));
+
+        JLabel lblName = new JLabel(label);
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblName.setForeground(new Color(99, 102, 241));
+
+        JLabel lblValue = new JLabel(value);
+        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblValue.setForeground(new Color(99, 102, 241));
+        lblValue.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        row.add(lblName, BorderLayout.WEST);
+        row.add(lblValue, BorderLayout.EAST);
+        return row;
+    }
+
+    private JSeparator createDivider() {
+        JSeparator sep = new JSeparator(JSeparator.HORIZONTAL);
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        sep.setForeground(new Color(229, 231, 235));
+        return sep;
     }
 }

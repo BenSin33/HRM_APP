@@ -113,6 +113,7 @@ public class PayrollDAO {
                 payroll.put("thang", rs.getInt("THANG"));
                 payroll.put("nam", rs.getInt("NAM"));
                 payroll.put("luongcb", rs.getDouble("LUONGCOBAN_SNAPSHOT"));
+                payroll.put("songaycong", rs.getFloat("SONGAYCONG"));
                 payroll.put("tong_phucap", rs.getDouble("TONG_PHUCAP"));
                 payroll.put("tong_khautru", rs.getDouble("TONG_KHAUTRU"));
                 payroll.put("thuclinh", rs.getDouble("THUCLINH"));
