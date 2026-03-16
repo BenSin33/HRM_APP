@@ -6,7 +6,7 @@ package com.hrm.DTO.HR;
 public class DepartmentDTO {
     private String maPhongBan;
     private String tenPhongBan;
-    private int soNhanVien;    
+    private int soNhanVien;
 
     public DepartmentDTO() {
     }
