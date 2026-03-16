@@ -389,4 +389,57 @@ public class EvaluationDAO {
         if (diem >= 60) return "Trung bình";
         return "Kém";
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // THÊMỚI: Lấy phiếu đánh giá theo MAPHIEU
+    // ═══════════════════════════════════════════════════════════
+    public EvaluationDTO getEvaluationByMaPhieu(String maPhieu) {
+        String sql = "SELECT MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, NHANXET, " +
+                     "QUYETDINH, LOAIQUYETDINH, TRANGTHAI_DUYET, NGAYDANHGIA " +
+                     "FROM phieudanhgia WHERE MAPHIEU = ?";
+        
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return null;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maPhieu);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    EvaluationDTO dto = new EvaluationDTO();
+                    dto.setMaPhieu(rs.getString("MAPHIEU"));
+                    dto.setMaNV(rs.getString("MANV"));
+                    dto.setMaDot(rs.getString("MADOT"));
+                    dto.setMaTieuChi(rs.getString("MATIEUCHI"));
+                    dto.setTongDiem(rs.getInt("TONGDIEM"));
+                    dto.setNhanXet(rs.getString("NHANXET"));
+                    dto.setQuyetDinh(rs.getString("QUYETDINH"));
+                    dto.setLoaiQuyetDinh(rs.getString("LOAIQUYETDINH"));
+                    dto.setTrangThaiDuyet(rs.getString("TRANGTHAI_DUYET"));
+                    dto.setNgayDanhGia(rs.getDate("NGAYDANHGIA"));
+                    dto.setXepLoai(tinhXepLoai(dto.getTongDiem()));
+                    return dto;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // THÊMỚI: Cập nhật trạng thái duyệt của phiếu
+    // ═══════════════════════════════════════════════════════════
+    public boolean updateEvaluationStatus(String maPhieu, String trangThaiDuyet) {
+        String sql = "UPDATE phieudanhgia SET TRANGTHAI_DUYET = ? WHERE MAPHIEU = ?";
+        
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return false;
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, trangThaiDuyet);
+            ps.setString(2, maPhieu);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
