@@ -124,4 +124,25 @@ public class DeductionDAO {
         
         return false;
     }
+
+    /**
+     * Tính tổng tất cả khấu trừ
+     */
+    public java.math.BigDecimal getTotalDeductions() {
+        String sql = "SELECT SUM(SOTIEN_MACDINH) as TOTAL FROM danhmuc_khautru";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                java.math.BigDecimal total = rs.getBigDecimal("TOTAL");
+                return total != null ? total : java.math.BigDecimal.ZERO;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return java.math.BigDecimal.ZERO;
+    }
 }

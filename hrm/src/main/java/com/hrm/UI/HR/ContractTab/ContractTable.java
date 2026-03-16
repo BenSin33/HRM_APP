@@ -226,6 +226,10 @@ public class ContractTable extends JPanel {
         loadContractData();
     }
 
+    public JTable getContractTable() {
+        return contractTable;
+    }
+
     // Filter method
     public void applyFilter(String searchText, String status, String type) {
         tableModel.setRowCount(0);

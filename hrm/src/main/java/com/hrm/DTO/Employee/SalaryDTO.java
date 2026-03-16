@@ -18,6 +18,7 @@ public class SalaryDTO {
     public String trangThai;
     public LocalDate ngayChot;
     public String tinhTrangThanToan;
+    public BigDecimal hesotrinhdo;  // Hệ số trình độ từ bảng trinhdo
 
     public SalaryDTO() {}
 
@@ -150,5 +151,13 @@ public class SalaryDTO {
 
     public void setTinhTrangThanToan(String tinhTrangThanToan) {
         this.tinhTrangThanToan = tinhTrangThanToan;
+    }
+
+    public BigDecimal getHesotrinhdo() {
+        return hesotrinhdo;
+    }
+
+    public void setHesotrinhdo(BigDecimal hesotrinhdo) {
+        this.hesotrinhdo = hesotrinhdo;
     }
 }

@@ -2,6 +2,7 @@ package com.hrm.UI.HR.SalaryTab;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.Service.SalaryService;
+import com.hrm.utils.SalaryExcelHelper;
 
 import javax.swing.*;
 import java.awt.*;
@@ -34,6 +35,12 @@ public class SalaryManagement extends JPanel {
             e -> handleUnlockSalary(),
             e -> handleCalculateSalary()
         );
+        
+        // Thêm listeners cho nút export/import/refresh
+        header.getExportButton().addActionListener(e -> handleExportSalary());
+        header.getImportButton().addActionListener(e -> handleImportSalary());
+        header.getRefreshButton().addActionListener(e -> handleRefreshData());
+        
         this.add(header, BorderLayout.NORTH);
 
         // 4. Nội dung chính
@@ -79,6 +86,11 @@ public class SalaryManagement extends JPanel {
             return summary.getFilterToMonth();
         }
         return null;
+    }
+
+    private void handleRefreshData() {
+        salaryTable.refreshData();
+        JOptionPane.showMessageDialog(this, "Dữ liệu đã được làm mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void handleLockSalary() {
@@ -177,5 +189,13 @@ public class SalaryManagement extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE);
             salaryTable.refreshData();
         }
+    }
+
+    private void handleExportSalary() {
+        SalaryExcelHelper.handleSalaryExport(salaryTable.getSalaryTable(), this);
+    }
+
+    private void handleImportSalary() {
+        SalaryExcelHelper.handleSalaryImport(salaryTable.getSalaryTable(), this);
     }
 }

@@ -1,5 +1,6 @@
 package com.hrm.DAO.Employee;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,10 +17,11 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
                      "ORDER BY bl.THANG DESC, bl.NAM DESC";
         
         try (Connection conn = JDBCConection.getConnection();
@@ -44,6 +46,7 @@ public class SalaryDAO {
                 dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                     rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                 dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
                 list.add(dto);
             }
         } catch (SQLException e) {
@@ -57,10 +60,11 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
                      "WHERE bl.THANG = ? AND bl.NAM = ? " +
                      "ORDER BY nv.HOTEN ASC";
         
@@ -89,6 +93,7 @@ public class SalaryDAO {
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                    dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
                     list.add(dto);
                 }
             }
@@ -102,10 +107,11 @@ public class SalaryDAO {
     public SalaryDTO getSalaryByMaNV(String maNV, int thang, int nam) {
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
                      "WHERE bl.MANV = ? AND bl.THANG = ? AND bl.NAM = ?";
         
         try (Connection conn = JDBCConection.getConnection();
@@ -134,6 +140,7 @@ public class SalaryDAO {
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                    dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
                     return dto;
                 }
             }
@@ -145,19 +152,39 @@ public class SalaryDAO {
 
     // Cập nhật bảng lương
     public boolean updateSalary(SalaryDTO salary) {
-        String sql = "UPDATE bangluong SET SONGAYCONG = ?, TONG_PHUCAP = ?, TONG_KHAUTRU = ?, " +
-                     "THUCLINH = ?, TRANGTHAI = ?, NGAYCHOTLUONG = ? WHERE MALUONG = ?";
+        String sql = "UPDATE bangluong SET LUONGCOBAN_SNAPSHOT = ?, SONGAYCONG = ?, TONG_PHUCAP = ?, " +
+                     "TONG_KHAUTRU = ?, THUCLINH = ?, TRANGTHAI = ?, NGAYCHOTLUONG = ?, TINH_TRANG_TT = ? " +
+                     "WHERE MALUONG = ?";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setFloat(1, salary.soNgayCong);
-            ps.setBigDecimal(2, salary.tongPhucap);
-            ps.setBigDecimal(3, salary.tongKhauTru);
-            ps.setBigDecimal(4, salary.thucLinh);
-            ps.setString(5, salary.trangThai);
-            ps.setObject(6, salary.ngayChot);
-            ps.setString(7, salary.maLuong);
+            // Cập nhật lương cơ bản snapshot
+            ps.setBigDecimal(1, salary.luongCoBan != null ? salary.luongCoBan : BigDecimal.ZERO);
+            ps.setFloat(2, salary.soNgayCong);
+            ps.setBigDecimal(3, salary.tongPhucap != null ? salary.tongPhucap : BigDecimal.ZERO);
+            ps.setBigDecimal(4, salary.tongKhauTru != null ? salary.tongKhauTru : BigDecimal.ZERO);
+            ps.setBigDecimal(5, salary.thucLinh != null ? salary.thucLinh : BigDecimal.ZERO);
+            
+            // Chuyển đổi TRANGTHAI từ String sang Integer
+            // 0: Chưa khóa (Nháp), 1: Đã khóa (Đã chốt)
+            int trangThaiValue = 0;
+            try {
+                trangThaiValue = Integer.parseInt(salary.trangThai);
+            } catch (NumberFormatException e) {
+                trangThaiValue = 0;
+            }
+            ps.setInt(6, trangThaiValue);
+            
+            // Chuyển đổi LocalDate sang java.sql.Date
+            if (salary.ngayChot != null) {
+                ps.setDate(7, java.sql.Date.valueOf(salary.ngayChot));
+            } else {
+                ps.setNull(7, java.sql.Types.DATE);
+            }
+            
+            ps.setString(8, salary.tinhTrangThanToan);
+            ps.setString(9, salary.maLuong);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -250,10 +277,11 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
                      "WHERE bl.THANG = ? AND bl.NAM = ? AND bl.TRANGTHAI = ? " +
                      "ORDER BY nv.HOTEN ASC";
         
@@ -283,6 +311,7 @@ public class SalaryDAO {
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                    dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
                     list.add(dto);
                 }
             }
@@ -297,10 +326,11 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
                      "WHERE bl.THANG = ? AND bl.NAM = ? AND (bl.MANV LIKE ? OR nv.HOTEN LIKE ? OR pb.TENPHONGBAN LIKE ?) " +
                      "ORDER BY nv.HOTEN ASC";
         
@@ -333,6 +363,7 @@ public class SalaryDAO {
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                    dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
                     list.add(dto);
                 }
             }
@@ -347,10 +378,11 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
                      "WHERE (bl.NAM > ? OR (bl.NAM = ? AND bl.THANG >= ?)) " +
                      "AND (bl.NAM < ? OR (bl.NAM = ? AND bl.THANG <= ?)) " +
                      "ORDER BY bl.NAM DESC, bl.THANG DESC, nv.HOTEN ASC";
@@ -383,6 +415,7 @@ public class SalaryDAO {
                     dto.ngayChot = rs.getDate("NGAYCHOTLUONG") != null ? 
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
+                    dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
                     list.add(dto);
                 }
             }

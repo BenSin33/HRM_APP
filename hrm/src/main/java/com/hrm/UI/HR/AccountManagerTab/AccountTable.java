@@ -212,4 +212,8 @@ public class AccountTable extends JPanel {
         tableModel.setRowCount(0);
         loadAccountData();
     }
+
+    public JTable getAccountTable() {
+        return accountTable;
+    }
 }

@@ -124,4 +124,25 @@ public class AllowanceDAO {
         
         return false;
     }
+
+    /**
+     * Tính tổng tất cả phụ cấp
+     */
+    public java.math.BigDecimal getTotalAllowances() {
+        String sql = "SELECT SUM(SOTIEN_MACDINH) as TOTAL FROM danhmuc_phucap";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                java.math.BigDecimal total = rs.getBigDecimal("TOTAL");
+                return total != null ? total : java.math.BigDecimal.ZERO;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return java.math.BigDecimal.ZERO;
+    }
 }
