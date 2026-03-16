@@ -171,10 +171,19 @@ public class Sidebar extends JPanel {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 if ("LOGOUT".equals(tab.getCardName())) {
-                    java.awt.Window window = SwingUtilities.getWindowAncestor(Sidebar.this);
-                    if (window != null) {
-                        window.dispose();
-                        new LoginUI().setVisible(true);
+                    int confirm = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(Sidebar.this),
+                        "Bạn có chắc chắn muốn đăng xuất không?",
+                        "Xác nhận đăng xuất",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE
+                    );
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        java.awt.Window window = SwingUtilities.getWindowAncestor(Sidebar.this);
+                        if (window != null) {
+                            window.dispose();
+                            new LoginUI().setVisible(true);
+                        }
                     }
                 } else {
                     cardLayout.show(contentPanel, tab.getCardName());
