@@ -249,7 +249,6 @@ public class DepartmentManagementPanel extends JPanel {
             String managerName = info != null && info.name != null && !info.name.isEmpty()
                     ? info.name
                     : "Chưa cập nhật";
-            String description = "Mô tả phòng ban sẽ được cập nhật sau";
             String email = info != null && info.email != null && !info.email.isEmpty() ? info.email : "N/A";
             String phone = info != null && info.phone != null && !info.phone.isEmpty() ? info.phone : "N/A";
 
@@ -258,7 +257,6 @@ public class DepartmentManagementPanel extends JPanel {
                     dept.getMaPhongBan(),
                     dept.getSoNhanVien(),
                     managerName,
-                    description,
                     email,
                     phone
             ));
@@ -277,8 +275,7 @@ public class DepartmentManagementPanel extends JPanel {
 
     // ============== MỘT CARD PHÒNG BAN ==============
     private JPanel createDepartmentCard(String name, String code, int employees,
-                                        String manager, String description,
-                                        String email, String phone) {
+                                        String manager, String email, String phone) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
@@ -290,57 +287,26 @@ public class DepartmentManagementPanel extends JPanel {
         String searchText = (name + " " + code + " " + manager).toLowerCase();
         card.putClientProperty("searchText", searchText);
 
-        // Header tím
-        JPanel header = new JPanel();
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        // Header tím (chỉ hiển thị tên phòng ban)
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         header.setBackground(new Color(151, 71, 255));
-        header.setBorder(new EmptyBorder(16, 18, 16, 18));
-
-        JPanel headerTop = new JPanel(new BorderLayout());
-        headerTop.setOpaque(false);
-
+        header.setBorder(new EmptyBorder(14, 18, 14, 18));
         JLabel lblName = new JLabel(name);
         lblName.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblName.setForeground(Color.WHITE);
+        header.add(lblName);
 
-        // Không dùng icon tòa nhà, chỉ hiển thị tên phòng
-        headerTop.add(lblName, BorderLayout.WEST);
-
-        JLabel lblCode = new JLabel("Mã: " + code);
-        lblCode.setForeground(Color.WHITE);
-        lblCode.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-
-        JPanel employeesRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        employeesRow.setOpaque(false);
-        JLabel lblEmployees = new JLabel(employees + " nhân viên");
-        lblEmployees.setForeground(Color.WHITE);
-        lblEmployees.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        employeesRow.add(lblEmployees);
-
-        header.add(headerTop);
-        header.add(Box.createVerticalStrut(8));
-        header.add(lblCode);
-        header.add(Box.createVerticalStrut(10));
-        header.add(employeesRow);
-
-        // Nội dung trắng bên dưới
-        JPanel body = new JPanel();
+        // Nội dung: bảng 2 cột (nhãn | giá trị) để thẳng hàng
+        JPanel body = new JPanel(new GridLayout(0, 2, 12, 8));
         body.setOpaque(false);
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBorder(new EmptyBorder(16, 18, 10, 18));
 
-        addInfoBlock(body, "Trưởng phòng", manager, null);
-        addInfoBlock(body, "Mô tả", "<html>" + description + "</html>", null);
-
-        // Hàng email / điện thoại
-        JPanel contactRow = new JPanel(new GridLayout(1, 2, 40, 0));
-        contactRow.setOpaque(false);
-        JPanel emailPanel = createLabeledValue("Email", email);
-        JPanel phonePanel = createLabeledValue("Điện thoại", phone);
-        contactRow.add(emailPanel);
-        contactRow.add(phonePanel);
-        body.add(contactRow);
-        body.add(Box.createVerticalStrut(10));
+        addGridRow(body, "Tên phòng ban", name);
+        addGridRow(body, "Mã phòng ban", code);
+        addGridRow(body, "Số nhân viên", employees + " nhân viên");
+        addGridRow(body, "Trưởng phòng", manager);
+        addGridRow(body, "Email", email);
+        addGridRow(body, "Điện thoại", phone);
 
         // Thanh action dưới cùng
         JPanel actionsBar = new JPanel(new BorderLayout());
@@ -348,18 +314,17 @@ public class DepartmentManagementPanel extends JPanel {
         actionsBar.setBorder(new EmptyBorder(12, 18, 16, 18));
 
         JButton viewBtn = new JButton("Xem chi tiết");
-        viewBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        viewBtn.setForeground(new Color(120, 49, 255));
-        viewBtn.setBackground(new Color(238, 228, 255));
+        viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        viewBtn.setForeground(new Color(86, 125, 255));
         viewBtn.setFocusPainted(false);
-        viewBtn.setBorder(BorderFactory.createEmptyBorder(8, 26, 8, 26));
-
+        viewBtn.setContentAreaFilled(false);
+        viewBtn.setBorder(BorderFactory.createEmptyBorder());
+        viewBtn.setToolTipText("Xem chi tiết phòng ban");
         viewBtn.addActionListener(e -> JOptionPane.showMessageDialog(
                 null,
                 "<html><b>" + name + " (" + code + ")</b><br/>"
                         + "Trưởng phòng: " + manager + "<br/>"
                         + "Số nhân viên: " + employees + "<br/><br/>"
-                        + "Mô tả: " + description + "<br/>"
                         + "Email: " + email + "<br/>"
                         + "Điện thoại: " + phone + "</html>",
                 "Chi tiết phòng ban",
@@ -389,10 +354,10 @@ public class DepartmentManagementPanel extends JPanel {
         deleteBtn.setToolTipText("Xóa phòng ban");
         deleteBtn.addActionListener(e -> handleDeleteDepartment(code, name, card));
 
+        iconButtons.add(viewBtn);
         iconButtons.add(editBtn);
         iconButtons.add(deleteBtn);
 
-        actionsBar.add(viewBtn, BorderLayout.WEST);
         actionsBar.add(iconButtons, BorderLayout.EAST);
 
         card.add(header);
@@ -450,42 +415,16 @@ public class DepartmentManagementPanel extends JPanel {
         return info;
     }
 
-    private void addInfoBlock(JPanel parent, String label, String value1, String value2) {
-        JLabel lblTitle = new JLabel(label);
-        lblTitle.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblTitle.setForeground(new Color(140, 144, 153));
-
-        JLabel lblMain = new JLabel(value1);
-        lblMain.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblMain.setForeground(new Color(33, 37, 41));
-
-        parent.add(lblTitle);
-        parent.add(lblMain);
-        if (value2 != null && !value2.isEmpty()) {
-            JLabel lblSub = new JLabel(value2);
-            lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-            lblSub.setForeground(new Color(140, 144, 153));
-            parent.add(lblSub);
-        }
-        parent.add(Box.createVerticalStrut(10));
-    }
-
-    private JPanel createLabeledValue(String label, String value) {
-        JPanel panel = new JPanel();
-        panel.setOpaque(false);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-
-        JLabel lblTitle = new JLabel(label);
-        lblTitle.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblTitle.setForeground(new Color(140, 144, 153));
-
-        JLabel lblValue = new JLabel(value);
-        lblValue.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblValue.setForeground(new Color(33, 37, 41));
-
-        panel.add(lblTitle);
-        panel.add(lblValue);
-        return panel;
+    /** Thêm một hàng nhãn + giá trị vào panel dạng GridLayout(0,2) để các cột thẳng hàng. */
+    private void addGridRow(JPanel parent, String label, String value) {
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lbl.setForeground(new Color(140, 144, 153));
+        JLabel val = new JLabel(value != null ? value : "");
+        val.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        val.setForeground(new Color(33, 37, 41));
+        parent.add(lbl);
+        parent.add(val);
     }
 
     // ============== LỌC DANH SÁCH PHÒNG BAN THEO TỪ KHÓA ==============
