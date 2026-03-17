@@ -187,37 +187,7 @@ public class ScheduleCenter extends JPanel {
                 int month = (Integer) spMonth.getValue();
                 int year = (Integer) spYear.getValue();
                 
-                LocalDate searchDate = LocalDate.of(year, month, day);
-                ScheduleDTO schedule = dao.getScheduleByEmployeeAndDate(manv, searchDate);
-                
-                tableModel.setRowCount(0);
-                if (schedule != null) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                    Date date = Date.from(searchDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-                    String dateStr = sdf.format(date);
-                    String dayOfWeek = getDayOfWeekVN(searchDate.getDayOfWeek());
-                    String start = schedule.getStartTime() != null && schedule.getStartTime().length() >= 5 
-                        ? schedule.getStartTime().substring(0, 5) : "-";
-                    String end = schedule.getEndTime() != null && schedule.getEndTime().length() >= 5 
-                        ? schedule.getEndTime().substring(0, 5) : "-";
-                    String time = start + " - " + end;
-                    String note = schedule.getDescription() != null ? schedule.getDescription() : "";
-                    
-                    tableModel.addRow(new Object[]{
-                        dateStr,
-                        dayOfWeek,
-                        schedule.getShift(),
-                        schedule.getShiftName(),
-                        time,
-                        note
-                    });
-                } else {
-                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                    Date date = Date.from(searchDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-                    String dateStr = sdf.format(date);
-                    String dayOfWeek = getDayOfWeekVN(searchDate.getDayOfWeek());
-                    tableModel.addRow(new Object[]{dateStr, dayOfWeek, "OFF", "Nghỉ", "-", ""});
-                }
+                loadScheduleForDate(LocalDate.of(year, month, day), tableModel);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -236,7 +206,31 @@ public class ScheduleCenter extends JPanel {
         searchPanel.add(Box.createVerticalStrut(10));
         searchPanel.add(scrollPane);
         
+        // Hiển thị lịch làm việc hôm nay mặc định
+        loadScheduleForDate(LocalDate.now(), tableModel);
+        
         return searchPanel;
+    }
+
+    private void loadScheduleForDate(LocalDate searchDate, DefaultTableModel tableModel) {
+        ScheduleDTO schedule = dao.getScheduleByEmployeeAndDate(manv, searchDate);
+        tableModel.setRowCount(0);
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        Date date = Date.from(searchDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        String dateStr = sdf.format(date);
+        String dayOfWeek = getDayOfWeekVN(searchDate.getDayOfWeek());
+
+        if (schedule != null) {
+            String start = schedule.getStartTime() != null && schedule.getStartTime().length() >= 5 
+                ? schedule.getStartTime().substring(0, 5) : "-";
+            String end = schedule.getEndTime() != null && schedule.getEndTime().length() >= 5 
+                ? schedule.getEndTime().substring(0, 5) : "-";
+            String time = start + " - " + end;
+            String note = schedule.getDescription() != null ? schedule.getDescription() : "";
+            tableModel.addRow(new Object[]{dateStr, dayOfWeek, schedule.getShift(), schedule.getShiftName(), time, note});
+        } else {
+            tableModel.addRow(new Object[]{dateStr, dayOfWeek, "-", "Không có lịch làm việc", "-", ""});
+        }
     }
 
     private String getDayOfWeekVN(DayOfWeek dow) {

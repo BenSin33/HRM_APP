@@ -121,6 +121,7 @@ public class PayrollDetails extends JPanel {
             BorderFactory.createLineBorder(new Color(230, 230, 230)),
             new EmptyBorder(0, 0, 0, 0)
         ));
+        scrollPane.setPreferredSize(new Dimension(0, 180));
         
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
