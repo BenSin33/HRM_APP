@@ -5,6 +5,7 @@ import javax.swing.table.DefaultTableModel;
 import com.hrm.DTO.PermissionDTO;
 import com.hrm.Service.PermissionService;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PermissionTable extends JTable {
@@ -12,9 +13,11 @@ public class PermissionTable extends JTable {
     private DefaultTableModel model;
     private PermissionService permissionService;
     private String currentRoleId;
+    private String currentManv;
+    private List<PermissionDTO> currentPermissions;
 
     public PermissionTable(){
-        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa"};
+        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa", "Duyệt", "Xuất BC"};
         
         // Dữ liệu mẫu ban đầu
         Object[][] data = {};
@@ -47,6 +50,7 @@ public class PermissionTable extends JTable {
         this.getTableHeader().setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         
         permissionService = new PermissionService();
+        currentPermissions = new ArrayList<>();
     }
     
     /**
@@ -54,6 +58,18 @@ public class PermissionTable extends JTable {
      */
     public void updateData(List<PermissionDTO> permissions, String roleId) {
         this.currentRoleId = roleId;
+        this.currentManv = null;
+        reloadModel(permissions);
+    }
+
+    public void updateUserData(List<PermissionDTO> permissions, String roleId, String manv) {
+        this.currentRoleId = roleId;
+        this.currentManv = manv;
+        reloadModel(permissions);
+    }
+
+    private void reloadModel(List<PermissionDTO> permissions) {
+        currentPermissions = new ArrayList<>();
         
         // Xóa dữ liệu cũ
         model.setRowCount(0);
@@ -64,39 +80,18 @@ public class PermissionTable extends JTable {
         
         // Thêm dữ liệu mới vào bảng
         for (PermissionDTO perm : permissions) {
+            currentPermissions.add(perm);
             Object[] row = {
-                getChucNangName(perm.getMachucNang()),
+                perm.getTenChucNang() != null ? perm.getTenChucNang() : perm.getMachucNang(),
                 perm.isQuyenXem(),
                 perm.isQuyenThem(),
                 perm.isQuyenSua(),
-                perm.isQuyenXoa()
+                perm.isQuyenXoa(),
+                perm.isQuyenDuyet(),
+                perm.isQuyenXuatBaoCao()
             };
             model.addRow(row);
         }
-    }
-    
-    /**
-     * Lấy tên chức năng từ mã chức năng
-     */
-    private String getChucNangName(String machucNang) {
-        switch(machucNang) {
-            case "CN01": return "Quản lý nhân sự";
-            case "CN02": return "Quản lý phòng ban";
-            case "CN03": return "Quản lý lương";
-            case "CN04": return "Quản lý nghỉ phép";
-            case "CN05": return "Quản lý hợp đồng";
-            case "CN06": return "Quản lý chứng chỉ";
-            case "CN07": return "Quản lý đánh giá";
-            default: return machucNang;
-        }
-    }
-    
-    /**
-     * Lấy mã chức năng từ tên chức năng
-     */
-    private String getMachucNang(int rowIndex) {
-        String[] machucNangs = {"CN01", "CN02", "CN03", "CN04", "CN05", "CN06", "CN07"};
-        return rowIndex < machucNangs.length ? machucNangs[rowIndex] : "";
     }
     
     /**
@@ -105,16 +100,39 @@ public class PermissionTable extends JTable {
     public boolean saveChanges() {
         try {
             int rowCount = model.getRowCount();
+            if (rowCount != currentPermissions.size()) {
+                return false;
+            }
             
             for (int i = 0; i < rowCount; i++) {
-                String machucNang = getMachucNang(i);
+                PermissionDTO permission = currentPermissions.get(i);
+                String machucNang = permission.getMachucNang();
                 boolean quyenXem = (boolean) model.getValueAt(i, 1);
                 boolean quyenThem = (boolean) model.getValueAt(i, 2);
                 boolean quyenSua = (boolean) model.getValueAt(i, 3);
                 boolean quyenXoa = (boolean) model.getValueAt(i, 4);
+                boolean quyenDuyet = (boolean) model.getValueAt(i, 5);
+                boolean quyenXuatBaoCao = (boolean) model.getValueAt(i, 6);
                 
-                permissionService.updatePermission(currentRoleId, machucNang, 
-                                                   quyenXem, quyenThem, quyenSua, quyenXoa);
+                boolean updated;
+                if (isEditingUserPermissions()) {
+                    updated = permissionService.updateUserPermission(currentManv, machucNang,
+                            quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
+                } else {
+                    updated = permissionService.updatePermission(currentRoleId, machucNang,
+                            quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
+                }
+
+                if (!updated) {
+                    return false;
+                }
+
+                permission.setQuyenXem(quyenXem);
+                permission.setQuyenThem(quyenThem);
+                permission.setQuyenSua(quyenSua);
+                permission.setQuyenXoa(quyenXoa);
+                permission.setQuyenDuyet(quyenDuyet);
+                permission.setQuyenXuatBaoCao(quyenXuatBaoCao);
             }
             
             return true;
@@ -123,6 +141,17 @@ public class PermissionTable extends JTable {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public boolean isEditingUserPermissions() {
+        return currentManv != null && !currentManv.trim().isEmpty();
+    }
+
+    public boolean clearUserPermissions() {
+        if (!isEditingUserPermissions()) {
+            return false;
+        }
+        return permissionService.clearUserPermissions(currentManv);
     }
 }
 

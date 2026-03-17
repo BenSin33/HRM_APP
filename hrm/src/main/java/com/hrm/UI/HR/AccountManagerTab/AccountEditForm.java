@@ -64,6 +64,8 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         add(new JLabel("Vai trò:"));
         cbRole = new JComboBox<>();
         loadRoles();
+        cbRole.setEnabled(false);
+        cbRole.setToolTipText("Vai trò được tự động phân theo chức vụ nhân viên");
         add(cbRole);
 
         // Trạng thái
