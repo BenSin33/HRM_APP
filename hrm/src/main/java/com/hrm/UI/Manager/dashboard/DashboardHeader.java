@@ -10,7 +10,7 @@ public class DashboardHeader extends JPanel {
         setBackground(Color.WHITE);
         setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
 
-        JLabel title = new JLabel("Tổng quan - Phòng DEPT001");
+        JLabel title = new JLabel("Tổng quan - Phòng Quản Lý");
         title.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
         JLabel greeting = new JLabel("Xin chào, Trần Thị Manager!");

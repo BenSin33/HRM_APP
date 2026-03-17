@@ -26,11 +26,12 @@ public class PhieuDanhGiaDAO {
         }
     }
 
-    public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet) {
+    public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet, String quyetDinh, String loaiQD) {
         if (diemTheoTieuChi == null || diemTheoTieuChi.isEmpty()) return false;
 
-        int tongDiem = diemTheoTieuChi.values().stream().mapToInt(Integer::intValue).sum(); // 0..100 nếu đủ 10 tiêu chí
-        String quyetDinh = decideRewardPenalty100(tongDiem);
+        int tongDiem = diemTheoTieuChi.values().stream().mapToInt(Integer::intValue).sum();
+        String autoQD = quyetDinh != null ? quyetDinh : decideRewardPenalty100(tongDiem);
+        String finalLoaiQD = loaiQD != null ? loaiQD : "Không có";
 
         Connection conn = null;
         try {
@@ -42,27 +43,29 @@ public class PhieuDanhGiaDAO {
             boolean isInsert = (maPhieu == null);
             if (isInsert) {
                 maPhieu = generateMaPhieu(conn);
-                String insertSql = "INSERT INTO phieudanhgia (MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, NHANXET, QUYETDINH, NGAYDANHGIA) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                String insertSql = "INSERT INTO phieudanhgia (MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, NHANXET, QUYETDINH, NGAYDANHGIA, LOAIQUYETDINH) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
                     ps.setString(1, maPhieu);
                     ps.setString(2, maNV);
                     ps.setString(3, maDot);
-                    ps.setString(4, null); // multi-criteria -> lưu chi tiết ở bảng phụ
+                    ps.setString(4, null);
                     ps.setInt(5, tongDiem);
                     ps.setString(6, nhanXet);
-                    ps.setString(7, quyetDinh);
+                    ps.setString(7, autoQD);
                     ps.setDate(8, java.sql.Date.valueOf(LocalDate.now()));
+                    ps.setString(9, finalLoaiQD);
                     ps.executeUpdate();
                 }
             } else {
-                String updateSql = "UPDATE phieudanhgia SET TONGDIEM = ?, NHANXET = ?, QUYETDINH = ?, NGAYDANHGIA = ? WHERE MAPHIEU = ?";
+                String updateSql = "UPDATE phieudanhgia SET TONGDIEM = ?, NHANXET = ?, QUYETDINH = ?, NGAYDANHGIA = ?, LOAIQUYETDINH = ? WHERE MAPHIEU = ?";
                 try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                     ps.setInt(1, tongDiem);
                     ps.setString(2, nhanXet);
-                    ps.setString(3, quyetDinh);
+                    ps.setString(3, autoQD);
                     ps.setDate(4, java.sql.Date.valueOf(LocalDate.now()));
-                    ps.setString(5, maPhieu);
+                    ps.setString(5, finalLoaiQD);
+                    ps.setString(6, maPhieu);
                     ps.executeUpdate();
                 }
             }
@@ -99,6 +102,10 @@ public class PhieuDanhGiaDAO {
                 try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
             }
         }
+    }
+
+    public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet) {
+        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, null, null);
     }
 
     public boolean resetEvaluation(String maNV, String maDot) {
@@ -281,6 +288,28 @@ public class PhieuDanhGiaDAO {
             e.printStackTrace();
         }
         return "";
-}
+    }
+
+    /**
+     * Lấy loại quyết định
+     */
+    public String getLoaiQuyetDinh(String maNV, String maDot) {
+        String sql = "SELECT LOAIQUYETDINH FROM phieudanhgia WHERE MANV = ? AND MADOT = ?";
+        
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, maNV);
+            ps.setString(2, maDot);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getString("LOAIQUYETDINH") != null ? rs.getString("LOAIQUYETDINH") : "Không có";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "Không có";
+    }
 }
 

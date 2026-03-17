@@ -88,6 +88,9 @@ public class EvaluationPanel extends JPanel {
     }
 
     private void showDetailPanel(String maNV, String hoTen) {
+        System.out.println("🔍 DEBUG: EvaluationPanel.showDetailPanel() called!");
+        System.out.println("   maNV=" + maNV + ", hoTen=" + hoTen);
+        
         this.currentMaNV = maNV;
         this.currentHoTen = hoTen;
         
@@ -98,17 +101,24 @@ public class EvaluationPanel extends JPanel {
         boolean isLocked = phieuDAO.hasEvaluation(maNV, currentMaDot);
         Map<String, Integer> savedScores = null;
         String nhanXet = "";
+        String quyetDinh = "Giữ nguyên";
+        String loaiQD = "Không có";
         
         if (isLocked) {
             savedScores = phieuDAO.getScoresByCriteria(maNV, currentMaDot);
             nhanXet = phieuDAO.getNhanXet(maNV, currentMaDot);
+            quyetDinh = phieuDAO.getQuyetDinh(maNV, currentMaDot);
+            loaiQD = phieuDAO.getLoaiQuyetDinh(maNV, currentMaDot);
+            System.out.println("   Loaded from DB: quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD);
         }
         
         // Cập nhật panel chi tiết
-        detailPanel.setData(maNV, hoTen, currentMaDot, criteria, savedScores, nhanXet, isLocked);
+        System.out.println("   Calling detailPanel.setData()...");
+        detailPanel.setData(maNV, hoTen, currentMaDot, criteria, savedScores, nhanXet, quyetDinh, loaiQD, isLocked);
         
         // Chuyển sang panel chi tiết
         cardLayout.show(cardPanel, "DETAIL");
+        System.out.println("   ✓ Switched to DETAIL panel");
     }
 
     private void backToList() {
@@ -116,8 +126,8 @@ public class EvaluationPanel extends JPanel {
         loadData(); // Refresh dữ liệu
     }
 
-    private void saveEvaluation(Map<String, Integer> scores, String nhanXet) {
-        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet);
+    private void saveEvaluation(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD) {
+        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet, quyetDinh, loaiQD);
         if (success) {
             JOptionPane.showMessageDialog(this, "Lưu điểm thành công!");
             backToList();

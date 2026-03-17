@@ -68,7 +68,7 @@ public class ManagerDashboard extends JFrame {
         this.setVisible(true);  
     }
     
-    // Các getter để ManagerInitializer có thể lấy panel và load data
+    
     public DashboardPanel getDashboardPanel() { return dashboardPanel; }
     public TeamPanel getTeamPanel() { return teamPanel; }
     public SchedulePanel getSchedulePanel() { return schedulePanel; }
