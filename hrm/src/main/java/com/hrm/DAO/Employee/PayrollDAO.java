@@ -143,4 +143,40 @@ public class PayrollDAO {
         }
         return items;
     }
+
+    public List<Map<String, Object>> getAllAllowances() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT TENPHUCAP, SOTIEN_MACDINH FROM danhmuc_phucap";
+        try (Connection conn = JDBCConection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("ten", rs.getString("TENPHUCAP"));
+                item.put("sotien", rs.getDouble("SOTIEN_MACDINH"));
+                list.add(item);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Map<String, Object>> getAllDeductions() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT TENKHAUTRU, SOTIEN_MACDINH FROM danhmuc_khautru";
+        try (Connection conn = JDBCConection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("ten", rs.getString("TENKHAUTRU"));
+                item.put("sotien", rs.getDouble("SOTIEN_MACDINH"));
+                list.add(item);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
