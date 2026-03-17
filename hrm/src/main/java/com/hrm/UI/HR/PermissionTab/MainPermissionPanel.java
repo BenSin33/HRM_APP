@@ -2,11 +2,12 @@ package com.hrm.UI.HR.PermissionTab;
 
 import javax.swing.*;
 import com.formdev.flatlaf.FlatClientProperties;
-import com.hrm.DAO.NhanVienDAO;
+import com.hrm.DTO.AccountManagerDTO;
 import com.hrm.DTO.PermissionDTO;
-import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.Service.AccountManagerService;
 import com.hrm.Service.PermissionService;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainPermissionPanel extends JPanel {
@@ -17,17 +18,9 @@ public class MainPermissionPanel extends JPanel {
     private JList<String> employeeList;
     private PermissionDetailPanel detailPanel;
     private PermissionService permissionService;
-    private NhanVienDAO nhanVienDAO;
-    
-    // Ánh xạ chức vụ → role
-    private static final String[] CHUCVU_TO_ROLE = {
-        "CV03", // CV03 (Nhân sự) → R1 (HR/Admin)
-        "CV01", // CV01 (Trưởng phòng) → R2 (Manager)
-        "CV02"  // CV02 (Nhân viên) → R3 (Employee)
-    };
-    
-    private static final String[] ROLE_IDS = {"R1", "R2", "R3"};
-    private static final String[] ROLE_NAMES = {"Nhân sự (HR)", "Quản lý (Manager)", "Nhân viên (Employee)"};
+    private AccountManagerService accountManagerService;
+    private final List<String> roleIds;
+    private final List<AccountManagerDTO> currentAccounts;
 
     public MainPermissionPanel() {
         this.setLayout(new BorderLayout(0, 15));
@@ -35,7 +28,9 @@ public class MainPermissionPanel extends JPanel {
         this.setBackground(new Color(248, 249, 250));
 
         permissionService = new PermissionService();
-        nhanVienDAO = new NhanVienDAO();
+        accountManagerService = new AccountManagerService();
+        roleIds = new ArrayList<>();
+        currentAccounts = new ArrayList<>();
 
         // 1. Header
         headerPanel = createHeaderPanel();
@@ -60,6 +55,7 @@ public class MainPermissionPanel extends JPanel {
         
         // Permission detail panel
         detailPanel = new PermissionDetailPanel();
+        detailPanel.setResetOverrideAction(this::resetUserPermissions);
         
         contentPanel.add(sidebarPanel, BorderLayout.WEST);
         contentPanel.add(detailPanel, BorderLayout.CENTER);
@@ -128,13 +124,15 @@ public class MainPermissionPanel extends JPanel {
         panel.setBorder(BorderFactory.createTitledBorder("Chọn Chức Vụ / Role"));
         
         DefaultListModel<String> roleModel = new DefaultListModel<>();
-        roleModel.addElement("Nhân sự (HR) - Admin");
-        roleModel.addElement("Quản lý (Manager)");
-        roleModel.addElement("Nhân viên (Employee)");
+        roleIds.clear();
+        for (String roleId : permissionService.getAllRoles()) {
+            roleIds.add(roleId);
+            roleModel.addElement(permissionService.getRoleName(roleId) + " (" + roleId + ")");
+        }
         
         roleList = new JList<>(roleModel);
         roleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        roleList.setCellRenderer(new RoleCellRenderer());
+        roleList.setCellRenderer(new com.hrm.UI.HR.PermissionTab.RoleCellRenderer());
         
         JScrollPane scrollPane = new JScrollPane(roleList);
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -164,36 +162,31 @@ public class MainPermissionPanel extends JPanel {
      * Khi chọn Role, load danh sách nhân viên theo chức vụ
      */
     private void onRoleSelected() {
-        int roleIndex = roleList.getSelectedIndex();
-        if (roleIndex < 0) return;
-        
-        // Lấy chức vụ tương ứng
-        String chucVu = CHUCVU_TO_ROLE[roleIndex];
-        String roleName = ROLE_NAMES[roleIndex];
-        
-        // Cập nhật header detail panel
-        detailPanel.updateHeader(roleName);
-        
-        // Load nhân viên theo chức vụ
-        loadEmployeesByChucVu(chucVu);
-        
-        // Reset employee selection
+        String roleId = getSelectedRoleId();
+        if (roleId == null) {
+            return;
+        }
+
         employeeList.clearSelection();
+        loadEmployeesByRole(roleId);
+        loadRolePermissions(roleId);
     }
 
     /**
-     * Load danh sách nhân viên theo chức vụ
+     * Load danh sách nhân viên theo role
      */
-    private void loadEmployeesByChucVu(String chucVu) {
+    private void loadEmployeesByRole(String roleId) {
         try {
-            List<NhanVienDTO> employees = nhanVienDAO.getEmployeesByChucVu(chucVu);
+            List<AccountManagerDTO> accounts = accountManagerService.getAccountsByRoleId(roleId);
+            currentAccounts.clear();
             
             DefaultListModel<String> model = (DefaultListModel<String>) employeeList.getModel();
             model.clear();
             
-            if (employees != null && !employees.isEmpty()) {
-                for (NhanVienDTO emp : employees) {
-                    model.addElement(emp.getManv() + " - " + emp.getHoten());
+            if (accounts != null && !accounts.isEmpty()) {
+                currentAccounts.addAll(accounts);
+                for (AccountManagerDTO account : accounts) {
+                    model.addElement(account.maNV + " - " + account.hoTen);
                 }
             }
         } catch (Exception e) {
@@ -207,17 +200,29 @@ public class MainPermissionPanel extends JPanel {
      */
     private void onEmployeeSelected() {
         int employeeIndex = employeeList.getSelectedIndex();
-        int roleIndex = roleList.getSelectedIndex();
         
-        if (employeeIndex < 0 || roleIndex < 0) return;
-        
-        String roleId = ROLE_IDS[roleIndex];
-        
-        // Load quyền hạn theo role của nhân viên
-        List<PermissionDTO> permissions = permissionService.getPermissionsByRole(roleId);
+        if (employeeIndex < 0) {
+            String roleId = getSelectedRoleId();
+            if (roleId != null) {
+                loadRolePermissions(roleId);
+            }
+            return;
+        }
+
+        if (employeeIndex >= currentAccounts.size()) {
+            return;
+        }
+
+        AccountManagerDTO selectedAccount = currentAccounts.get(employeeIndex);
+        List<PermissionDTO> permissions = permissionService.getPermissionsByUser(selectedAccount.maNV, selectedAccount.roleId);
         
         if (permissions != null && !permissions.isEmpty()) {
-            detailPanel.getPermissionTable().updateData(permissions, roleId);
+            detailPanel.updateHeader(
+                "Cấu hình quyền: " + selectedAccount.hoTen,
+                "Đang chỉnh quyền riêng cho " + selectedAccount.maNV + " - nếu xóa sẽ quay về quyền theo role " + selectedAccount.roleId,
+                true
+            );
+            detailPanel.getPermissionTable().updateUserData(permissions, selectedAccount.roleId, selectedAccount.maNV);
         }
     }
 
@@ -225,34 +230,56 @@ public class MainPermissionPanel extends JPanel {
      * Làm mới dữ liệu
      */
     private void refreshData() {
-        int roleIndex = roleList.getSelectedIndex();
-        if (roleIndex >= 0) {
+        if (roleList.getSelectedIndex() >= 0) {
             onRoleSelected();
             JOptionPane.showMessageDialog(this, "Dữ liệu đã được làm mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    /**
-     * Custom cell renderer cho role list
-     */
-    private static class RoleCellRenderer extends JLabel implements javax.swing.ListCellRenderer<String> {
-        @Override
-        public java.awt.Component getListCellRendererComponent(
-                JList<? extends String> list, String value, int index,
-                boolean isSelected, boolean cellHasFocus) {
-            setText(value);
-            setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            
-            if (isSelected) {
-                setBackground(new Color(59, 130, 246));
-                setForeground(Color.WHITE);
-            } else {
-                setBackground(Color.WHITE);
-                setForeground(Color.BLACK);
-            }
-            setOpaque(true);
-            setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-            return this;
+    private String getSelectedRoleId() {
+        int roleIndex = roleList.getSelectedIndex();
+        if (roleIndex < 0 || roleIndex >= roleIds.size()) {
+            return null;
+        }
+        return roleIds.get(roleIndex);
+    }
+
+    private void loadRolePermissions(String roleId) {
+        List<PermissionDTO> permissions = permissionService.getPermissionsByRole(roleId);
+        if (permissions != null && !permissions.isEmpty()) {
+            detailPanel.updateHeader(
+                "Cấu hình quyền role: " + permissionService.getRoleName(roleId),
+                "Đang chỉnh quyền mặc định cho role " + roleId + ". Chọn nhân viên nếu muốn tạo quyền riêng.",
+                false
+            );
+            detailPanel.getPermissionTable().updateData(permissions, roleId);
+        }
+    }
+
+    private void resetUserPermissions() {
+        int employeeIndex = employeeList.getSelectedIndex();
+        if (employeeIndex < 0 || employeeIndex >= currentAccounts.size()) {
+            JOptionPane.showMessageDialog(this, "Hãy chọn nhân viên để xóa quyền riêng.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        AccountManagerDTO selectedAccount = currentAccounts.get(employeeIndex);
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Xóa toàn bộ quyền riêng của " + selectedAccount.hoTen + " và quay về quyền role?",
+            "Xác nhận",
+            JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        if (detailPanel.getPermissionTable().clearUserPermissions()) {
+            JOptionPane.showMessageDialog(this, "Đã xóa quyền riêng của nhân viên.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            onEmployeeSelected();
+        } else {
+            JOptionPane.showMessageDialog(this, "Không thể xóa quyền riêng của nhân viên.", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

@@ -7,7 +7,9 @@ import java.awt.*;
 public class PermissionDetailPanel extends JPanel {
 
     private JLabel lblTitle;
+    private JLabel lblSubtitle;
     private PermissionTable permissionTable;
+    private JButton btnResetOverride;
     
     public PermissionDetailPanel(){
         // Sử dụng BorderLayout để phân chia Header (NORTH) và Table (CENTER)
@@ -22,14 +24,33 @@ public class PermissionDetailPanel extends JPanel {
         lblTitle = new JLabel("Cấu hình quyền hạn");
         lblTitle.setFont(new Font("Times New Roman", Font.BOLD, 20));
 
+        lblSubtitle = new JLabel("Chọn role hoặc nhân viên để bắt đầu cấu hình");
+        lblSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblSubtitle.setForeground(new Color(107, 114, 128));
+
+        JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 4));
+        titlePanel.setOpaque(false);
+        titlePanel.add(lblTitle);
+        titlePanel.add(lblSubtitle);
+
         JButton btnSave = new JButton("Lưu thay đổi"); 
         btnSave.putClientProperty(FlatClientProperties.STYLE, 
             "arc: 10; background: #7e22ce; foreground: #ffffff");
         
         btnSave.addActionListener(e -> savePermissions());
+
+        btnResetOverride = new JButton("Xóa quyền riêng");
+        btnResetOverride.putClientProperty(FlatClientProperties.STYLE,
+            "arc: 10; background: #e5e7eb; foreground: #111827");
+        btnResetOverride.setVisible(false);
+
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        actionPanel.setOpaque(false);
+        actionPanel.add(btnResetOverride);
+        actionPanel.add(btnSave);
         
-        headerPanel.add(lblTitle, BorderLayout.WEST);
-        headerPanel.add(btnSave, BorderLayout.EAST);
+        headerPanel.add(titlePanel, BorderLayout.WEST);
+        headerPanel.add(actionPanel, BorderLayout.EAST);
 
         // 2. Bảng quyền hạn
         permissionTable = new PermissionTable();
@@ -45,8 +66,10 @@ public class PermissionDetailPanel extends JPanel {
     /**
      * Hàm cập nhật tiêu đề linh động
      */
-    public void updateHeader(String roleName) {
-        lblTitle.setText("Cấu hình: " + roleName);
+    public void updateHeader(String title, String subtitle, boolean isUserMode) {
+        lblTitle.setText(title);
+        lblSubtitle.setText(subtitle);
+        btnResetOverride.setVisible(isUserMode);
     }
 
     /**
@@ -54,6 +77,13 @@ public class PermissionDetailPanel extends JPanel {
      */
     public PermissionTable getPermissionTable() {
         return permissionTable;
+    }
+
+    public void setResetOverrideAction(Runnable action) {
+        for (java.awt.event.ActionListener listener : btnResetOverride.getActionListeners()) {
+            btnResetOverride.removeActionListener(listener);
+        }
+        btnResetOverride.addActionListener(e -> action.run());
     }
 
     /**

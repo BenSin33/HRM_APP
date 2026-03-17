@@ -11,6 +11,79 @@ import com.hrm.utils.JDBCConection;
 import com.hrm.utils.PasswordUtil;
 
 public class AccountManagerDAO {
+
+    private static final String ROLE_ADMIN = "R1";
+    private static final String ROLE_MANAGER = "R2";
+    private static final String ROLE_EMPLOYEE = "R3";
+
+    private String roleName(String roleId) {
+        switch (roleId) {
+            case ROLE_ADMIN:
+                return "Admin";
+            case ROLE_MANAGER:
+                return "Manager";
+            default:
+                return "Employee";
+        }
+    }
+
+    private String roleFromPosition(String maChucVu) {
+        if ("CV03".equals(maChucVu)) {
+            return ROLE_ADMIN;
+        }
+        if ("CV01".equals(maChucVu)) {
+            return ROLE_MANAGER;
+        }
+        return ROLE_EMPLOYEE;
+    }
+
+    private boolean existsAnotherManagerInDepartment(Connection conn, String maPhongBan, String excludeMaNV) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM taikhoan tk " +
+                     "JOIN nhanvien nv ON tk.MANV = nv.MANV " +
+                     "WHERE nv.MAPHONGBAN = ? AND tk.ROLEID = ? AND tk.MANV <> ? AND tk.STATUS = 1";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maPhongBan);
+            ps.setString(2, ROLE_MANAGER);
+            ps.setString(3, excludeMaNV == null ? "" : excludeMaNV);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    private String resolveRoleForEmployee(Connection conn, String maNV) throws SQLException {
+        String sql = "SELECT MAPHONGBAN, MACHUCVU FROM nhanvien WHERE MANV = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return ROLE_EMPLOYEE;
+                }
+
+                String maPhongBan = rs.getString("MAPHONGBAN");
+                String maChucVu = rs.getString("MACHUCVU");
+
+                // Trưởng phòng Nhân sự (CV01 + PB01) → Admin, vì họ quản lý hệ thống HRM
+                if ("CV01".equals(maChucVu) && "PB01".equals(maPhongBan)) {
+                    return ROLE_ADMIN;
+                }
+
+                String role = roleFromPosition(maChucVu);
+
+                // Một phòng ban chỉ có 1 quản lý hoạt động.
+                if (ROLE_MANAGER.equals(role) && existsAnotherManagerInDepartment(conn, maPhongBan, maNV)) {
+                    return ROLE_EMPLOYEE;
+                }
+
+                return role;
+            }
+        }
+    }
     
     // Lấy tất cả tài khoản
     public List<AccountManagerDTO> getAllAccounts() {
@@ -125,9 +198,10 @@ public class AccountManagerDAO {
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            String assignedRole = resolveRoleForEmployee(conn, account.maNV);
             
             ps.setString(1, account.maNV);
-            ps.setString(2, account.roleId);
+            ps.setString(2, assignedRole);
             ps.setString(3, PasswordUtil.hashPassword("123")); // Mật khẩu mặc định
             ps.setInt(4, account.status);
             
@@ -144,8 +218,9 @@ public class AccountManagerDAO {
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            String assignedRole = resolveRoleForEmployee(conn, account.maNV);
             
-            ps.setString(1, account.roleId);
+            ps.setString(1, assignedRole);
             ps.setInt(2, account.status);
             ps.setString(3, account.maNV);
             
@@ -224,18 +299,15 @@ public class AccountManagerDAO {
                 while (rs.next()) {
                     String maNV = rs.getString("MANV");
                     String hoTen = rs.getString("HOTEN");
+                    String assignedRole = resolveRoleForEmployee(conn, maNV);
 
                     insertPs.setString(1, maNV);
-                    insertPs.setString(2, "R3"); // Mặc định Employee
+                    insertPs.setString(2, assignedRole);
                     insertPs.setString(3, PasswordUtil.hashPassword("123"));
                     insertPs.setInt(4, 1);
-                    insertPs.addBatch();
+                    insertPs.executeUpdate();
 
-                    createdEmployees.add(maNV + " - " + hoTen);
-                }
-
-                if (!createdEmployees.isEmpty()) {
-                    insertPs.executeBatch();
+                    createdEmployees.add(maNV + " - " + hoTen + " (" + roleName(assignedRole) + ")");
                 }
 
                 conn.commit();

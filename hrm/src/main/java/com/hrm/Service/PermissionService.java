@@ -37,7 +37,7 @@ public class PermissionService {
         if (user == null || user.getRoleId() == null) {
             return false;
         }
-        return permissionDAO.hasPermission(user.getRoleId(), machucNang, quyenType);
+        return permissionDAO.hasPermission(user.getManv(), user.getRoleId(), machucNang, quyenType);
     }
 
     /**
@@ -80,6 +80,22 @@ public class PermissionService {
         return hasPermission(user, machucNang, "QUYEN_XOA");
     }
 
+    public boolean canApprove(UserDTO user, String machucNang) {
+        return hasPermission(user, machucNang, "QUYEN_DUYET");
+    }
+
+    public boolean canExport(UserDTO user, String machucNang) {
+        return hasPermission(user, machucNang, "QUYEN_XUAT_BC");
+    }
+
+    public List<PermissionDTO> getPermissionsByUser(String manv, String roleId) {
+        if (manv == null || manv.trim().isEmpty() || roleId == null || roleId.trim().isEmpty()) {
+            System.err.println("Lỗi: MANV và RoleId không được để trống!");
+            return null;
+        }
+        return permissionDAO.getPermissionsByUser(manv, roleId);
+    }
+
     /**
      * Cập nhật quyền cho một vai trò
      * @param roleId ID vai trò
@@ -93,12 +109,39 @@ public class PermissionService {
     public boolean updatePermission(String roleId, String machucNang,
                                    boolean quyenXem, boolean quyenThem,
                                    boolean quyenSua, boolean quyenXoa) {
+        return updatePermission(roleId, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, false, false);
+    }
+
+    public boolean updatePermission(String roleId, String machucNang,
+                                   boolean quyenXem, boolean quyenThem,
+                                   boolean quyenSua, boolean quyenXoa,
+                                   boolean quyenDuyet, boolean quyenXuatBaoCao) {
         if (roleId == null || roleId.trim().isEmpty() || 
             machucNang == null || machucNang.trim().isEmpty()) {
             System.err.println("Lỗi: RoleId và MachucNang không được để trống!");
             return false;
         }
-        return permissionDAO.updatePermission(roleId, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa);
+        return permissionDAO.updatePermission(roleId, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
+    }
+
+    public boolean updateUserPermission(String manv, String machucNang,
+                                        boolean quyenXem, boolean quyenThem,
+                                        boolean quyenSua, boolean quyenXoa,
+                                        boolean quyenDuyet, boolean quyenXuatBaoCao) {
+        if (manv == null || manv.trim().isEmpty() ||
+            machucNang == null || machucNang.trim().isEmpty()) {
+            System.err.println("Lỗi: MANV và MachucNang không được để trống!");
+            return false;
+        }
+        return permissionDAO.updateUserPermission(manv, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
+    }
+
+    public boolean clearUserPermissions(String manv) {
+        if (manv == null || manv.trim().isEmpty()) {
+            System.err.println("Lỗi: MANV không được để trống!");
+            return false;
+        }
+        return permissionDAO.deleteUserPermissions(manv);
     }
 
     /**

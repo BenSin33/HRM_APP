@@ -55,7 +55,8 @@ public class AccountManagerPanel extends JPanel {
 
         StringBuilder message = new StringBuilder();
         message.append("Đã tạo ").append(createdEmployees.size())
-               .append(" tài khoản mới (mật khẩu mặc định: 123)\n\n");
+             .append(" tài khoản mới (mật khẩu mặc định: 123)\n")
+             .append("Vai trò được tự động gán theo chức vụ nhân viên.\n\n");
         message.append("Danh sách nhân viên:\n");
         for (String employee : createdEmployees) {
             message.append("- ").append(employee).append("\n");
