@@ -21,6 +21,9 @@ public class EvaluationDetailPanel extends JPanel {
     private JButton btnSave;
     private JButton btnReset;
     
+    private JComboBox<String> comboQuyetDinh;
+    private JComboBox<String> comboLoaiQD;
+    
     private List<ScoreRadioPanel> scorePanels;
     private Runnable onBackListener;
     private SaveListener onSaveListener;
@@ -28,10 +31,9 @@ public class EvaluationDetailPanel extends JPanel {
     
     private String currentMaNV;
     private String currentMaDot;
-    private boolean locked;
 
     public interface SaveListener {
-        void onSave(Map<String, Integer> scores, String nhanXet);
+        void onSave(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD);
     }
 
     public EvaluationDetailPanel(Runnable backListener, SaveListener saveListener) {
@@ -86,44 +88,101 @@ public class EvaluationDetailPanel extends JPanel {
         
         add(headerPanel, BorderLayout.NORTH);
 
-        // === CRITERIA PANEL ===
+        // === CRITERIA PANEL (Không scroll riêng) ===
         criteriaPanel = new JPanel();
         criteriaPanel.setLayout(new BoxLayout(criteriaPanel, BoxLayout.Y_AXIS));
         criteriaPanel.setBackground(Color.WHITE);
+        criteriaPanel.setOpaque(false);
         
-        JScrollPane scrollPane = new JScrollPane(criteriaPanel);
-        scrollPane.setBorder(BorderFactory.createTitledBorder(
+        // Tiêu chí panel với border
+        JPanel tieuChiWrapPanel = new JPanel(new BorderLayout());
+        tieuChiWrapPanel.setOpaque(false);
+        tieuChiWrapPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
             "Tiêu chí đánh giá",
             TitledBorder.LEFT,
             TitledBorder.TOP,
             new Font("Segoe UI", Font.BOLD, 14)
         ));
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setPreferredSize(new Dimension(500, 400));
+        tieuChiWrapPanel.add(criteriaPanel, BorderLayout.CENTER);
         
-        add(scrollPane, BorderLayout.CENTER);
-
-        // === NHẬN XÉT PANEL ===
+        // === NHẬN XÉT PANEL (Không scroll riêng - vừa vặn) ===
         JPanel nhanXetPanel = new JPanel(new BorderLayout(5, 5));
         nhanXetPanel.setOpaque(false);
-        nhanXetPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        nhanXetPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            "Nhận xét",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14)
+        ));
         
-        JLabel lblNhanXet = new JLabel("Nhận xét:");
-        lblNhanXet.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        
-        txtNhanXet = new JTextArea(3, 40);
+        txtNhanXet = new JTextArea(2, 40);  // 2 dòng vừa đủ
         txtNhanXet.setLineWrap(true);
         txtNhanXet.setWrapStyleWord(true);
-        txtNhanXet.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtNhanXet.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        txtNhanXet.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtNhanXet.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         
-        JScrollPane spNhanXet = new JScrollPane(txtNhanXet);
+        nhanXetPanel.add(txtNhanXet, BorderLayout.CENTER);
         
-        nhanXetPanel.add(lblNhanXet, BorderLayout.NORTH);
-        nhanXetPanel.add(spNhanXet, BorderLayout.CENTER);
+        // === QUYẾT ĐỊNH PANEL ===
+        JPanel quyetDinhPanel = new JPanel(new BorderLayout(0, 10));
+        quyetDinhPanel.setOpaque(false);
+        quyetDinhPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            "Quyết định / Thưởng / Phạt",
+            javax.swing.border.TitledBorder.LEFT,
+            javax.swing.border.TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14)
+        ));
         
-        add(nhanXetPanel, BorderLayout.SOUTH);
+        JPanel qdContentPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        qdContentPanel.setOpaque(false);
+        qdContentPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // Quyết định
+        JLabel lblQuyetDinh = new JLabel("Quyết định:");
+        lblQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        comboQuyetDinh = new JComboBox<>(new String[]{
+            "Giữ nguyên", "Khen thưởng", "Tăng lương 10%", "Tăng lương 15%",
+            "Thưởng quý", "Trừ lương tháng", "Cảnh cáo", "Không có"
+        });
+        comboQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        
+        // Loại quyết định
+        JLabel lblLoaiQD = new JLabel("Loại quyết định:");
+        lblLoaiQD.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        comboLoaiQD = new JComboBox<>(new String[]{
+            "Không có", "Thưởng", "Tăng lương", "Trừ lương", "Kỷ luật"
+        });
+        comboLoaiQD.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        
+        qdContentPanel.add(lblQuyetDinh);
+        qdContentPanel.add(comboQuyetDinh);
+        qdContentPanel.add(lblLoaiQD);
+        qdContentPanel.add(comboLoaiQD);
+        
+        quyetDinhPanel.add(qdContentPanel, BorderLayout.CENTER);
+        
+        // === TỔNG HỢP NỘI DUNG CHÍNH - 1 SCROLLPANE CHO TẤT CẢ ===
+        JPanel mainContentPanel = new JPanel();
+        mainContentPanel.setLayout(new BoxLayout(mainContentPanel, BoxLayout.Y_AXIS));
+        mainContentPanel.setOpaque(false);
+        mainContentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        mainContentPanel.add(tieuChiWrapPanel);
+        mainContentPanel.add(Box.createRigidArea(new Dimension(0, 12)));
+        mainContentPanel.add(nhanXetPanel);
+        mainContentPanel.add(Box.createRigidArea(new Dimension(0, 12)));
+        mainContentPanel.add(quyetDinhPanel);
+        mainContentPanel.add(Box.createVerticalGlue());
+        
+        // 1 ScrollPane duy nhất cho toàn bộ
+        JScrollPane mainScroll = new JScrollPane(mainContentPanel);
+        mainScroll.getVerticalScrollBar().setUnitIncrement(30);  // Tăng scroll speed từ 20 -> 30
+        mainScroll.setBorder(BorderFactory.createEmptyBorder());
+        
+        add(mainScroll, BorderLayout.CENTER);
 
         // === BUTTON PANEL ===
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
@@ -157,10 +216,16 @@ public class EvaluationDetailPanel extends JPanel {
                        List<TieuChiDanhGiaDTO> criteria, 
                        Map<String, Integer> savedScores,
                        String nhanXet,
+                       String quyetDinh,
+                       String loaiQD,
                        boolean locked) {
+        System.out.println("🔍 DEBUG: EvaluationDetailPanel.setData() được gọi!");
+        System.out.println("   maNV=" + maNV + ", quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD);
+        System.out.println("   comboQuyetDinh=" + comboQuyetDinh);
+        System.out.println("   comboLoaiQD=" + comboLoaiQD);
+        
         this.currentMaNV = maNV;
         this.currentMaDot = maDot;
-        this.locked = locked;
         
         titleLabel.setText("Chấm điểm - " + hoTen + " (" + maNV + ")");
         statusLabel.setText("Kỳ đánh giá: " + maDot + (locked ? " (Đã lưu)" : ""));
@@ -190,6 +255,22 @@ public class EvaluationDetailPanel extends JPanel {
         txtNhanXet.setText(nhanXet != null ? nhanXet : "");
         txtNhanXet.setEditable(!locked);
         
+        // Set combo values
+        try {
+            comboQuyetDinh.setSelectedItem(quyetDinh != null ? quyetDinh : "Giữ nguyên");
+        } catch (Exception e) {
+            comboQuyetDinh.setSelectedIndex(0);
+        }
+        
+        try {
+            comboLoaiQD.setSelectedItem(loaiQD != null ? loaiQD : "Không có");
+        } catch (Exception e) {
+            comboLoaiQD.setSelectedIndex(0);
+        }
+        
+        comboQuyetDinh.setEnabled(!locked);
+        comboLoaiQD.setEnabled(!locked);
+        
         // Set trạng thái nút
         if (locked) {
             btnSave.setEnabled(false);
@@ -201,6 +282,8 @@ public class EvaluationDetailPanel extends JPanel {
         
         criteriaPanel.revalidate();
         criteriaPanel.repaint();
+        this.revalidate();
+        this.repaint();
     }
 
     // SỬA LẠI METHOD RESET - XÓA DATABASE VÀ CHO NHẬP LẠI
@@ -224,26 +307,27 @@ public class EvaluationDetailPanel extends JPanel {
                 panel.resetToZero();
             }
             txtNhanXet.setText("");
+            comboQuyetDinh.setSelectedItem("Giữ nguyên");
+            comboLoaiQD.setSelectedItem("Không có");
             
-            // 2. Chuyển trạng thái
-            locked = false;
-            
-            // 3. ENABLE TẤT CẢ RADIO BUTTON ĐỂ CÓ THỂ NHẬP LẠI
+            // 2. ENABLE TẤT CẢ RADIO BUTTON ĐỂ CÓ THỂ NHẬP LẠI
             for (ScoreRadioPanel panel : scorePanels) {
                 panel.setEnabled(true);
             }
             
-            // 4. Cập nhật nút
+            // 3. Cập nhật nút
             btnSave.setEnabled(true);    // Cho phép lưu
             btnReset.setEnabled(false);  // Tạm thời disable reset
             
-            // 5. Enable ô nhận xét
+            // 4. Enable ô nhận xét
             txtNhanXet.setEditable(true);
+            comboQuyetDinh.setEnabled(true);
+            comboLoaiQD.setEnabled(true);
             
-            // 6. Cập nhật status label
+            // 5. Cập nhật status label
             statusLabel.setText("Kỳ đánh giá: " + currentMaDot);
             
-            // 7. Cập nhật giao diện
+            // 6. Cập nhật giao diện
             criteriaPanel.revalidate();
             criteriaPanel.repaint();
             
@@ -261,8 +345,11 @@ public class EvaluationDetailPanel extends JPanel {
             scores.put(panel.getMaTieuChi(), panel.getSelectedScore());
         }
         
+        String quyetDinh = (String) comboQuyetDinh.getSelectedItem();
+        String loaiQD = (String) comboLoaiQD.getSelectedItem();
+        
         if (onSaveListener != null) {
-            onSaveListener.onSave(scores, txtNhanXet.getText());
+            onSaveListener.onSave(scores, txtNhanXet.getText(), quyetDinh, loaiQD);
         }
     }
 }
