@@ -122,10 +122,10 @@ public class DepartmentManagementPanel extends JPanel {
     private JPanel createStatCard(String label, String value, Color accent) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(Color.WHITE);
+        card.setBackground(new Color(248, 249, 251)); // xám nhạt như ảnh mẫu
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 234, 242), 1, true),
-                new EmptyBorder(16, 18, 10, 18)
+                new EmptyBorder(14, 16, 12, 16)
         ));
 
         JLabel lblLabel = new JLabel(label);
@@ -133,19 +133,19 @@ public class DepartmentManagementPanel extends JPanel {
         lblLabel.setForeground(new Color(140, 144, 153));
 
         JLabel lblValue = new JLabel(value);
-        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblValue.setForeground(accent);
 
-        // Gạch màu sắc bên dưới số, giống mockup
+        // Gạch màu mỏng bên dưới số
         JPanel colorLine = new JPanel();
         colorLine.setBackground(accent);
         colorLine.setMaximumSize(new Dimension(Integer.MAX_VALUE, 3));
         colorLine.setPreferredSize(new Dimension(1, 3));
 
         card.add(lblLabel);
-        card.add(Box.createVerticalStrut(8));
+        card.add(Box.createVerticalStrut(6));
         card.add(lblValue);
-        card.add(Box.createVerticalStrut(10));
+        card.add(Box.createVerticalStrut(8));
         card.add(colorLine);
 
         return card;
@@ -235,9 +235,9 @@ public class DepartmentManagementPanel extends JPanel {
         return wrapper;
     }
 
-    // ============== CARDS GRID ==============
+    // ============== CARDS (GridLayout 1 hàng 3 cột = chiều ngang bằng nhau, wrapper để card không bị kéo cao) ==============
     private JScrollPane createCardsArea() {
-        cardsContainer = new JPanel(new GridLayout(0, 3, 20, 20));
+        cardsContainer = new JPanel(new GridLayout(1, 3, 20, 20)); // 1 hàng, 3 cột = 3 card chiều ngang bằng nhau
         cardsContainer.setOpaque(false);
         cardsContainer.setBorder(new EmptyBorder(24, 0, 0, 0));
 
@@ -252,14 +252,20 @@ public class DepartmentManagementPanel extends JPanel {
             String email = info != null && info.email != null && !info.email.isEmpty() ? info.email : "N/A";
             String phone = info != null && info.phone != null && !info.phone.isEmpty() ? info.phone : "N/A";
 
-            cardsContainer.add(createDepartmentCard(
+            JPanel card = createDepartmentCard(
                     dept.getTenPhongBan(),
                     dept.getMaPhongBan(),
                     dept.getSoNhanVien(),
                     managerName,
                     email,
                     phone
-            ));
+            );
+            // Wrapper: BorderLayout.NORTH để card giữ đúng chiều cao, grid cho card chiều ngang bằng nhau
+            JPanel wrapper = new JPanel(new BorderLayout());
+            wrapper.setOpaque(false);
+            wrapper.putClientProperty("searchText", card.getClientProperty("searchText"));
+            wrapper.add(card, BorderLayout.NORTH);
+            cardsContainer.add(wrapper);
         }
 
         // Bọc grid trong JScrollPane để có thể kéo xuống xem các phòng bên dưới
@@ -290,16 +296,16 @@ public class DepartmentManagementPanel extends JPanel {
         // Header tím (chỉ hiển thị tên phòng ban)
         JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         header.setBackground(new Color(151, 71, 255));
-        header.setBorder(new EmptyBorder(14, 18, 14, 18));
+        header.setBorder(new EmptyBorder(10, 14, 10, 14));
         JLabel lblName = new JLabel(name);
-        lblName.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblName.setForeground(Color.WHITE);
         header.add(lblName);
 
         // Nội dung: bảng 2 cột (nhãn | giá trị) để thẳng hàng
-        JPanel body = new JPanel(new GridLayout(0, 2, 12, 8));
+        JPanel body = new JPanel(new GridLayout(0, 2, 10, 4));
         body.setOpaque(false);
-        body.setBorder(new EmptyBorder(16, 18, 10, 18));
+        body.setBorder(new EmptyBorder(10, 14, 6, 14));
 
         addGridRow(body, "Tên phòng ban", name);
         addGridRow(body, "Mã phòng ban", code);
@@ -311,7 +317,7 @@ public class DepartmentManagementPanel extends JPanel {
         // Thanh action dưới cùng
         JPanel actionsBar = new JPanel(new BorderLayout());
         actionsBar.setOpaque(false);
-        actionsBar.setBorder(new EmptyBorder(12, 18, 16, 18));
+        actionsBar.setBorder(new EmptyBorder(6, 14, 10, 14));
 
         JButton viewBtn = new JButton("Xem chi tiết");
         viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -583,30 +589,45 @@ public class DepartmentManagementPanel extends JPanel {
             String maPhongBan = codeField.getText().trim();
             String soNhanVienStr = employeesField.getText().trim();
 
-            if (tenPhongBan.isEmpty() || maPhongBan.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Vui lòng nhập đầy đủ tên và mã phòng ban!");
+            // Kiểm tra không ô nào được bỏ trống
+            if (tenPhongBan.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Tên phòng ban không được để trống!");
+                return;
+            }
+            if (maPhongBan.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Mã phòng ban không được để trống!");
+                return;
+            }
+            if (soNhanVienStr.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Số nhân viên không được để trống!");
                 return;
             }
 
-            int soNhanVien = 0;
-            if (!soNhanVienStr.isEmpty()) {
-                try {
-                    soNhanVien = Integer.parseInt(soNhanVienStr);
-                    if (soNhanVien < 0) {
-                        JOptionPane.showMessageDialog(null, "Số nhân viên phải là số không âm!");
-                        return;
-                    }
-                } catch (NumberFormatException e) {
-                    JOptionPane.showMessageDialog(null, "Số nhân viên phải là số nguyên!");
+            int soNhanVien;
+            try {
+                soNhanVien = Integer.parseInt(soNhanVienStr);
+                if (soNhanVien < 0) {
+                    JOptionPane.showMessageDialog(null, "Số nhân viên phải là số không âm!");
                     return;
                 }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Số nhân viên phải là số nguyên!");
+                return;
             }
 
-            // Kiểm tra mã phòng ban đã tồn tại chưa
-            DepartmentDTO existing = departmentService.findDepartmentById(maPhongBan);
-            if (existing != null) {
+            // Kiểm tra mã phòng ban không trùng
+            DepartmentDTO existingByCode = departmentService.findDepartmentById(maPhongBan);
+            if (existingByCode != null) {
                 JOptionPane.showMessageDialog(null, "Mã phòng ban đã tồn tại!");
                 return;
+            }
+
+            // Kiểm tra tên phòng ban không trùng
+            for (DepartmentDTO d : departmentService.getAllDepartments()) {
+                if (d.getTenPhongBan() != null && d.getTenPhongBan().trim().equalsIgnoreCase(tenPhongBan)) {
+                    JOptionPane.showMessageDialog(null, "Tên phòng ban đã tồn tại!");
+                    return;
+                }
             }
 
             // Thêm vào database
