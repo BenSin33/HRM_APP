@@ -2,7 +2,6 @@ package com.hrm.UI.Manager.team;
 
 import com.hrm.UI.Manager.color.ColorScheme;
 import com.hrm.Service.NhanVienService;  // ← IMPORT SERVICE
-import com.hrm.UI.Manager.evaluation.TieuChiDanhGiaDialog;
 import javax.swing.*;
 import java.awt.*;
 
@@ -25,7 +24,6 @@ public class TeamPanel extends JPanel {
         header = new TeamHeader();
         stats = new TeamStats();
         table = new TeamTable();
-        table.setEmployeeClickListener((maNV, hoTen) -> openScoringDialog(maNV, hoTen));
         footer = new TeamFooter();
 
         // Header
@@ -42,26 +40,45 @@ public class TeamPanel extends JPanel {
 
         add(contentArea, BorderLayout.CENTER);
 
-        // Setup actions
-       
-        
         // ← TỰ ĐỘNG LOAD DATA
         loadData();
     }
 
-   
-
     // ← METHOD MỚI: TỰ GỌI SERVICE
     private void loadData() {
-        stats.updateStats(
-            nhanVienService.countAll(),
-            nhanVienService.countDangHoatDong(),
-            nhanVienService.countSenior(),
-            nhanVienService.countJunior()
-        );
-        
-        table.setData(nhanVienService.getTableDataForTeam());
+    Object[][] data = nhanVienService.getTableDataForTeam();
+
+    int total = data != null ? data.length : 0;
+    int active = 0;
+    int senior = 0;
+    int junior = 0;
+
+    if (data != null) {
+        for (Object[] row : data) {
+            if (row == null) continue;
+
+            // Cấu trúc row theo service:
+            // [0]=maNV, [1]=hoTen, [2]=chucVu (CV01/CV02), [3]=lienHe, [4]=ngayVaoLam, [5]=trangThai
+            String chucVu = row.length > 2 && row[2] != null ? row[2].toString().trim() : "";
+            String trangThai = row.length > 5 && row[5] != null ? row[5].toString().trim() : "";
+
+            // Đang hoạt động = "Đang làm việc"
+            if ("Đang làm việc".equalsIgnoreCase(trangThai)) {
+                active++;
+            }
+
+            // CV02 = Senior, CV01 = Junior
+            if ("CV02".equalsIgnoreCase(chucVu)) {
+                senior++;
+            } else if ("CV01".equalsIgnoreCase(chucVu)) {
+                junior++;
+            }
+        }
     }
+
+    stats.updateStats(total, active, senior, junior);
+    table.setData(data);
+}
     
     // ← GIỮ LẠI METHOD NÀY ĐỂ REFRESH
     public void refresh() {
@@ -72,10 +89,5 @@ public class TeamPanel extends JPanel {
         return table.getSelectedEmployeeId();
     }
 
-    private void openScoringDialog(String maNV, String hoTen) {
-        String maDot = TieuChiDanhGiaDialog.defaultMaDotNow();
-        Window w = SwingUtilities.getWindowAncestor(this);
-        TieuChiDanhGiaDialog dialog = new TieuChiDanhGiaDialog(w, maNV, hoTen, maDot, null);
-        dialog.setVisible(true);
-    }
+    
 }
