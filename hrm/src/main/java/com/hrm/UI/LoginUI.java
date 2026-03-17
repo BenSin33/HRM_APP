@@ -113,22 +113,24 @@ public class LoginUI extends JFrame{
         UserDTO userInfo = authService.authenticateByMaNV(manv, pass);
 
         if(userInfo != null){
+            this.setVisible(false);
+            this.dispose();
+
             // Nếu mật khẩu hiện còn dạng plain-text thì mã hoá ngay sau đăng nhập thành công
             authService.upgradePasswordIfLegacy(manv, pass);
 
             if(authService.isAdmin(userInfo)){
                 new HRDashboard();
-                JOptionPane.showMessageDialog(this, "Xin chào quản trị viên: " + userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào quản trị viên: " + userInfo.getManv());
             } else if(authService.isManager(userInfo)){
                 new ManagerDashboard();      // Tạo giao diện   
-                JOptionPane.showMessageDialog(this, "Xin chào quản lý: " + userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào quản lý: " + userInfo.getManv());
             } else if(authService.isEmployee(userInfo)){
                 new EDashboard(userInfo.getManv());
-                JOptionPane.showMessageDialog(this, "Xin chào nhân viên: " + userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào nhân viên: " + userInfo.getManv());
             } else {
-                JOptionPane.showMessageDialog(this, "Vai trò không được xác định!");
+                JOptionPane.showMessageDialog(null, "Vai trò không được xác định!");
             }
-            this.dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Mã nhân viên hoặc mật khẩu không đúng!");
         }

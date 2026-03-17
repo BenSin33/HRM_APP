@@ -77,7 +77,7 @@ public class EvaluationTable extends JPanel {
         leftBar.add(periodLabel);
         leftBar.add(periodBox);
 
-        // Phải: Nút Thêm phiếu đánh giá
+        // Phải: Nút Thêm phiếu đánh giá (ẨNĐI - click hàng để duyệt)
         JButton addBtn = new JButton("＋  Thêm phiếu đánh giá");
         addBtn.setFont(addBtn.getFont().deriveFont(Font.BOLD, 12f));
         addBtn.setForeground(Color.WHITE);
@@ -86,6 +86,7 @@ public class EvaluationTable extends JPanel {
         addBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         addBtn.putClientProperty("FlatLaf.style", "arc:8; background:#7C3AED; borderWidth:0");
         addBtn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        addBtn.setVisible(false);  // ← ẨNĐI - SỬ DỤNG CLICK HÀN THAY VÌ BUTTON
         addBtn.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseEntered(java.awt.event.MouseEvent e) {
                 addBtn.putClientProperty("FlatLaf.style", "arc:8; background:#6D28D9; borderWidth:0");
@@ -483,6 +484,36 @@ public class EvaluationTable extends JPanel {
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(Color.WHITE);
+        scroll.getVerticalScrollBar().setUnitIncrement(30);  // Tăng scroll speed
+        
+        // === THÊM CLICK LISTENER - CLICK HÀN ĐỂ DUYỆT QUYẾT ĐỊNH ===
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                if (row >= 0 && row < table.getRowCount()) {
+                    // Lấy dữ liệu hàng được click
+                    String maNV = table.getValueAt(row, 0).toString();  // Cột MÃ NV
+                    String maPhieu = null;
+                    
+                    // Lấy maPhieu từ database dựa vào maNV và maDot
+                    String maDot = getCurrentMaDot();
+                    List<EvaluationDTO> list = dao.getEvaluationsByPeriod(maDot);
+                    for (EvaluationDTO dto : list) {
+                        if (dto.getMaNV().equals(maNV)) {
+                            maPhieu = dto.getMaPhieu();
+                            break;
+                        }
+                    }
+                    
+                    if (maPhieu != null) {
+                        System.out.println("🔍 DEBUG: Click hàng - maNV=" + maNV + ", maPhieu=" + maPhieu);
+                        showApprovalDialog(maPhieu, maNV, maDot);  // Mở dialog duyệt
+                    }
+                }
+            }
+        });
+        
         return scroll;
     }
 
@@ -718,4 +749,114 @@ public class EvaluationTable extends JPanel {
             return cell;
         }
     }
+    
+    // ─────────────────────────────────────────────────────────────
+    // DIALOG DUYỆT QUYẾT ĐỊNH - CLICK HÀN MỞ DIALOG NÀY
+    // ─────────────────────────────────────────────────────────────
+    private void showApprovalDialog(String maPhieu, String maNV, String maDot) {
+        JDialog dialog = new JDialog(
+                SwingUtilities.getWindowAncestor(this),
+                "Duyệt Quyết Định Đánh Giá",
+                Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setSize(500, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+        dialog.setLayout(new BorderLayout());
+
+        // === FORM DUYỆT ===
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(Color.WHITE);
+        form.setBorder(BorderFactory.createEmptyBorder(20, 24, 8, 24));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.gridx = 0;
+        gbc.insets = new Insets(4, 0, 4, 0);
+
+        // Lấy dữ liệu phiếu từ database
+        EvaluationDTO eval = dao.getEvaluationByMaPhieu(maPhieu);
+        
+        // 1. Thông tin nhân viên (read-only)
+        gbc.gridy = 0;
+        form.add(makeLabel("Nhân viên: "), gbc);
+        gbc.gridy = 1;
+        JLabel nvLabel = new JLabel(maNV);
+        nvLabel.setFont(nvLabel.getFont().deriveFont(Font.PLAIN, 13f));
+        form.add(nvLabel, gbc);
+
+        // 2. Tổng điểm
+        gbc.gridy = 2;
+        form.add(makeLabel("Tổng điểm: "), gbc);
+        gbc.gridy = 3;
+        JLabel diemLabel = new JLabel(eval != null ? String.valueOf(eval.getTongDiem()) : "0");
+        diemLabel.setFont(diemLabel.getFont().deriveFont(Font.BOLD, 14f));
+        form.add(diemLabel, gbc);
+
+        // 3. Xếp loại
+        gbc.gridy = 4;
+        form.add(makeLabel("Xếp loại: "), gbc);
+        gbc.gridy = 5;
+        JLabel xepLoaiLabel = new JLabel(eval != null ? eval.getXepLoai() : "-");
+        xepLoaiLabel.setFont(xepLoaiLabel.getFont().deriveFont(Font.PLAIN, 13f));
+        form.add(xepLoaiLabel, gbc);
+
+        // 4. Trạng thái duyệt (lựa chọn)
+        gbc.gridy = 6;
+        form.add(makeLabel("Trạng thái duyệt: *"), gbc);
+        gbc.gridy = 7;
+        JComboBox<String> statusBox = makeCombo(new String[]{"Chờ duyệt", "Đã duyệt"});
+        if (eval != null && "Đã duyệt".equals(eval.getTrangThaiDuyet())) {
+            statusBox.setSelectedItem("Đã duyệt");
+        }
+        form.add(statusBox, gbc);
+
+        JScrollPane formScroll = new JScrollPane(form);
+        formScroll.setBorder(BorderFactory.createEmptyBorder());
+        formScroll.getViewport().setBackground(Color.WHITE);
+        formScroll.getVerticalScrollBar().setUnitIncrement(30);  // Tăng scroll speed
+
+        // === BUTTONS ===
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 14));
+        btnPanel.setBackground(Color.WHITE);
+        btnPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GRAY200));
+
+        JButton cancelBtn = new JButton("Hủy");
+        cancelBtn.setPreferredSize(new Dimension(90, 36));
+        cancelBtn.setFocusPainted(false);
+        cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cancelBtn.putClientProperty("FlatLaf.style", "arc:8; background:#F3F4F6; borderColor:#E5E7EB");
+        cancelBtn.addActionListener(e -> dialog.dispose());
+
+        JButton saveBtn = new JButton("Lưu Duyệt");
+        saveBtn.setPreferredSize(new Dimension(110, 36));
+        saveBtn.setForeground(Color.WHITE);
+        saveBtn.setBackground(PURPLE);
+        saveBtn.setFocusPainted(false);
+        saveBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        saveBtn.putClientProperty("FlatLaf.style", "arc:8; background:#7C3AED; borderWidth:0");
+
+        saveBtn.addActionListener(e -> {
+            String status = (String) statusBox.getSelectedItem();
+            boolean success = dao.updateEvaluationStatus(maPhieu, status);
+            if (success) {
+                JOptionPane.showMessageDialog(dialog,
+                        "Cập nhật trạng thái duyệt thành công!",
+                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                loadTableData();  // Refresh bảng
+                dialog.dispose();
+            } else {
+                JOptionPane.showMessageDialog(dialog,
+                        "Cập nhật thất bại!",
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnPanel.add(cancelBtn);
+        btnPanel.add(saveBtn);
+
+        dialog.add(formScroll, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
 }

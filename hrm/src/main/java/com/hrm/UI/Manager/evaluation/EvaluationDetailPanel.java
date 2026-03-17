@@ -179,7 +179,7 @@ public class EvaluationDetailPanel extends JPanel {
         
         // 1 ScrollPane duy nhất cho toàn bộ
         JScrollPane mainScroll = new JScrollPane(mainContentPanel);
-        mainScroll.getVerticalScrollBar().setUnitIncrement(20);
+        mainScroll.getVerticalScrollBar().setUnitIncrement(30);  // Tăng scroll speed từ 20 -> 30
         mainScroll.setBorder(BorderFactory.createEmptyBorder());
         
         add(mainScroll, BorderLayout.CENTER);

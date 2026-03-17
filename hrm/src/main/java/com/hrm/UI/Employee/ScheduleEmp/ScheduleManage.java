@@ -8,8 +8,6 @@ import java.awt.*;
  * Kết hợp Header (Tiêu đề/Điều hướng), Center (Lịch 7 ngày) và Footer (Chú thích).
  */
 import java.time.LocalDate;
-import java.time.temporal.WeekFields;
-import java.util.Locale;
 
 public class ScheduleManage extends JPanel {
     private String manv;
@@ -20,10 +18,9 @@ public class ScheduleManage extends JPanel {
 
     public ScheduleManage(String manv) {
         this.manv = manv;
-        // Xác định ngày đầu tuần hiện tại
+        // Xác định ngày đầu tuần hiện tại theo chuẩn ISO (Thứ 2)
         LocalDate now = LocalDate.now();
-        WeekFields weekFields = WeekFields.of(Locale.getDefault());
-        weekStart = now.with(weekFields.dayOfWeek(), 1); // Thứ 2 đầu tuần
+        weekStart = now.minusDays(now.getDayOfWeek().getValue() - 1);
 
         setLayout(new BorderLayout(0, 0));
         setBackground(new Color(248, 249, 250));

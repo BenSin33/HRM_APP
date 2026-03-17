@@ -13,16 +13,16 @@ public class PermissionDetailPanel extends JPanel {
         // Sử dụng BorderLayout để phân chia Header (NORTH) và Table (CENTER)
         setLayout(new BorderLayout(0, 15));
         this.setBackground(Color.WHITE);
-        this.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
+        this.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
         // 1. Header Panel
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setOpaque(false); // Để dùng chung màu nền với Panel chính
+        headerPanel.setOpaque(false);
 
         lblTitle = new JLabel("Cấu hình quyền hạn");
-        lblTitle.setFont(new Font("Times New Roman", Font.BOLD, 22));
+        lblTitle.setFont(new Font("Times New Roman", Font.BOLD, 20));
 
-        JButton btnSave = new JButton("Chỉnh sửa quyền hạn"); 
+        JButton btnSave = new JButton("Lưu thay đổi"); 
         btnSave.putClientProperty(FlatClientProperties.STYLE, 
             "arc: 10; background: #7e22ce; foreground: #ffffff");
         
@@ -31,18 +31,15 @@ public class PermissionDetailPanel extends JPanel {
         headerPanel.add(lblTitle, BorderLayout.WEST);
         headerPanel.add(btnSave, BorderLayout.EAST);
 
-        // 2. TabbedPane chứa Bảng (Cho đúng mẫu UI bạn đưa)
+        // 2. Bảng quyền hạn
         permissionTable = new PermissionTable();
         JScrollPane scrollPane = new JScrollPane(permissionTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(240, 240, 240)));
-
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Quyền hạn chức năng", scrollPane);
-        tabs.addTab("Thành viên", new JPanel());
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 1));
+        scrollPane.getViewport().setBackground(Color.WHITE);
 
         // Thêm các thành phần vào Panel chính
         this.add(headerPanel, BorderLayout.NORTH);
-        this.add(tabs, BorderLayout.CENTER);
+        this.add(scrollPane, BorderLayout.CENTER);
     }
 
     /**

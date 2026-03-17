@@ -53,5 +53,31 @@ public class ChucVuHRDAO {
         // fallback: nếu không tìm thấy trong DB thì trả lại mã
         return maChucVu;
     }
+
+    /**
+     * Lấy mã chức vụ theo tên (ví dụ "Trưởng phòng" -> CV01).
+     * Nếu chuỗi đã là mã (CV01, CV02...) thì trả về chính nó nếu tồn tại trong DB.
+     */
+    public String getMaChucVuByTen(String tenVitriOrCode) {
+        if (tenVitriOrCode == null || tenVitriOrCode.trim().isEmpty()) {
+            return "CV02";
+        }
+        String s = tenVitriOrCode.trim();
+        String sql = "SELECT machucvu FROM chucvu WHERE tenvitri = ? OR machucvu = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn != null ? conn.prepareStatement(sql) : null) {
+            if (ps == null) return "CV02";
+            ps.setString(1, s);
+            ps.setString(2, s);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("machucvu");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "CV02";
+    }
 }
 

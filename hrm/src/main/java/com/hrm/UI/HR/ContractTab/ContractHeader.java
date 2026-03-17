@@ -12,7 +12,11 @@ public class ContractHeader extends JPanel {
     private ContractStatsCard soonCard;
     private ContractStatsCard expiredCard;
     private JButton addButton;
+    private JButton exportButton;
+    private JButton importButton;
     private Runnable onAddCallback;
+    private Runnable onExportCallback;
+    private Runnable onImportCallback;
     private ContractDAO contractDAO;
 
     public ContractHeader() {
@@ -23,6 +27,14 @@ public class ContractHeader extends JPanel {
 
     public void setOnAddCallback(Runnable callback) {
         this.onAddCallback = callback;
+    }
+
+    public void setOnExportCallback(Runnable callback) {
+        this.onExportCallback = callback;
+    }
+
+    public void setOnImportCallback(Runnable callback) {
+        this.onImportCallback = callback;
     }
 
     private void initComponent() {
@@ -49,6 +61,10 @@ public class ContractHeader extends JPanel {
         
         titlePanel.add(textPanel, BorderLayout.WEST);
         
+        // Nút thao tác
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+        
         // Nút Thêm hợp đồng
         addButton = new JButton("+ Thêm hợp đồng");
         addButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -56,14 +72,46 @@ public class ContractHeader extends JPanel {
         addButton.setBackground(new Color(156, 39, 176)); // Purple
         addButton.setFocusPainted(false);
         addButton.setBorderPainted(false);
-        addButton.setPreferredSize(new Dimension(180, 40));
+        addButton.setPreferredSize(new Dimension(140, 38));
         addButton.addActionListener(e -> {
             if (onAddCallback != null) {
                 onAddCallback.run();
             }
         });
         
-        titlePanel.add(addButton, BorderLayout.EAST);
+        // Nút Xuất Excel
+        exportButton = new JButton("Xuất Excel");
+        exportButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        exportButton.setForeground(Color.WHITE);
+        exportButton.setBackground(new Color(76, 175, 80)); // Green
+        exportButton.setFocusPainted(false);
+        exportButton.setBorderPainted(false);
+        exportButton.setPreferredSize(new Dimension(100, 38));
+        exportButton.addActionListener(e -> {
+            if (onExportCallback != null) {
+                onExportCallback.run();
+            }
+        });
+        
+        // Nút Nhập Excel
+        importButton = new JButton("Nhập Excel");
+        importButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        importButton.setForeground(Color.WHITE);
+        importButton.setBackground(new Color(33, 150, 243)); // Blue
+        importButton.setFocusPainted(false);
+        importButton.setBorderPainted(false);
+        importButton.setPreferredSize(new Dimension(100, 38));
+        importButton.addActionListener(e -> {
+            if (onImportCallback != null) {
+                onImportCallback.run();
+            }
+        });
+        
+        buttonPanel.add(addButton);
+        buttonPanel.add(exportButton);
+        buttonPanel.add(importButton);
+        
+        titlePanel.add(buttonPanel, BorderLayout.EAST);
         
         add(titlePanel, BorderLayout.NORTH);
         
@@ -123,7 +171,6 @@ public class ContractHeader extends JPanel {
         }
         
         if (index >= 0) {
-            ContractStatsCard oldCard = card;
             if (card == totalCard) {
                 card = new ContractStatsCard("Tổng hợp đồng", value, "icons/document.svg", new Color(156, 39, 176));
                 totalCard = card;

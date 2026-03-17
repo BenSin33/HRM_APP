@@ -54,12 +54,12 @@ public class ManagerDashboard extends JFrame {
 
         // Cấu hình sidebar
         List<SidebarTab> ManagerTabs = new ArrayList<>();
-        ManagerTabs.add(new SidebarTab("Tổng quan", "MANAGER_DASHBOARD"));
-        ManagerTabs.add(new SidebarTab("Quản lý đội nhóm", "TEAM_MANAGEMENT"));
-        ManagerTabs.add(new SidebarTab("Lịch làm việc", "SCHEDULE_MANAGEMENT"));
-        ManagerTabs.add(new SidebarTab("Duyệt nghỉ phép", "LEAVE_APPROVAL"));
-        ManagerTabs.add(new SidebarTab("Đánh giá hiệu suất", "PERFORMANCE_EVALUATION"));
-        ManagerTabs.add(new SidebarTab("Đăng xuất", "LOGOUT"));
+        ManagerTabs.add(new SidebarTab("TỔNG QUAN", "MANAGER_DASHBOARD"));
+        ManagerTabs.add(new SidebarTab("QUẢN LÝ ĐỘI NHÓM", "TEAM_MANAGEMENT"));
+        ManagerTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
+        ManagerTabs.add(new SidebarTab("DUYỆT NGHỈ PHÉP", "LEAVE_APPROVAL"));
+        ManagerTabs.add(new SidebarTab("ĐÁNH GIÁ HIỆU SUẤT", "PERFORMANCE_EVALUATION"));
+        ManagerTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, ManagerTabs);
 
