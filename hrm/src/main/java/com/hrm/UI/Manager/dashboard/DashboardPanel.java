@@ -3,6 +3,7 @@ package com.hrm.UI.Manager.dashboard;
 import com.hrm.UI.Manager.color.ColorScheme;
 import com.hrm.Service.NhanVienService;
 import com.hrm.Service.NghiPhepService;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
@@ -10,7 +11,7 @@ import java.util.function.Consumer;
 public class DashboardPanel extends JPanel {
     private NhanVienService nhanVienService;
     private NghiPhepService nghiPhepService;
-    
+
     private DashboardHeader header;
     private DashboardStats stats;
     private DashboardTeamPanel teamPanel;
@@ -55,7 +56,7 @@ public class DashboardPanel extends JPanel {
         contentArea.add(actionCards, BorderLayout.SOUTH);
 
         add(contentArea, BorderLayout.CENTER);
-        
+
         // ← TỰ ĐỘNG LOAD DATA
         loadData();
     }
@@ -67,19 +68,26 @@ public class DashboardPanel extends JPanel {
         String hieuSuat = nhanVienService.getHieuSuatTrungBinh();
 
         stats.updateStats(
-            totalEmployees,
-            choDuyet,
-            onLeaveToday,
-            hieuSuat
+                totalEmployees,
+                choDuyet,
+                onLeaveToday,
+                hieuSuat
         );
 
-        actionCards.updateActions(
-            choDuyet,
-            nghiPhepService.countDaDuyet(),
-            nhanVienService.countDangHoatDong()
-        );
+        // ===== Action cards (3 card click ở cuối) =====
+        // 1) Đơn chờ xử lý: lấy đúng từ nghỉ phép "Chờ duyệt"
+        int donChoXuLy = choDuyet;
 
-        // ==== Team panel: hiển thị danh sách thành viên (tối đa 6) ====
+        // 2) Đợt cần hoàn thành: hiểu là số NV CHƯA được đánh giá trong kỳ hiện tại (Qx-YYYY)
+        String maDot = getCurrentMaDot();
+        int canHoanThanh = countChuaDanhGiaTheoDot(maDot);
+
+        // 3) Thành viên team: dùng tổng nhân viên
+        int thanhVienTeam = totalEmployees;
+
+        actionCards.updateActions(donChoXuLy, canHoanThanh, thanhVienTeam);
+
+        // ==== Team panel: hiển thị danh sách thành viên (tối đa 9) ====
         teamPanel.clearMembers();
         Object[][] teamData = nhanVienService.getTableDataForTeam();
         if (teamData != null) {
@@ -96,23 +104,45 @@ public class DashboardPanel extends JPanel {
         taskPanel.clearTasks();
         if (choDuyet > 0) {
             taskPanel.addTask(
-                "Duyệt đơn nghỉ phép",
-                choDuyet + " đơn đang chờ duyệt",
-                "Cao"
+                    "Duyệt đơn nghỉ phép",
+                    choDuyet + " đơn đang chờ duyệt",
+                    "Cao"
             );
         }
         if (onLeaveToday > 0) {
             taskPanel.addTask(
-                "Theo dõi nhân viên vắng",
-                onLeaveToday + " nhân viên đang nghỉ hôm nay",
-                "Trung bình"
+                    "Theo dõi nhân viên vắng",
+                    onLeaveToday + " nhân viên đang nghỉ hôm nay",
+                    "Trung bình"
             );
         }
         taskPanel.addTask(
-            "Xem hiệu suất team",
-            "Hiệu suất trung bình hiện tại: " + hieuSuat,
-            "Thấp"
+                "Xem hiệu suất team",
+                "Hiệu suất trung bình hiện tại: " + hieuSuat,
+                "Thấp"
         );
+    }
+
+    private String getCurrentMaDot() {
+        java.time.LocalDate now = java.time.LocalDate.now();
+        int q = ((now.getMonthValue() - 1) / 3) + 1;
+        return "Q" + q + "-" + now.getYear();
+    }
+
+    private int countChuaDanhGiaTheoDot(String maDot) {
+        com.hrm.DAO.NhanVienDAO nvDao = new com.hrm.DAO.NhanVienDAO();
+        com.hrm.DAO.PhieuDanhGiaDAO phieuDao = new com.hrm.DAO.PhieuDanhGiaDAO();
+
+        java.util.List<com.hrm.DTO.Manager.NhanVienDTO> list = nvDao.getAll();
+        if (list == null || list.isEmpty()) return 0;
+
+        int count = 0;
+        for (com.hrm.DTO.Manager.NhanVienDTO nv : list) {
+            if (nv == null || nv.getManv() == null) continue;
+            boolean daDanhGia = phieuDao.hasEvaluation(nv.getManv(), maDot);
+            if (!daDanhGia) count++;
+        }
+        return count;
     }
 
     private void handleActionClick(String action) {
@@ -131,7 +161,7 @@ public class DashboardPanel extends JPanel {
                 break;
         }
     }
-    
+
     // ← GIỮ LẠI METHOD NÀY ĐỂ REFRESH
     public void refresh() {
         loadData();

@@ -27,6 +27,9 @@ public class DashboardTeamPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(membersList);
         scrollPane.setBorder(null);
         scrollPane.setBackground(Color.WHITE);
+        // Tăng tốc độ cuộn (độ cao mỗi nấc cuộn)
+        scrollPane.getVerticalScrollBar().setUnitIncrement(24);
+        scrollPane.getVerticalScrollBar().setBlockIncrement(96);
         add(scrollPane, BorderLayout.CENTER);
     }
 

@@ -9,8 +9,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class AttendanceDAO {
-    private static int autoIncrementCC = 8;
     private static String soGioColumn;
+
+    private String nextMaChamCong(Connection conn) throws SQLException {
+        String sql = "SELECT MAX(CAST(SUBSTRING(MACHAMCONG, 3) AS UNSIGNED)) FROM chamcong";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            int maxId = 0;
+            if (rs.next()) maxId = rs.getInt(1);
+            return "CC" + String.format("%02d", maxId + 1);
+        }
+    }
 
     private String resolveSoGioColumn(Connection conn) throws SQLException {
         if (soGioColumn != null) {
@@ -46,17 +55,16 @@ public class AttendanceDAO {
         }
     }
 
-    // Thực hiện Check-in
+    // Thực hiện Check-in: chỉ ghi nhận giờ vào, TRANGTHAI='0', SOGIOLAM=0
     public boolean insertCheckIn(String manv) throws SQLException {
-        String maChamCong = "CC" + String.format("%02d", ++autoIncrementCC);
-        String sql = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI, MACALAM) " +
-                "SELECT ?, ?, CURRENT_DATE, CURRENT_TIME, " +
-                "CASE WHEN CURRENT_TIME > c.GIOVAOCA THEN 0 ELSE 1 END, l.MACALAM " +
-                "FROM lichlamviec l INNER JOIN calam c ON l.MACALAM = c.MACALAM " +
-                "WHERE l.MANV = ? AND l.NGAYLAMVIEC = CURRENT_DATE";
-
-        try (Connection conn = JDBCConection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = JDBCConection.getConnection()) {
+            String soGioCol = resolveSoGioColumn(conn);
+            String sql = "INSERT INTO chamcong (MACHAMCONG, MANV, NGAYLAMVIEC, CHECKIN, TRANGTHAI, " + soGioCol + ") " +
+                    "SELECT ?, ?, CURRENT_DATE, CURRENT_TIME, '0', 0 " +
+                    "FROM lichlamviec l INNER JOIN calam c ON l.MACALAM = c.MACALAM " +
+                    "WHERE l.MANV = ? AND l.NGAYLAMVIEC = CURRENT_DATE";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            String maChamCong = nextMaChamCong(conn);
             ps.setString(1, maChamCong);
             ps.setString(2, manv);
             ps.setString(3, manv);
@@ -64,28 +72,57 @@ public class AttendanceDAO {
         }
     }
 
-    // Thực hiện Check-out và tính SOGIO
+    // Thực hiện Check-out và tính SOGIO + TRANGTHAI
+    // Quy tắc:
+    // - TRANGTHAI: '1' nếu checkin <= GIOVAOCA AND checkout >= GIOTANCA, '0' nếu đi muộn hoặc về sớm
+    // - SOGIOLAM khi TRANGTHAI='1': 8h cho C1/C2/C3, 4h cho C4/C5/C6
+    // - SOGIOLAM khi TRANGTHAI='0': tính (checkout - checkin) có trừ nghỉ trưa cho C1/C2
+    //   + C1/C2 nghỉ trưa 12:00-13:00: checkin 12-13h tính 13h, checkout 12-13h tính 12h, 
+    //     checkin<12 và checkout>13 trừ 1h
     public boolean updateCheckOut(String manv) throws SQLException {
-        // Cập nhật CHECKOUT, giờ làm và TRANGTHAI
-        // TONGGIOVIPHAM = (giờ đi muộn) + (giờ về sớm)
-        // SOGIOLAM = (giờ ca) - TONGGIOVIPHAM
-        // TRANGTHAI = 0 nếu có vi phạm, 1 nếu không vi phạm
         try (Connection conn = JDBCConection.getConnection()) {
             String soGioCol = resolveSoGioColumn(conn);
-            String sql = "UPDATE chamcong cc " +
-                "INNER JOIN calam c ON c.MACALAM = cc.MACALAM " +
-                "SET CHECKOUT = CURRENT_TIME, " +
-                soGioCol + " = ROUND((" +
-                "  TIME_TO_SEC(TIMEDIFF(c.GIOTANCA, c.GIOVAOCA)) - " +
-                "  (CASE WHEN CHECKIN > c.GIOVAOCA THEN TIME_TO_SEC(TIMEDIFF(CHECKIN, c.GIOVAOCA)) ELSE 0 END + " +
-                "   CASE WHEN CURRENT_TIME < c.GIOTANCA THEN TIME_TO_SEC(TIMEDIFF(c.GIOTANCA, CURRENT_TIME)) ELSE 0 END)" +
-                ") / 3600, 1), " +
-                "TRANGTHAI = CASE WHEN (CHECKIN > c.GIOVAOCA OR CURRENT_TIME < c.GIOTANCA) THEN 0 ELSE 1 END " +
-                "WHERE MANV = ? AND NGAYLAMVIEC = CURRENT_DATE AND CHECKOUT IS NULL";
 
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, manv);
-            return ps.executeUpdate() > 0;
+            // Bước 1: Xác định TRANGTHAI
+            String sqlTrangThai = "UPDATE chamcong cc " +
+                "INNER JOIN lichlamviec l ON l.MANV = cc.MANV AND l.NGAYLAMVIEC = cc.NGAYLAMVIEC " +
+                "INNER JOIN calam c ON c.MACALAM = l.MACALAM " +
+                "SET cc.CHECKOUT = CURRENT_TIME, " +
+                "cc.TRANGTHAI = CASE WHEN (cc.CHECKIN <= c.GIOVAOCA AND CURRENT_TIME >= c.GIOTANCA) THEN '1' ELSE '0' END " +
+                "WHERE cc.MANV = ? AND cc.NGAYLAMVIEC = CURRENT_DATE AND cc.CHECKOUT IS NULL";
+            PreparedStatement ps1 = conn.prepareStatement(sqlTrangThai);
+            ps1.setString(1, manv);
+            int updated = ps1.executeUpdate();
+            if (updated == 0) return false;
+
+            // Bước 2: Tính SOGIOLAM dựa trên TRANGTHAI và mã ca
+            // Nếu TRANGTHAI='1': C1/C2/C3 → 8h, C4/C5/C6 → 4h
+            // Nếu TRANGTHAI='0': tính thực tế (checkout - checkin) có xử lý nghỉ trưa C1/C2
+            String sqlSoGio = "UPDATE chamcong cc " +
+                "INNER JOIN lichlamviec l ON l.MANV = cc.MANV AND l.NGAYLAMVIEC = cc.NGAYLAMVIEC " +
+                "INNER JOIN calam c ON c.MACALAM = l.MACALAM " +
+                "SET cc." + soGioCol + " = CASE " +
+                // Trạng thái 1 (đúng giờ)
+                "  WHEN cc.TRANGTHAI = '1' AND l.MACALAM IN ('C1','C2','C3') THEN 8 " +
+                "  WHEN cc.TRANGTHAI = '1' AND l.MACALAM IN ('C4','C5','C6') THEN 4 " +
+                "  WHEN cc.TRANGTHAI = '1' THEN 8 " +
+                // Trạng thái 0 (đi muộn/về sớm) - tính thực tế
+                // Xử lý nghỉ trưa cho C1/C2 (12:00-13:00)
+                "  WHEN cc.TRANGTHAI = '0' AND l.MACALAM IN ('C1','C2') THEN ROUND(" +
+                "    TIME_TO_SEC(TIMEDIFF(" +
+                "      CASE WHEN cc.CHECKOUT >= '12:00:00' AND cc.CHECKOUT < '13:00:00' THEN '12:00:00' ELSE cc.CHECKOUT END, " +
+                "      CASE WHEN cc.CHECKIN >= '12:00:00' AND cc.CHECKIN < '13:00:00' THEN '13:00:00' ELSE cc.CHECKIN END" +
+                "    )) / 3600.0 " +
+                "    - CASE WHEN cc.CHECKIN < '12:00:00' AND cc.CHECKOUT > '13:00:00' THEN 1 ELSE 0 END" +
+                "  , 1) " +
+                // Ca khác (C3/C4/C5/C6) - không có nghỉ trưa
+                "  ELSE ROUND(TIME_TO_SEC(TIMEDIFF(cc.CHECKOUT, cc.CHECKIN)) / 3600.0, 1) " +
+                "END " +
+                "WHERE cc.MANV = ? AND cc.NGAYLAMVIEC = CURRENT_DATE";
+            PreparedStatement ps2 = conn.prepareStatement(sqlSoGio);
+            ps2.setString(1, manv);
+            ps2.executeUpdate();
+            return true;
         }
     }
 
@@ -96,8 +133,8 @@ public class AttendanceDAO {
             String soGioCol = resolveSoGioColumn(conn);
             String sql = "SELECT " +
                 "COUNT(*) as totalDays, " +
-                "SUM(CASE WHEN TRANGTHAI = 1 THEN 1 ELSE 0 END) as onTime, " +
-                "SUM(CASE WHEN TRANGTHAI = 0 THEN 1 ELSE 0 END) as late, " +
+                "SUM(CASE WHEN TRANGTHAI = '1' THEN 1 ELSE 0 END) as onTime, " +
+                "SUM(CASE WHEN TRANGTHAI = '0' THEN 1 ELSE 0 END) as late, " +
                 "SUM(" + soGioCol + ") as totalHours " +
                 "FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = MONTH(CURRENT_DATE) AND YEAR(NGAYLAMVIEC) = YEAR(CURRENT_DATE)";
 
@@ -151,7 +188,7 @@ public class AttendanceDAO {
                 dto.setCheckIn(rs.getTime("CHECKIN"));
                 dto.setCheckOut(rs.getTime("CHECKOUT"));
                 dto.setSoGioLam(rs.getDouble(soGioCol));
-                dto.setTrangThai(getStatusDisplay(rs.getInt("TRANGTHAI")));
+                dto.setTrangThai(displayStatus(rs.getString("TRANGTHAI")));
                 return dto;
             }
         } catch (Exception e) {
@@ -163,8 +200,11 @@ public class AttendanceDAO {
     public AttendanceDTO getAttendanceDetail(String manv, int day, int month, int year) {
         String dateStr = String.format("%d-%02d-%02d", year, month, day);
 
-        // Ưu tiên 1: Tìm trong bảng chấm công (Dữ liệu thực tế)
-        String sqlChamCong = "SELECT * FROM chamcong WHERE MANV = ? AND NGAYLAMVIEC = ?";
+        // Ưu tiên 1: Tìm trong bảng chấm công (Dữ liệu thực tế) + tên ca từ lichlamviec
+        String sqlChamCong = "SELECT cc.*, c.TENCALAM FROM chamcong cc " +
+                "LEFT JOIN lichlamviec l ON cc.MANV = l.MANV AND cc.NGAYLAMVIEC = l.NGAYLAMVIEC " +
+                "LEFT JOIN calam c ON l.MACALAM = c.MACALAM " +
+                "WHERE cc.MANV = ? AND cc.NGAYLAMVIEC = ?";
 
         try (Connection conn = com.hrm.utils.JDBCConection.getConnection()) {
             String soGioCol = resolveSoGioColumn(conn);
@@ -178,9 +218,9 @@ public class AttendanceDAO {
                 dto.setNgayLamViec(rs.getDate("NGAYLAMVIEC"));
                 dto.setCheckIn(rs.getTime("CHECKIN"));
                 dto.setCheckOut(rs.getTime("CHECKOUT"));
-                dto.setTrangThai(getStatusDisplay(rs.getInt("TRANGTHAI")));
+                dto.setTrangThai(displayStatus(rs.getString("TRANGTHAI")));
                 dto.setSoGioLam(rs.getDouble(soGioCol));
-                dto.setMaCaLam(rs.getString("MACALAM"));
+                dto.setMaCaLam(rs.getString("TENCALAM"));
                 return dto;
             }
 
@@ -232,11 +272,26 @@ public class AttendanceDAO {
         return shiftMap;
     }
 
+    // Chuyển '1'/'0' thành text hiển thị
+    private String displayStatus(String dbValue) {
+        if ("1".equals(dbValue)) return "Đúng giờ";
+        if ("0".equals(dbValue)) return "Đi muộn/Về sớm";
+        return dbValue;
+    }
+
+    // Chuyển text hiển thị thành giá trị DB
+    private String dbStatus(String displayValue) {
+        if ("Đúng giờ".equals(displayValue)) return "1";
+        if ("Đi muộn/Về sớm".equals(displayValue)) return "0";
+        return displayValue;
+    }
+
     public ArrayList<AttendanceDTO> searchAttendance(String manv, Integer day, Integer month, Integer year, String trangThai, String maCaLam) {
     ArrayList<AttendanceDTO> list = new ArrayList<>();
     StringBuilder sql = new StringBuilder(
         "SELECT cc.*, c.TENCALAM FROM chamcong cc " +
-        "JOIN calam c ON cc.MACALAM = c.MACALAM WHERE cc.MANV = ?"
+        "LEFT JOIN lichlamviec l ON cc.MANV = l.MANV AND cc.NGAYLAMVIEC = l.NGAYLAMVIEC " +
+        "LEFT JOIN calam c ON l.MACALAM = c.MACALAM WHERE cc.MANV = ?"
     );
 
     // Xây dựng câu lệnh SQL động dựa trên lựa chọn của người dùng
@@ -244,9 +299,13 @@ public class AttendanceDAO {
         String dayStr = String.format("%02d", day);
         String monthStr = String.format("%02d", month);
         sql.append(" AND cc.NGAYLAMVIEC = '").append(year).append("-").append(monthStr).append("-").append(dayStr).append("'");
+    } else {
+        if (month != null && month > 0) sql.append(" AND MONTH(cc.NGAYLAMVIEC) = ").append(month);
+        if (year != null && year > 0) sql.append(" AND YEAR(cc.NGAYLAMVIEC) = ").append(year);
     }
     if (trangThai != null && !trangThai.equals("Tất cả")) sql.append(" AND cc.TRANGTHAI = ?");
-    if (maCaLam != null && !maCaLam.equals("Tất cả")) sql.append(" AND cc.MACALAM = ?");
+    if (maCaLam != null && !maCaLam.equals("Tất cả")) sql.append(" AND l.MACALAM = ?");
+    sql.append(" ORDER BY cc.NGAYLAMVIEC DESC");
 
     try (Connection conn = com.hrm.utils.JDBCConection.getConnection()) {
         String soGioCol = resolveSoGioColumn(conn);
@@ -254,7 +313,7 @@ public class AttendanceDAO {
         ps.setString(1, manv);
         
         int paramIndex = 2;
-        if (trangThai != null && !trangThai.equals("Tất cả")) ps.setInt(paramIndex++, getStatusCode(trangThai));
+        if (trangThai != null && !trangThai.equals("Tất cả")) ps.setString(paramIndex++, dbStatus(trangThai));
         if (maCaLam != null && !maCaLam.equals("Tất cả")) ps.setString(paramIndex++, maCaLam);
 
         ResultSet rs = ps.executeQuery();
@@ -263,21 +322,13 @@ public class AttendanceDAO {
             dto.setNgayLamViec(rs.getDate("NGAYLAMVIEC"));
             dto.setCheckIn(rs.getTime("CHECKIN"));
             dto.setCheckOut(rs.getTime("CHECKOUT"));
-            dto.setTrangThai(getStatusDisplay(rs.getInt("TRANGTHAI")));
+            dto.setTrangThai(displayStatus(rs.getString("TRANGTHAI")));
             dto.setSoGioLam(rs.getDouble(soGioCol));
-            dto.setMaCaLam(rs.getString("TENCALAM")); // Dùng tạm field này để lưu tên ca hiển thị
+            dto.setMaCaLam(rs.getString("TENCALAM")); // Tên ca từ bảng calam qua lichlamviec
             list.add(dto);
         }
     } catch (SQLException e) { e.printStackTrace(); }
     return list;
 }
-
-    private String getStatusDisplay(int statusCode) {
-        return statusCode == 1 ? "Đúng giờ" : "Đi muộn/Về sớm";
-    }
-
-    private int getStatusCode(String statusDisplay) {
-        return "Đúng giờ".equals(statusDisplay) ? 1 : 0;
-    }
 
 }

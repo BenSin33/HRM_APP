@@ -1,8 +1,6 @@
 package com.hrm.UI.Manager.team;
 import javax.swing.*;
 import java.awt.*;
-// import removed: ActionListener no longer used
-
 
 public class TeamHeader extends JPanel {
     private JLabel title;
@@ -18,7 +16,7 @@ public class TeamHeader extends JPanel {
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBackground(Color.WHITE);
 
-        title = new JLabel("Đội nhóm - Phòng DEPT001");
+        title = new JLabel("Đội nhóm - Phòng Quản Lý");
         title.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
         subtitle = new JLabel("Danh sách thành viên trong team");
@@ -30,12 +28,5 @@ public class TeamHeader extends JPanel {
         leftPanel.add(subtitle);
 
         add(leftPanel, BorderLayout.WEST);
-    }
-
-   
-
-    public String getSearchText() {
-        // removed: không còn thanh tìm kiếm
-        return "";
     }
 }

@@ -1,4 +1,5 @@
 package com.hrm.UI.Manager.team;
+import com.hrm.UI.Manager.color.ColorScheme;
 import javax.swing.*;
 import java.awt.*;
 
