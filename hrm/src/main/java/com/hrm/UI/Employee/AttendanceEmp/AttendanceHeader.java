@@ -13,7 +13,7 @@ import java.util.Map;
 public class AttendanceHeader extends JPanel {
     private String manv;
     private AttendanceManage parent;
-    private AttendanceService attendanceDAO = new AttendanceService();
+    private AttendanceService attendanceService = new AttendanceService();
     private JPanel statsPanel;
     private JLabel lblTime;
     private JLabel lblNowDate;
@@ -51,6 +51,7 @@ public class AttendanceHeader extends JPanel {
 
         lblNowDate = new JLabel("", SwingConstants.CENTER);
         lblNowDate.setForeground(new Color(219, 234, 254));
+        lblNowDate.setFont(new Font("Arial", Font.BOLD, 18));
 
         JPanel textCenter = new JPanel(new GridLayout(2, 1));
         textCenter.setOpaque(false);
@@ -89,6 +90,7 @@ public class AttendanceHeader extends JPanel {
         String dateStr = now.format(DateTimeFormatter.ofPattern("EEEE, dd 'tháng' M, yyyy", new Locale("vi", "VN")));
         lblTime.setText(timeStr);
         lblNowDate.setText("Hôm nay " + dateStr);
+        lblNowDate.setFont(new Font("Arial", Font.BOLD, 18));
     }
 
     private void startClock() {
@@ -109,7 +111,7 @@ public class AttendanceHeader extends JPanel {
 
     private void refreshStats() {
         statsPanel.removeAll();
-        Map<String, String> stats = attendanceDAO.getMonthlyStats(manv);
+        Map<String, String> stats = attendanceService.getMonthlyStats(manv);
         statsPanel.add(createStatCard("Tổng ngày làm", stats.getOrDefault("totalDays", "0"), "", new Color(59, 130, 246)));
         statsPanel.add(createStatCard("Đúng giờ", stats.getOrDefault("onTime", "0"), "", new Color(34, 197, 94)));
         statsPanel.add(createStatCard("Đi muộn/Về sớm", stats.getOrDefault("late", "0"), "", new Color(234, 179, 8)));
@@ -121,17 +123,17 @@ public class AttendanceHeader extends JPanel {
     private void handleAttendance(boolean isCheckIn) {
         try {
             if (isCheckIn) {
-                if (attendanceDAO.checkAlreadyCheckedIn(manv)) {
+                if (attendanceService.checkAlreadyCheckedIn(manv)) {
                     JOptionPane.showMessageDialog(this, "Bạn đã check-in hôm nay!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                if (attendanceDAO.insertCheckIn(manv)) {
+                if (attendanceService.insertCheckIn(manv)) {
                     JOptionPane.showMessageDialog(this, "Check-in thành công!");
                 } else {
                     JOptionPane.showMessageDialog(this, "Không có lịch làm việc cho hôm nay!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                if (attendanceDAO.updateCheckOut(manv)) {
+                if (attendanceService.updateCheckOut(manv)) {
                     JOptionPane.showMessageDialog(this, "Check-out thành công!");
                 } else {
                     JOptionPane.showMessageDialog(this, "Không tìm thấy lượt Check-in hợp lệ!");

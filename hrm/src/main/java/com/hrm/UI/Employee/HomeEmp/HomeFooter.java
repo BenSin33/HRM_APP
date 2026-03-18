@@ -60,55 +60,85 @@ public class HomeFooter extends JPanel {
     }
 
     private void openChangePasswordDialog() {
-        JPanel panel = new JPanel(new GridLayout(2, 2, 8, 8));
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Đổi mật khẩu", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(380, 250);
+        dialog.setLocationRelativeTo(this);
 
-        JLabel lblNewPass = new JLabel("Mật khẩu mới:");
-        JPasswordField txtNewPass = new JPasswordField();
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 5, 15));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(4, 4, 4, 4);
 
-        JLabel lblConfirmPass = new JLabel("Xác nhận mật khẩu:");
-        JPasswordField txtConfirmPass = new JPasswordField();
+        JPasswordField txtOldPass = new JPasswordField(18);
+        JPasswordField txtNewPass = new JPasswordField(18);
+        JPasswordField txtConfirmPass = new JPasswordField(18);
+        JLabel lblError = new JLabel(" ");
+        lblError.setForeground(Color.RED);
+        lblError.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        panel.add(lblNewPass);
-        panel.add(txtNewPass);
-        panel.add(lblConfirmPass);
-        panel.add(txtConfirmPass);
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(new JLabel("Mật khẩu cũ:"), gbc);
+        gbc.gridx = 1;
+        panel.add(txtOldPass, gbc);
 
-        int option = JOptionPane.showConfirmDialog(
-                this,
-                panel,
-                "Đổi mật khẩu",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-        );
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(new JLabel("Mật khẩu mới:"), gbc);
+        gbc.gridx = 1;
+        panel.add(txtNewPass, gbc);
 
-        if (option != JOptionPane.OK_OPTION) {
-            return;
-        }
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(new JLabel("Nhập lại mật khẩu mới:"), gbc);
+        gbc.gridx = 1;
+        panel.add(txtConfirmPass, gbc);
 
-        String newPassword = new String(txtNewPass.getPassword()).trim();
-        String confirmPassword = new String(txtConfirmPass.getPassword()).trim();
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        panel.add(lblError, gbc);
 
-        if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin mật khẩu.");
-            return;
-        }
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnOK = new JButton("Xác nhận");
+        JButton btnCancel = new JButton("Hủy");
+        btnPanel.add(btnOK);
+        btnPanel.add(btnCancel);
 
-        if (newPassword.length() < 6) {
-            JOptionPane.showMessageDialog(this, "Mật khẩu mới phải có ít nhất 6 ký tự.");
-            return;
-        }
+        btnCancel.addActionListener(e -> dialog.dispose());
+        btnOK.addActionListener(e -> {
+            String oldPassword = new String(txtOldPass.getPassword()).trim();
+            String newPassword = new String(txtNewPass.getPassword()).trim();
+            String confirmPassword = new String(txtConfirmPass.getPassword()).trim();
 
-        if (!newPassword.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this, "Mật khẩu xác nhận không khớp.");
-            return;
-        }
+            if (oldPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+                lblError.setText("Vui lòng nhập đầy đủ thông tin.");
+                return;
+            }
 
-        boolean changed = accountManagerService.changePasswordByManv(manv, newPassword);
-        if (changed) {
-            JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công.");
-        } else {
-            JOptionPane.showMessageDialog(this, "Đổi mật khẩu thất bại. Vui lòng thử lại.");
-        }
+            if (!accountManagerService.verifyPassword(manv, oldPassword)) {
+                lblError.setText("Mật khẩu cũ không đúng.");
+                txtOldPass.setText("");
+                txtOldPass.requestFocusInWindow();
+                return;
+            }
+
+            if (!newPassword.equals(confirmPassword)) {
+                lblError.setText("Mật khẩu mới nhập lại không khớp.");
+                txtConfirmPass.setText("");
+                txtConfirmPass.requestFocusInWindow();
+                return;
+            }
+
+            boolean changed = accountManagerService.changePasswordByManv(manv, newPassword);
+            if (changed) {
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công.");
+            } else {
+                lblError.setText("Đổi mật khẩu thất bại. Vui lòng thử lại.");
+            }
+        });
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
     }
 
     private JPanel createActionBtn(String label, Color iconColor, String noteString, String cardName, ImageIcon icon) {
