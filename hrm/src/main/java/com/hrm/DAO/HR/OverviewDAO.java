@@ -39,8 +39,11 @@ public class OverviewDAO {
         return 0;
     }
 
+    /**
+     * Đếm nhân viên đang làm việc (trạng thái "Đang làm việc" hoặc "Đang làm" trong nhanvien).
+     */
     public int getWorkingEmployees() {
-        String sql = "SELECT COUNT(*) FROM nhanvien WHERE trangthai = 'Đang làm'";
+        String sql = "SELECT COUNT(*) FROM nhanvien WHERE TRIM(trangthai) IN ('Đang làm việc', 'Đang làm')";
         Connection conn = JDBCConection.getConnection();
         if (conn == null) {
             System.err.println("Lỗi: Không thể kết nối database trong OverviewDAO.getWorkingEmployees()");
@@ -56,9 +59,14 @@ public class OverviewDAO {
         return 0;
     }
 
+    /**
+     * Đếm nhân viên nghỉ phép hôm nay từ bảng nghiphep:
+     * - Đơn có ngày hôm nay nằm trong khoảng NGAYNGHI – NGAYLAMLAI (nghỉ 1 ngày: NGAYLAMLAI có thể NULL, dùng COALESCE).
+     * - Đếm cả đơn đã duyệt và chờ duyệt để phản ánh đúng số người nghỉ/đăng ký nghỉ hôm nay.
+     */
     public int getOnLeaveToday() {
-        // in absence of a proper leave table we rely on the status field
-        String sql = "SELECT COUNT(*) FROM nhanvien WHERE trangthai = 'NGHI'";
+        String sql = "SELECT COUNT(DISTINCT np.MANV) FROM nghiphep np "
+                + "WHERE CURDATE() BETWEEN np.NGAYNGHI AND COALESCE(np.NGAYLAMLAI, np.NGAYNGHI)";
         Connection conn = JDBCConection.getConnection();
         if (conn == null) {
             System.err.println("Lỗi: Không thể kết nối database trong OverviewDAO.getOnLeaveToday()");
@@ -74,9 +82,11 @@ public class OverviewDAO {
         return 0;
     }
 
+    /**
+     * Tổng thực lĩnh tháng hiện tại từ bảng bangluong (cột THANG, NAM, THUCLINH).
+     */
     public BigDecimal getTotalSalaryThisMonth() {
-        // assume `bangluong` table has THUCLINH column and THANG/NAM
-        String sql = "SELECT SUM(thuclinh) FROM bangluong WHERE thang = MONTH(CURRENT_DATE()) AND nam = YEAR(CURRENT_DATE())";
+        String sql = "SELECT SUM(THUCLINH) FROM bangluong WHERE THANG = MONTH(CURRENT_DATE()) AND NAM = YEAR(CURRENT_DATE())";
         Connection conn = JDBCConection.getConnection();
         if (conn == null) {
             System.err.println("Lỗi: Không thể kết nối database trong OverviewDAO.getTotalSalaryThisMonth()");
