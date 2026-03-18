@@ -3,8 +3,8 @@ package com.hrm.UI.Employee.LeaveEmp;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import com.hrm.Service.Employee.LeaveService;
+import com.hrm.UI.component.CRUDDialog;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
@@ -96,12 +96,12 @@ public class LeaveHistory extends JPanel {
         rightPanel.add(lblStatus);
         
         if (isDraft) {
-            JButton btnEdit = new JButton("Chỉnh sửa", createPencilIcon(Color.WHITE, 12));
+            JButton btnEdit = new JButton("Chỉnh sửa");
             btnEdit.setFont(new Font("Segoe UI", Font.PLAIN, 11));
             btnEdit.setPreferredSize(new Dimension(110, 30));
             btnEdit.setBackground(new Color(59, 130, 246));
             btnEdit.setForeground(Color.WHITE);
-            btnEdit.setIconTextGap(6);
+            btnEdit.setCursor(new Cursor(Cursor.HAND_CURSOR));
             btnEdit.addActionListener(e -> editLeaveRequest(leaveData));
             rightPanel.add(btnEdit);
         }
@@ -112,26 +112,21 @@ public class LeaveHistory extends JPanel {
     }
     
     private void editLeaveRequest(Map<String, Object> leaveData) {
-        LeaveEditDialog dialog = new LeaveEditDialog(SwingUtilities.getWindowAncestor(this), leaveData);
+        LeaveFormPanel formPanel = new LeaveFormPanel();
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        CRUDDialog<Map<String, Object>> dialog = new CRUDDialog<>(frame, "Chỉnh sửa đơn nghỉ phép", formPanel, leaveData);
         dialog.setVisible(true);
-        
-        if (dialog.isSubmitted() && onDataChanged != null) {
-            onDataChanged.run();
+
+        Map<String, Object> result = dialog.getResult();
+        if (result != null) {
+            result.put("manghiphep", leaveData.get("manghiphep"));
+            LeaveService dao = new LeaveService();
+            if (dao.updateLeaveRequest(result)) {
+                JOptionPane.showMessageDialog(this, "Cập nhật đơn nghỉ thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                if (onDataChanged != null) onDataChanged.run();
+            } else {
+                JOptionPane.showMessageDialog(this, "Cập nhật đơn nghỉ thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         }
-    }
-
-    private ImageIcon createPencilIcon(Color color, int size) {
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = image.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(color);
-        g2d.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-
-        g2d.drawLine(2, size - 3, size - 5, 4);
-        g2d.drawLine(size - 6, 2, size - 3, 5);
-        g2d.drawLine(2, size - 3, 4, size - 1);
-
-        g2d.dispose();
-        return new ImageIcon(image);
     }
 }

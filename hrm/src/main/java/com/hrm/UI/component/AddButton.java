@@ -3,7 +3,6 @@ package com.hrm.UI.component;
 import java.awt.Cursor;
 
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 public class AddButton extends JButton{
     public AddButton(String title, JPanel formPanel, Runnable onSuccess) {
