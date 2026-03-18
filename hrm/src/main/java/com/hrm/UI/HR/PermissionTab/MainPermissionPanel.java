@@ -2,10 +2,14 @@ package com.hrm.UI.HR.PermissionTab;
 
 import javax.swing.*;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.DAO.NhanVienDAO;
 import com.hrm.DTO.AccountManagerDTO;
+import com.hrm.DTO.Manager.NhanVienDTO;
 import com.hrm.DTO.PermissionDTO;
+import com.hrm.DTO.UserDTO;
 import com.hrm.Service.AccountManagerService;
 import com.hrm.Service.PermissionService;
+import com.hrm.utils.SessionManager;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +35,14 @@ public class MainPermissionPanel extends JPanel {
         accountManagerService = new AccountManagerService();
         roleIds = new ArrayList<>();
         currentAccounts = new ArrayList<>();
+
+        // Kiểm tra quyền truy cập tab phân quyền
+        // Chỉ Trưởng phòng Nhân sự (PB01 + CV01) mới có thể vào tab này
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !canAccessPermissionTab(currentUser)) {
+            showAccessDeniedPanel();
+            return;
+        }
 
         // 1. Header
         headerPanel = createHeaderPanel();
@@ -79,6 +91,34 @@ public class MainPermissionPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             roleList.setSelectedIndex(0);
         });
+    }
+
+    /**
+     * Kiểm tra xem user có quyền truy cập tab phân quyền
+     */
+    private boolean canAccessPermissionTab(UserDTO user) {
+        if (user == null) {
+            return false;
+        }
+        NhanVienDAO nhanVienDAO = new NhanVienDAO();
+        NhanVienDTO employeeDetails = nhanVienDAO.findById(user.getManv());
+        if (employeeDetails == null) {
+            return false;
+        }
+        // Chỉ Trưởng phòng Nhân sự (PB01 + CV01) mới được vào
+        return "PB01".equals(employeeDetails.getMaphongban()) && 
+               "CV01".equals(employeeDetails.getMachucvu());
+    }
+
+    /**
+     * Hiển thị thông báo khi không có quyền truy cập
+     */
+    private void showAccessDeniedPanel() {
+        this.setLayout(new BorderLayout());
+        JLabel noAccessLabel = new JLabel("❌ Bạn không có quyền truy cập chức năng này!", JLabel.CENTER);
+        noAccessLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        noAccessLabel.setForeground(new Color(239, 68, 68));
+        this.add(noAccessLabel, BorderLayout.CENTER);
     }
 
     /**

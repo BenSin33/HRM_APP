@@ -42,7 +42,10 @@ import com.hrm.DTO.HR.DepartmentDTO;
 import com.hrm.DTO.Manager.NhanVienDTO;
 import com.hrm.DTO.PositionDTO;
 import com.hrm.DTO.TrinhDoDTO;
+import com.hrm.DTO.UserDTO;
 import com.hrm.Service.DepartmentService;
+import com.hrm.Service.PermissionService;
+import com.hrm.utils.SessionManager;
 
 public class EmployeeManagementPanel extends JPanel {
 
@@ -65,6 +68,7 @@ public class EmployeeManagementPanel extends JPanel {
     private TrinhDoDAO trinhDoDAO = new TrinhDoDAO();
     private PositionDAO positionDAO = new PositionDAO();
     private DepartmentService departmentService = new DepartmentService();
+    private PermissionService permissionService = new PermissionService();
 
     public EmployeeManagementPanel() {
         setLayout(new BorderLayout());
@@ -165,6 +169,13 @@ public class EmployeeManagementPanel extends JPanel {
         JButton addBtn = new JButton("+ Thêm nhân viên");
         addBtn.setBackground(new Color(88, 63, 191));
         addBtn.setForeground(Color.WHITE);
+
+        // Kiểm tra quyền ADD cho chức năng nhân viên
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN02_EMPLOYEE")) {
+            addBtn.setEnabled(false);
+            addBtn.setToolTipText("Bạn không có quyền thêm nhân viên");
+        }
 
         // Action mở form thêm nhân viên
         addBtn.addActionListener(e -> openAddEmployeeForm());
@@ -364,6 +375,13 @@ public class EmployeeManagementPanel extends JPanel {
 
     // ================= FORM THÊM NHÂN VIÊN =================
     private void openAddEmployeeForm() {
+        // Kiểm tra quyền trước khi mở form
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN02_EMPLOYEE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm nhân viên!", "Từ chối quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         JTextField idField = new JTextField(20);
         JTextField nameField = new JTextField(20);
         JComboBox<String> genderBox = new JComboBox<>(new String[]{"Nam", "Nữ"});
@@ -538,9 +556,21 @@ public class EmployeeManagementPanel extends JPanel {
                                                        boolean isSelected, boolean hasFocus,
                                                        int row, int column) {
             removeAll();
-            add(makeIconButton(viewIcon, "V"));
-            add(makeIconButton(editIcon, "E"));
-            add(makeIconButton(deleteIcon, "D"));
+            
+            UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+            
+            JButton viewBtn = makeIconButton(viewIcon, "V");
+            viewBtn.setEnabled(permissionService.canView(currentUser, "CN02_EMPLOYEE"));
+            add(viewBtn);
+
+            JButton editBtn = makeIconButton(editIcon, "E");
+            editBtn.setEnabled(permissionService.canEdit(currentUser, "CN02_EMPLOYEE"));
+            add(editBtn);
+
+            JButton deleteBtn = makeIconButton(deleteIcon, "D");
+            deleteBtn.setEnabled(permissionService.canDelete(currentUser, "CN02_EMPLOYEE"));
+            add(deleteBtn);
+
             setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
             return this;
         }
@@ -603,6 +633,12 @@ public class EmployeeManagementPanel extends JPanel {
         public Component getTableCellEditorComponent(JTable table, Object value,
                                                      boolean isSelected, int row, int column) {
             this.currentRow = row;
+            
+            UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+            viewBtn.setEnabled(permissionService.canView(currentUser, "CN02_EMPLOYEE"));
+            editBtn.setEnabled(permissionService.canEdit(currentUser, "CN02_EMPLOYEE"));
+            deleteBtn.setEnabled(permissionService.canDelete(currentUser, "CN02_EMPLOYEE"));
+
             panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
             return panel;
         }
@@ -629,6 +665,13 @@ public class EmployeeManagementPanel extends JPanel {
     }
 
     private void deleteEmployeeByViewRow(int viewRow) {
+        // Kiểm tra quyền DELETE
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN02_EMPLOYEE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa nhân viên!", "Từ chối quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (viewRow < 0 || viewRow >= table.getRowCount()) return;
         String manv = String.valueOf(table.getModel().getValueAt(viewRow, 0));
         if (nhanVienHRDAO.delete(manv)) {
@@ -650,6 +693,13 @@ public class EmployeeManagementPanel extends JPanel {
 
     // ================= VIEW / EDIT HELPERS =================
     private void showEmployeeDetails(int masterIndex) {
+        // Kiểm tra quyền VIEW
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canView(currentUser, "CN02_EMPLOYEE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xem thông tin nhân viên!", "Từ chối quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (masterIndex < 0 || masterIndex >= masterData.size()) return;
         Object[] r = masterData.get(masterIndex);
         String id = String.valueOf(r[0]);
@@ -669,6 +719,13 @@ public class EmployeeManagementPanel extends JPanel {
     }
 
     private void openEditEmployeeForm(int masterIndex) {
+        // Kiểm tra quyền EDIT
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN02_EMPLOYEE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa thông tin nhân viên!", "Từ chối quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (masterIndex < 0 || masterIndex >= masterData.size()) return;
         Object[] r = masterData.get(masterIndex);
         String manv = String.valueOf(r[0]);

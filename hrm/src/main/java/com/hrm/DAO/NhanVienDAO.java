@@ -1,6 +1,6 @@
 package com.hrm.DAO;
 import com.hrm.DTO.Manager.NhanVienDTO;
-import com.hrm.UI.Manager.config.JDBCUtil;
+import com.hrm.utils.JDBCConection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ public class NhanVienDAO {
         List<NhanVienDTO> dsNhanVien = new ArrayList<>();
         String sql = "SELECT * FROM nhanvien";
 
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -43,7 +43,7 @@ public class NhanVienDAO {
 
     public void add(NhanVienDTO nv) {
         String sql = "INSERT INTO nhanvien (manv, maphongban, machucvu, matrinhdo, hoten, gioitinh, diachi, dienthoai, email, trangthai, ngayvaolam, songayphep) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nv.getManv());
             ps.setString(2, nv.getMaphongban());
@@ -65,7 +65,7 @@ public class NhanVienDAO {
 
     public void update(NhanVienDTO nv) {
         String sql = "UPDATE nhanvien SET manv=?, maphongban=?, machucvu=?, matrinhdo=?, hoten=?, gioitinh=?, diachi=?, dienthoai=?, email=?, trangthai=?, ngayvaolam=?, songayphep=? WHERE manv=?";
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nv.getManv());
             ps.setString(2, nv.getMaphongban());
@@ -88,7 +88,7 @@ public class NhanVienDAO {
 
     public void delete(String manv) {
         String sql = "DELETE FROM nhanvien WHERE manv=?";
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ps.executeUpdate();
@@ -99,7 +99,7 @@ public class NhanVienDAO {
 
     public NhanVienDTO findById(String manv) {
         String sql = "SELECT * FROM nhanvien WHERE manv=?";
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
@@ -128,7 +128,7 @@ public class NhanVienDAO {
 
     public int countDonChoXuLy() {
         String sql = "SELECT COUNT(*) FROM nghi_phep WHERE trangThai = 'CHO_XU_LY'";
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) return rs.getInt(1);
@@ -147,7 +147,7 @@ public class NhanVienDAO {
         List<NhanVienDTO> dsNhanVien = new ArrayList<>();
         String sql = "SELECT * FROM nhanvien WHERE machucvu = ? AND trangthai = 'Hoạt động'";
 
-        try (Connection conn = JDBCUtil.getConnection();
+        try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, machucvu);
             try (ResultSet rs = ps.executeQuery()) {

@@ -9,6 +9,7 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AccountTable extends JPanel {
@@ -18,11 +19,13 @@ public class AccountTable extends JPanel {
     private AccountManagerDAO accountDAO;
     private AccountActionRenderer actionRenderer;
     private int hoveredRow = -1;
+    private List<AccountManagerDTO> allAccounts;
 
     public AccountTable() {
         setLayout(new BorderLayout());
         setOpaque(false);
         accountDAO = new AccountManagerDAO();
+        allAccounts = new ArrayList<>();
         initComponent();
     }
 
@@ -132,23 +135,8 @@ public class AccountTable extends JPanel {
     }
 
     private void loadAccountData() {
-        List<AccountManagerDTO> accounts = accountDAO.getAllAccounts();
-        
-        for (AccountManagerDTO account : accounts) {
-            tableModel.addRow(new Object[]{
-                account.maNV,
-                account.hoTen,
-                account.email != null ? account.email : "N/A",
-                account.dienThoai != null ? account.dienThoai : "N/A",
-                account.roleName,
-                account.phongBan,
-                account.getStatusText(),
-                ""
-            });
-        }
-        
-        // Cập nhật thông tin phân trang
-        updatePageInfo(accounts.size());
+        allAccounts = accountDAO.getAllAccounts();
+        applyFilter(""); // Load tất cả dữ liệu vào bảng
     }
 
     private void updatePageInfo(int totalRecords) {
@@ -205,6 +193,66 @@ public class AccountTable extends JPanel {
                 JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setOpaque(false);
+        
+        JLabel lblSearch = new JLabel("Tìm kiếm:");
+        JTextField searchField = new JTextField(20);
+        searchField.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
+        
+        searchPanel.add(lblSearch, BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        
+        return searchPanel;
+    }
+
+    private void performSearch() {
+        // Method này không dùng nữa
+    }
+
+    public void applyFilter(String searchText) {
+        tableModel.setRowCount(0);
+        
+        if (searchText == null || searchText.trim().isEmpty()) {
+            // Hiển thị tất cả dữ liệu
+            for (AccountManagerDTO account : allAccounts) {
+                tableModel.addRow(new Object[]{
+                    account.maNV,
+                    account.hoTen,
+                    account.email != null ? account.email : "N/A",
+                    account.dienThoai != null ? account.dienThoai : "N/A",
+                    account.roleName,
+                    account.phongBan,
+                    account.getStatusText(),
+                    ""
+                });
+            }
+        } else {
+            // Tìm kiếm trong dữ liệu đã load
+            String lowerKeyword = searchText.toLowerCase();
+            
+            for (AccountManagerDTO account : allAccounts) {
+                if ((account.maNV != null && account.maNV.toLowerCase().contains(lowerKeyword)) ||
+                    (account.hoTen != null && account.hoTen.toLowerCase().contains(lowerKeyword)) ||
+                    (account.email != null && account.email.toLowerCase().contains(lowerKeyword)) ||
+                    (account.roleName != null && account.roleName.toLowerCase().contains(lowerKeyword))) {
+                    tableModel.addRow(new Object[]{
+                        account.maNV,
+                        account.hoTen,
+                        account.email != null ? account.email : "N/A",
+                        account.dienThoai != null ? account.dienThoai : "N/A",
+                        account.roleName,
+                        account.phongBan,
+                        account.getStatusText(),
+                        ""
+                    });
+                }
+            }
+        }
+        updatePageInfo(tableModel.getRowCount());
     }
 
     // Public method để refresh dữ liệu từ Tab

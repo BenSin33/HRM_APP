@@ -37,6 +37,18 @@ public class ContractHeader extends JPanel {
         this.onImportCallback = callback;
     }
 
+    public void setAddButtonEnabled(boolean enabled) {
+        addButton.setEnabled(enabled);
+    }
+
+    public void setExportButtonEnabled(boolean enabled) {
+        exportButton.setEnabled(enabled);
+    }
+
+    public void setImportButtonEnabled(boolean enabled) {
+        importButton.setEnabled(enabled);
+    }
+
     private void initComponent() {
         setLayout(new BorderLayout(0, 20));
         setOpaque(false);

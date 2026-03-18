@@ -1,6 +1,8 @@
 package com.hrm.UI.HR.PermissionTab;
 
 import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import com.hrm.DTO.PermissionDTO;
 import com.hrm.Service.PermissionService;
@@ -17,7 +19,8 @@ public class PermissionTable extends JTable {
     private List<PermissionDTO> currentPermissions;
 
     public PermissionTable(){
-        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa", "Duyệt", "Xuất BC"};
+        // NOTE: Only use CRUD permissions (Xem/Thêm/Sửa/Xóa). Other rights are disabled.
+        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa"};
         
         // Dữ liệu mẫu ban đầu
         Object[][] data = {};
@@ -37,6 +40,41 @@ public class PermissionTable extends JTable {
         };
 
         this.setModel(model);
+        
+        // Thêm listener để xử lý logic tước quyền
+        model.addTableModelListener(e -> {
+            if (e.getType() == TableModelEvent.UPDATE) {
+                int row = e.getFirstRow();
+                int column = e.getColumn();
+                
+                if (row < 0 || row >= model.getRowCount()) {
+                    return;
+                }
+
+                // Nếu cột "Xem" (index 1) bị bỏ, tắt các quyền khác
+                if (column == 1) {
+                    Boolean quyenXem = (Boolean) model.getValueAt(row, 1);
+                    if (!quyenXem) {
+                        SwingUtilities.invokeLater(() -> {
+                            model.setValueAt(false, row, 2); // Tắt Thêm
+                            model.setValueAt(false, row, 3); // Tắt Sửa
+                            model.setValueAt(false, row, 4); // Tắt Xóa
+                        });
+                    }
+                } else if (column > 1) { 
+                    // Nếu Thêm/Sửa/Xóa được bật, phải bật Xem
+                    Boolean hasPermission = (Boolean) model.getValueAt(row, column);
+                    if (hasPermission) {
+                        Boolean quyenXem = (Boolean) model.getValueAt(row, 1);
+                        if (!quyenXem) {
+                            SwingUtilities.invokeLater(() -> {
+                                model.setValueAt(true, row, 1); // Bật Xem
+                            });
+                        }
+                    }
+                }
+            }
+        });
         this.setRowHeight(40);
         this.setShowVerticalLines(false);
         this.setGridColor(new Color(220, 220, 220));
@@ -86,9 +124,7 @@ public class PermissionTable extends JTable {
                 perm.isQuyenXem(),
                 perm.isQuyenThem(),
                 perm.isQuyenSua(),
-                perm.isQuyenXoa(),
-                perm.isQuyenDuyet(),
-                perm.isQuyenXuatBaoCao()
+                perm.isQuyenXoa()
             };
             model.addRow(row);
         }
@@ -111,8 +147,9 @@ public class PermissionTable extends JTable {
                 boolean quyenThem = (boolean) model.getValueAt(i, 2);
                 boolean quyenSua = (boolean) model.getValueAt(i, 3);
                 boolean quyenXoa = (boolean) model.getValueAt(i, 4);
-                boolean quyenDuyet = (boolean) model.getValueAt(i, 5);
-                boolean quyenXuatBaoCao = (boolean) model.getValueAt(i, 6);
+                // NOTE: Only CRUD permissions are used; other rights are forced to false.
+                boolean quyenDuyet = false;
+                boolean quyenXuatBaoCao = false;
                 
                 boolean updated;
                 if (isEditingUserPermissions()) {
