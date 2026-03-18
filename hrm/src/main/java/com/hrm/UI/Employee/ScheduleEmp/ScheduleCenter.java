@@ -149,6 +149,7 @@ public class ScheduleCenter extends JPanel {
         
         SpinnerNumberModel yearModel = new SpinnerNumberModel(LocalDate.now().getYear(), 2020, 2050, 1);
         JSpinner spYear = new JSpinner(yearModel);
+        spYear.setEditor(new JSpinner.NumberEditor(spYear, "#"));
         spYear.setPreferredSize(new Dimension(70, 25));
         
         JButton btnSearch = new JButton("Tìm kiếm");
