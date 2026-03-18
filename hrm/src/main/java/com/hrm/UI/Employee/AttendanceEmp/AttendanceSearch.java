@@ -7,7 +7,7 @@ import java.awt.*;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import com.hrm.DAO.Employee.AttendanceDAO;
+import com.hrm.Service.Employee.AttendanceService;
 import com.hrm.DTO.Employee.AttendanceDTO;
 
 public class AttendanceSearch extends JPanel {
@@ -110,7 +110,7 @@ public class AttendanceSearch extends JPanel {
         JLabel lblCaLam = new JLabel("  Ca làm: ");
         lblCaLam.setFont(new Font("Arial", Font.BOLD, 18));
         row2.add(lblCaLam);
-        AttendanceDAO shiftDao = new AttendanceDAO();
+        AttendanceService shiftDao = new AttendanceService();
         LinkedHashMap<String, String> shiftDisplayMap = shiftDao.getShiftDisplayMap();
         JComboBox<String> cbShift = new JComboBox<>();
         cbShift.addItem("Tất cả");
@@ -130,7 +130,7 @@ public class AttendanceSearch extends JPanel {
 
         // Xử lý sự kiện tìm kiếm
         btnSearchDate.addActionListener(e -> {
-            AttendanceDAO dao = new AttendanceDAO();
+            AttendanceService dao = new AttendanceService();
             ArrayList<AttendanceDTO> results = dao.searchAttendance(
                     manv,
                     (int) cbDay.getSelectedItem(),
@@ -154,7 +154,7 @@ public class AttendanceSearch extends JPanel {
             }
         });
         btnSearchStatus.addActionListener(e -> {
-            AttendanceDAO dao = new AttendanceDAO();
+            AttendanceService dao = new AttendanceService();
             String selectedShiftDisplay = cbShift.getSelectedItem().toString();
             String selectedShiftCode = "Tất cả";
             if (!"Tất cả".equals(selectedShiftDisplay)) {
@@ -192,7 +192,7 @@ public class AttendanceSearch extends JPanel {
     }
 
     private void showCurrentMonthHistory() {
-        AttendanceDAO dao = new AttendanceDAO();
+        AttendanceService dao = new AttendanceService();
         ArrayList<AttendanceDTO> results = dao.searchAttendance(
             manv,
             null,

@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.AttendanceEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import com.hrm.DAO.Employee.AttendanceDAO;
+import com.hrm.Service.Employee.AttendanceService;
 import java.awt.*;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ import java.util.Map;
 public class AttendanceHeader extends JPanel {
     private String manv;
     private AttendanceManage parent;
-    private AttendanceDAO attendanceDAO = new AttendanceDAO();
+    private AttendanceService attendanceDAO = new AttendanceService();
     private JPanel statsPanel;
     private JLabel lblTime;
     private JLabel lblNowDate;

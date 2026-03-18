@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.PayrollEmp;
 
 import javax.swing.*;
 
-import com.hrm.DAO.Employee.PayrollDAO;
+import com.hrm.Service.Employee.PayrollService;
 
 import java.awt.*;
 import java.util.List;
@@ -20,7 +20,7 @@ public class PayrollManage extends JPanel {
         setBackground(new Color(248, 249, 250));
 
         // Lấy dữ liệu thực tế từ DAO
-        PayrollDAO dao = new PayrollDAO();
+        PayrollService dao = new PayrollService();
         List<Map<String, Object>> chartData = dao.getSalaryHistory(manv);
 
         JPanel contentPanel = new JPanel();

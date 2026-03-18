@@ -2,7 +2,9 @@ package com.hrm.UI.component;
 
 import java.awt.*;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.*;
 import com.hrm.UI.LoginUI;
 import com.hrm.utils.*;
@@ -25,6 +27,7 @@ public class Sidebar extends JPanel {
     private JLabel currentHoveredTab = null;
     private JLabel firstMenuTab = null;
     private List<SidebarTab> tabsList;
+    private Map<String, JLabel> tabLabelMap = new HashMap<>();
 
     public Sidebar(JPanel contentPanel, CardLayout cardLayout, List<SidebarTab> tabsList) {
         this.contentPanel = contentPanel;
@@ -138,6 +141,7 @@ public class Sidebar extends JPanel {
             SidebarTab tab = tabsLists.get(i);
             JLabel menuLabel = createMenuLabel(tab);
             menuContainer.add(menuLabel);
+            tabLabelMap.put(tab.getCardName(), menuLabel);
             
             // Thêm đường ngăn cách giữa các tab (trừ tab cuối)
             if (i < tabsLists.size() - 1) {
@@ -241,6 +245,14 @@ public class Sidebar extends JPanel {
         if (firstMenuTab != null && !tabsList.isEmpty()) {
             selectTab(firstMenuTab);
             cardLayout.show(contentPanel, tabsList.get(0).getCardName());
+        }
+    }
+
+    public void selectTabByCardName(String cardName) {
+        JLabel label = tabLabelMap.get(cardName);
+        if (label != null) {
+            cardLayout.show(contentPanel, cardName);
+            selectTab(label);
         }
     }
 }

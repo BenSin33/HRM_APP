@@ -1,6 +1,7 @@
 package com.hrm.UI.Employee.HomeEmp;
 
 import com.hrm.Service.AccountManagerService;
+import com.hrm.UI.component.Sidebar;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,12 +15,14 @@ public class HomeFooter extends JPanel {
     private CardLayout cardLayout;
     private JPanel cardContainer;
     private AccountManagerService accountManagerService;
+    private Sidebar sidebar;
 
-    public HomeFooter(String manv, CardLayout cardLayout, JPanel cardContainer) {
+    public HomeFooter(String manv, CardLayout cardLayout, JPanel cardContainer, Sidebar sidebar) {
         this.manv = manv;
         this.cardLayout = cardLayout;
         this.cardContainer = cardContainer;
         this.accountManagerService = new AccountManagerService();
+        this.sidebar = sidebar;
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(0, 20, 20, 20));
@@ -149,7 +152,11 @@ public class HomeFooter extends JPanel {
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 if (cardLayout != null && cardContainer != null && cardName != null) {
-                    cardLayout.show(cardContainer, cardName);
+                    if (sidebar != null) {
+                        sidebar.selectTabByCardName(cardName);
+                    } else {
+                        cardLayout.show(cardContainer, cardName);
+                    }
                 }
             }
             public void mouseEntered(java.awt.event.MouseEvent evt) {

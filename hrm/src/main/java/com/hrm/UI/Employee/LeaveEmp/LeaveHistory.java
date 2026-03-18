@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.LeaveEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import com.hrm.DAO.Employee.LeaveDAO;
+import com.hrm.Service.Employee.LeaveService;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
@@ -32,7 +32,7 @@ public class LeaveHistory extends JPanel {
         add(Box.createVerticalStrut(15));
 
         // Lấy dữ liệu từ database
-        LeaveDAO dao = new LeaveDAO();
+        LeaveService dao = new LeaveService();
         List<Map<String, Object>> leaves = dao.getLeaveRequestsByEmployee(manv);
 
         if (leaves != null && !leaves.isEmpty()) {

@@ -3,7 +3,7 @@ package com.hrm.UI.Employee.PayrollEmp;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-import com.hrm.DAO.Employee.PayrollDAO;
+import com.hrm.Service.Employee.PayrollService;
 
 import java.awt.*;
 import java.time.LocalDate;
@@ -16,7 +16,7 @@ public class PayrollSummary extends JPanel {
         setBorder(new EmptyBorder(10, 25, 10, 25));
 
         // Lấy dữ liệu thực lĩnh từ database
-        PayrollDAO dao = new PayrollDAO();
+        PayrollService dao = new PayrollService();
         Map<String, Object> payroll = dao.getCurrentMonthPayroll(manv);
         
         String amountDisplay = "0";

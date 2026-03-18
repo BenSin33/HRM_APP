@@ -46,16 +46,16 @@ public class EDashboard extends JFrame {
         employeeTabs.add(new SidebarTab("ĐÁNH GIÁ", "EVALUATION"));
         employeeTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
 
-        // Truyền cardLayout và contentPanel cho HomeManage
-        contentPanel.add(createDashboardPanel(new HomeManage(manv, cardLayout, contentPanel)), "DASHBOARD");
+        Sidebar sidebar = new Sidebar(contentPanel, cardLayout, employeeTabs); // tạo sidebar
+
+        // Truyền cardLayout, contentPanel và sidebar cho HomeManage
+        contentPanel.add(createDashboardPanel(new HomeManage(manv, cardLayout, contentPanel, sidebar)), "DASHBOARD");
         contentPanel.add(createDashboardPanel(new ProfileManage(manv)), "PROFILE");
         contentPanel.add(createDashboardPanel(new AttendanceManage(manv)), "ATTENDANCE");
         contentPanel.add(createDashboardPanel(new ScheduleManage(manv)), "SCHEDULE");
         contentPanel.add(createDashboardPanel(new PayrollManage(manv)), "PAYROLL");
         contentPanel.add(createDashboardPanel(new LeaveManage(manv)), "LEAVE");
         contentPanel.add(createDashboardPanel(new EvaluationManage(manv)), "EVALUATION");
-
-        Sidebar sidebar = new Sidebar(contentPanel, cardLayout, employeeTabs); // tạo sidebar
 
         this.add(sidebar, BorderLayout.WEST); // thêm sidebar vào giao diện chính
         this.add(contentPanel, BorderLayout.CENTER); // thêm content panel vào giao diện chính

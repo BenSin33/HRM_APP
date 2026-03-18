@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.LeaveEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import com.hrm.DAO.Employee.LeaveDAO;
+import com.hrm.Service.Employee.LeaveService;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -185,7 +185,7 @@ public class LeaveEditDialog extends JDialog {
         updateData.put("ngaynghi", startDate);
         updateData.put("ngaylamlai", endDate);
 
-        LeaveDAO dao = new LeaveDAO();
+        LeaveService dao = new LeaveService();
         if (dao.updateLeaveRequest(updateData)) {
             JOptionPane.showMessageDialog(this, "Cập nhật đơn nghỉ thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             submitted = true;

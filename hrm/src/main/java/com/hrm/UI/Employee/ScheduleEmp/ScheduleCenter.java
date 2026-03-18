@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Calendar;
 import java.util.Date;
 import java.text.SimpleDateFormat;
-import com.hrm.DAO.Employee.ScheduleDAO;
+import com.hrm.Service.Employee.ScheduleService;
 import com.hrm.DTO.Employee.ScheduleDTO;
 
 import java.time.LocalDate;
@@ -17,11 +17,11 @@ import java.time.ZoneId;
 
 public class ScheduleCenter extends JPanel {
     private String manv;
-    private ScheduleDAO dao;
+    private ScheduleService dao;
 
     public ScheduleCenter(LocalDate weekStart, String manv, Runnable onPrev, Runnable onNext) {
         this.manv = manv;
-        this.dao = new ScheduleDAO();
+        this.dao = new ScheduleService();
         
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(new Color(248, 249, 250));

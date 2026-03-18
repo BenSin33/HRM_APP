@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.LeaveEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import com.hrm.DAO.Employee.LeaveDAO;
+import com.hrm.Service.Employee.LeaveService;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -154,7 +154,7 @@ public class LeaveRequestDialog extends JDialog {
         }
         
         // Lưu vào database
-        LeaveDAO dao = new LeaveDAO();
+        LeaveService dao = new LeaveService();
         String maLeave = dao.generateLeaveRequestId();
         
         Map<String, Object> leaveData = new HashMap<>();

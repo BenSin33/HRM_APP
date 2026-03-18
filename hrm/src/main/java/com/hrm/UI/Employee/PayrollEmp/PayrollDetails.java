@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
-import com.hrm.DAO.Employee.PayrollDAO;
+import com.hrm.Service.Employee.PayrollService;
 import com.hrm.DTO.Employee.PayrollSummaryDTO;
 import com.hrm.Service.PayrollSummaryService;
 
@@ -83,7 +83,7 @@ public class PayrollDetails extends JPanel {
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
         
         // Lấy dữ liệu chi tiết lương từ database
-        PayrollDAO dao = new PayrollDAO();
+        PayrollService dao = new PayrollService();
         List<Map<String, Object>> payrollData = dao.getPayrollDetails(manv);
         
         if (payrollData != null && !payrollData.isEmpty()) {

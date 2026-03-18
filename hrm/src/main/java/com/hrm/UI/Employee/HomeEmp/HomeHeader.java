@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import com.hrm.DAO.Employee.HomeDAO;
+import com.hrm.Service.Employee.HomeService;
 import com.hrm.DTO.Employee.HomeDTO;
 
 import java.time.LocalDate;
@@ -12,10 +12,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class HomeHeader extends JPanel {
-    private HomeDAO HomeDAO = new HomeDAO();
+    private HomeService homeService = new HomeService();
 
     public HomeHeader(String manv) {
-        HomeDTO data = HomeDAO.getHomeHeaderData(manv);
+        HomeDTO data = homeService.getHomeHeaderData(manv);
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250)); // Màu nền xám nhạt
         setBorder(new EmptyBorder(20, 20, 20, 20));

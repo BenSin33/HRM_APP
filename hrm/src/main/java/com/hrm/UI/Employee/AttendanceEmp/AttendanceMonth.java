@@ -8,7 +8,7 @@ import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Map;
-import com.hrm.DAO.Employee.AttendanceDAO;
+import com.hrm.Service.Employee.AttendanceService;
 import com.hrm.DTO.Employee.AttendanceDTO;
 
 public class AttendanceMonth extends JPanel {
@@ -16,7 +16,7 @@ public class AttendanceMonth extends JPanel {
     private YearMonth currentMonth;
     private JPanel daysPanel;
     private JLabel lblMonthTitle;
-    private AttendanceDAO attendanceDAO = new AttendanceDAO();
+    private AttendanceService attendanceDAO = new AttendanceService();
 
     public AttendanceMonth(String manv) {
         this.manv = manv;

@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.PayrollEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import com.hrm.DAO.Employee.PayrollDAO;
+import com.hrm.Service.Employee.PayrollService;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class PayrollCurrentMonth extends JPanel {
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(20, 25, 20, 25));
 
-        PayrollDAO dao = new PayrollDAO();
+        PayrollService dao = new PayrollService();
         
         // Lấy dữ liệu lương theo tháng/năm được chọn
         Map<String, Object> currentPayroll = dao.getPayrollByMonth(manv, selectedMonth, selectedYear);
@@ -114,7 +114,7 @@ public class PayrollCurrentMonth extends JPanel {
         listPanel.add(createDivider());
 
         // Lấy danh mục phụ cấp và khấu trừ từ DB
-        PayrollDAO dao = new PayrollDAO();
+        PayrollService dao = new PayrollService();
         List<Map<String, Object>> allowances = dao.getAllAllowances();
         List<Map<String, Object>> deductions = dao.getAllDeductions();
 
