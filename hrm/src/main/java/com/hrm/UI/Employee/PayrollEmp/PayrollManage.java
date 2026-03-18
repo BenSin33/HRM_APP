@@ -13,6 +13,7 @@ public class PayrollManage extends JPanel {
     private PayrollHeader header;
     private PayrollCurrentMonth currentMonthPanel;
     private PayrollDetails detailsPanel;
+    private PayrollSummary summaryPanel;
     
     public PayrollManage(String manv) {
         this.manv = manv;
@@ -32,10 +33,7 @@ public class PayrollManage extends JPanel {
         header.addMonthChangeListener(e -> updatePayrollData());
 
         // 1. Thẻ tóm tắt lương
-        JPanel summaryPanel = new JPanel();
-        summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
-        summaryPanel.setBackground(new Color(248, 249, 250));
-        summaryPanel.add(new PayrollSummary(manv));
+        summaryPanel = new PayrollSummary(manv);
         contentPanel.add(summaryPanel);
 
         // 2. Chi tiết lương tháng
@@ -63,6 +61,7 @@ public class PayrollManage extends JPanel {
         int selectedYear = Integer.parseInt(parts[1]);
         
         // Cập nhật các panel
+        summaryPanel.updateMonth(selectedMonth, selectedYear);
         detailsPanel.updateMonth(selectedMonth, selectedYear);
     }
 }

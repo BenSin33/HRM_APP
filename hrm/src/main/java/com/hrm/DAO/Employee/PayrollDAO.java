@@ -49,19 +49,22 @@ public class PayrollDAO {
     public List<Map<String, Object>> getPayrollDetails(String manv) {
         List<Map<String, Object>> details = new ArrayList<>();
         
-        String sql = "SELECT THANG, NAM, LUONGCOBAN_SNAPSHOT, TONG_PHUCAP, TONG_KHAUTRU, THUCLINH FROM bangluong WHERE MANV = ? ORDER BY NAM DESC, THANG DESC";
+        String sql = "SELECT MALUONG, THANG, NAM, LUONGCOBAN_SNAPSHOT, TONG_PHUCAP, TONG_KHAUTRU, THUCLINH, TRANGTHAI, TINH_TRANG_TT FROM bangluong WHERE MANV = ? ORDER BY NAM DESC, THANG DESC";
         try (Connection conn = JDBCConection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
+                row.put("maluong", rs.getString("MALUONG"));
                 row.put("thang", rs.getInt("THANG"));
                 row.put("nam", rs.getInt("NAM"));
                 row.put("luongcb", rs.getDouble("LUONGCOBAN_SNAPSHOT"));
                 row.put("phucap", rs.getDouble("TONG_PHUCAP"));
                 row.put("khautru", rs.getDouble("TONG_KHAUTRU"));
                 row.put("thuclinh", rs.getDouble("THUCLINH"));
+                row.put("trangthai", rs.getInt("TRANGTHAI"));
+                row.put("tinhtrangtt", rs.getString("TINH_TRANG_TT"));
                 details.add(row);
             }
         } catch (Exception e) {

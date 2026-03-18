@@ -35,6 +35,10 @@ public class AttendanceService {
         return attendanceDAO.getAttendanceMap(manv, month, year);
     }
 
+    public Map<Integer, AttendanceDTO> getMonthlyAttendanceDetails(String manv, int month, int year) {
+        return attendanceDAO.getMonthlyAttendanceDetails(manv, month, year);
+    }
+
     public AttendanceDTO getAttendanceDetail(String manv, int day, int month, int year) {
         return attendanceDAO.getAttendanceDetail(manv, day, month, year);
     }
