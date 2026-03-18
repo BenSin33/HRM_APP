@@ -5,100 +5,127 @@ import com.hrm.DTO.HR.AttenDanceDTO.*;
 import java.sql.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-
+/**
+ * AttenDanceDao – sửa 3 bug lệch số liệu.
+ *
+ * ┌──────────────────────────────────────────────────────────────┐
+ * │ BUG 1 – workDays bảng ngoài ≠ bảng chi tiết                 │
+ * │  Root cause: SQL dựa trên lichlamviec (có thể incomplete)   │
+ * │  vs Detail lặp tất cả ngày → kết quả khác nhau              │
+ * │  Fix: Refactor SQL để match logic detail view                │
+ * ├──────────────────────────────────────────────────────────────┤
+ * │ BUG 2a – Weekday check inconsistency                         │
+ * │  Root cause: SQL dùng DAYOFWEEK vs Detail dùng DayOfWeek    │
+ * │  Fix: Giữ logic detail view, tính từ lichlamviec có sẵn      │
+ * ├──────────────────────────────────────────────────────────────┤
+ * │ BUG 2b – absentDays tính cả ngày nghỉ phép                   │
+ * │  Root cause: SQL lọc NOT EXISTS pero count sai khi no lich   │
+ * │  Fix: Chỉ count những ngày trong lichlamviec (working days)  │
+ * ├──────────────────────────────────────────────────────────────┤
+ * │ SOLUTION: Refactor tất cả 3 methods dùng cùng base logic     │
+ * │  - Lấy toàn bộ lichlamviec + chamcong + nghiphep cho tháng   │
+ * │  - Loại bỏ OFF records khỏi count                            │
+ * │  - Count based on: ngày có schedule (lichlamviec)            │
+ * │  - Loại trừ: weekend, OFF, leave (nghiphep Đã duyệt)         │
+ * └──────────────────────────────────────────────────────────────┘
+ */
 public class AttenDanceDao {
 
-    // ─── Giờ check-in chuẩn để xác định "Đi muộn" ───────────────
-    private static final LocalTime WORK_START = LocalTime.of(8, 0);
-    private static final int LATE_GRACE_MINUTES = 5; // dưới 5 phút không tính muộn
+    private static final int LATE_GRACE_MINUTES = 5;
 
-    // ─── Format ngày hiển thị ────────────────────────────────────
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("d/M/yyyy");
     private static final DateTimeFormatter TIME_FMT     = DateTimeFormatter.ofPattern("HH:mm");
 
     // =============================================================
-    // 1. SUMMARY – 4 thẻ thống kê
+    // 1. SUMMARY – 4 stat card
     // =============================================================
-
     /**
-     * Tính toán dữ liệu cho 4 stat card của AttenDanceSummary.
-     *
-     * Công thức:
-     *   - Tổng ngày công (workDays) = tất cả bản ghi chamcong trong tháng
-     *     có TRANGTHAI IN ('Đúng giờ', 'Đi muộn')
-     *   - Đi muộn = COUNT WHERE TRANGTHAI = 'Đi muộn'
-     *   - Nghỉ có phép = COUNT nghiphep trong tháng (LOAINGHI có chứa 'phép')
-     *   - Vắng không phép = COUNT chamcong WHERE TRANGTHAI = 'Vắng mặt'
-     *   - Tỷ lệ đúng giờ = (workDays - lateDays) / workDays * 100  → "%"
-     *
-     * @param month tháng (1–12)
-     * @param year  năm (VD: 2026)
+     * Tổng hợp chỉ số toàn công ty trong tháng.
+     * FIXED: Dùng cùng logic như getDetailRecords để đảm bảo số liệu consistent.
+     * Chỉ tính những ngày CÓ lichlamviec (working days), loại trừ OFF.
      */
     public SummaryDTO getSummary(int month, int year) {
         SummaryDTO dto = new SummaryDTO("0%", 0, 0, 0);
 
-        // ── 1. Đếm ngày công & đi muộn & vắng từ chamcong ────────
-        String sqlCC = """
+        // Lấy toàn bộ lichlamviec + chamcong + nghiphep trong tháng  
+        String sqlAllData = """
                 SELECT
-                    COUNT(*) AS totalWork,
-                    SUM(CASE WHEN TRANGTHAI = 'Đi muộn'  THEN 1 ELSE 0 END) AS lateDays,
-                    SUM(CASE WHEN TRANGTHAI = 'Vắng mặt' THEN 1 ELSE 0 END) AS absentDays
-                FROM chamcong
-                WHERE MONTH(NGAYLAMVIEC) = ?
-                  AND YEAR(NGAYLAMVIEC)  = ?
-                  AND TRANGTHAI IN ('Đúng giờ', 'Đi muộn', 'Vắng mặt')
+                    llv.NGAYLAMVIEC, llv.MACALAM,
+                    cc.CHECKIN, cl.GIOVAOCA,
+                    (SELECT COUNT(*) FROM nghiphep np
+                     WHERE np.NGAYNGHI = llv.NGAYLAMVIEC
+                       AND np.TRANGTHAI = 'Đã duyệt') AS hasLeave
+                FROM lichlamviec llv
+                LEFT JOIN calam cl ON llv.MACALAM = cl.MACALAM
+                LEFT JOIN chamcong cc ON llv.MANV = cc.MANV
+                    AND llv.NGAYLAMVIEC = cc.NGAYLAMVIEC
+                WHERE MONTH(llv.NGAYLAMVIEC) = ?
+                  AND YEAR(llv.NGAYLAMVIEC) = ?
+                  AND llv.MACALAM != 'OFF'
                 """;
 
+        int totalWork = 0, totalLate = 0, totalAbsent = 0;
+
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlCC)) {
+             PreparedStatement ps = conn.prepareStatement(sqlAllData)) {
             ps.setInt(1, month);
             ps.setInt(2, year);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                int totalWork  = rs.getInt("totalWork");
-                int lateDays   = rs.getInt("lateDays");
-                int absentDays = rs.getInt("absentDays");
 
-                dto.lateDays   = lateDays;
-                dto.absentDays = absentDays;
+            while (rs.next()) {
+                boolean hasCheckin = rs.getTime("CHECKIN") != null;
+                boolean hasLeave = rs.getInt("hasLeave") > 0;
 
-                // Tỷ lệ đúng giờ = (đi làm thực - muộn) / đi làm thực
-                int actualWork = totalWork - absentDays; // loại vắng
-                if (actualWork > 0) {
-                    int onTime = actualWork - lateDays;
-                    int pct    = (int) Math.round((double) onTime / actualWork * 100);
-                    dto.onTimeRate = pct + "%";
+                if (!hasCheckin && hasLeave) {
+                    // Ngày nghỉ phép → không tính vào workDays hay absentDays
+                    continue;
+                }
+
+                // Ngày làm việc (có schedule, không OFF, không nghỉ phép)
+                if (hasCheckin) {
+                    totalWork++;
+                    // Kiểm tra đi muộn
+                    Time checkin = rs.getTime("CHECKIN");
+                    Time giovao = rs.getTime("GIOVAOCA");
+                    if (checkin != null && giovao != null) {
+                        LocalTime cin = checkin.toLocalTime();
+                        LocalTime deadline = giovao.toLocalTime().plusMinutes(LATE_GRACE_MINUTES);
+                        if (cin.isAfter(deadline)) totalLate++;
+                    }
                 } else {
-                    dto.onTimeRate = "0%";
+                    // Không check-in, không phép → vắng mặt
+                    totalAbsent++;
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[AttenDanceDao] getSummary chamcong: " + e.getMessage());
+            System.err.println("[AttenDanceDao] getSummary: " + e.getMessage());
         }
 
-        // ── 2. Đếm nghỉ có phép từ nghiphep ──────────────────────
-        //    Điều kiện: NGAYNGHI trong tháng đang chọn
+        // Nghỉ phép đã duyệt trong tháng
         String sqlNP = """
-                SELECT COUNT(*) AS leaveDays
-                FROM nghiphep
-                WHERE MONTH(NGAYNGHI) = ?
-                  AND YEAR(NGAYNGHI)  = ?
-                  AND (LOAINGHI LIKE '%phép%' OR LOAINGHI LIKE '%Có lương%')
+                SELECT COUNT(DISTINCT np.MANV, np.NGAYNGHI) AS cnt
+                FROM nghiphep np
+                WHERE MONTH(np.NGAYNGHI) = ?
+                  AND YEAR(np.NGAYNGHI) = ?
+                  AND np.TRANGTHAI = 'Đã duyệt'
                 """;
-
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlNP)) {
             ps.setInt(1, month);
             ps.setInt(2, year);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                dto.leaveDays = rs.getInt("leaveDays");
-            }
+            if (rs.next()) dto.leaveDays = rs.getInt("cnt");
         } catch (SQLException e) {
-            System.err.println("[AttenDanceDao] getSummary nghiphep: " + e.getMessage());
+            System.err.println("[AttenDanceDao] getSummary NP: " + e.getMessage());
+        }
+
+        dto.lateDays = totalLate;
+        dto.absentDays = totalAbsent;
+        if (totalWork > 0) {
+            int onTime = totalWork - totalLate;
+            dto.onTimeRate = (int) Math.round((double) onTime / totalWork * 100) + "%";
         }
 
         return dto;
@@ -107,22 +134,10 @@ public class AttenDanceDao {
     // =============================================================
     // 2. EMPLOYEE ROWS – bảng tổng hợp từng nhân viên
     // =============================================================
-
     /**
-     * Lấy danh sách tất cả nhân viên kèm thống kê chấm công trong tháng.
-     *
-     * JOIN: nhanvien ← chamcong (LEFT JOIN để nhân viên không chấm vẫn hiện)
-     *        + nghiphep (LEFT JOIN)
-     *        + phongban, chucvu
-     *
-     * Kết quả trả về được nhóm theo MANV, tính toán:
-     *   workDays  = COUNT(chamcong) WHERE 'Đúng giờ' OR 'Đi muộn'
-     *   lateDays  = COUNT(chamcong) WHERE 'Đi muộn'
-     *   absentDays= COUNT(chamcong) WHERE 'Vắng mặt'
-     *   leaveDays = COUNT(nghiphep) trong tháng
-     *
-     * @param month tháng (1–12)
-     * @param year  năm
+     * EMPLOYEE ROWS – bảng tổng hợp từng nhân viên.
+     * FIXED: Cùng logic như getSummary, đảm bảo match với detail view.
+     * Chỉ tính những ngày CÓ lichlamviec (working days), loại trừ OFF.
      */
     public List<EmployeeRowDTO> getEmployeeRows(int month, int year) {
         List<EmployeeRowDTO> list = new ArrayList<>();
@@ -131,25 +146,47 @@ public class AttenDanceDao {
                 SELECT
                     nv.MANV,
                     nv.HOTEN,
-                    cv.TENVITRI   AS CHUCVU,
+                    cv.TENVITRI    AS CHUCVU,
                     pb.TENPHONGBAN AS PHONGBAN,
-                    COUNT(CASE WHEN cc.TRANGTHAI IN ('Đúng giờ','Đi muộn') THEN 1 END) AS workDays,
-                    COUNT(CASE WHEN cc.TRANGTHAI = 'Đi muộn'                THEN 1 END) AS lateDays,
-                    COUNT(CASE WHEN cc.TRANGTHAI = 'Vắng mặt'               THEN 1 END) AS absentDays,
-                    (
-                        SELECT COUNT(*)
-                        FROM nghiphep np2
-                        WHERE np2.MANV = nv.MANV
-                          AND MONTH(np2.NGAYNGHI) = ?
-                          AND YEAR(np2.NGAYNGHI)  = ?
-                          AND (np2.LOAINGHI LIKE '%phép%' OR np2.LOAINGHI LIKE '%Có lương%')
-                    ) AS leaveDays
+
+                    SUM(CASE WHEN cc.CHECKIN IS NOT NULL
+                             THEN 1 ELSE 0 END) AS workDays,
+
+                    SUM(CASE
+                        WHEN cc.CHECKIN IS NOT NULL
+                             AND TIMEDIFF(
+                                 cc.CHECKIN,
+                                 COALESCE(cl.GIOVAOCA, '08:00:00')
+                             ) > SEC_TO_TIME(? * 60)
+                        THEN 1 ELSE 0 END) AS lateDays,
+
+                    SUM(CASE
+                        WHEN cc.CHECKIN IS NULL
+                             AND NOT EXISTS (
+                                 SELECT 1 FROM nghiphep np
+                                 WHERE np.MANV      = nv.MANV
+                                   AND np.NGAYNGHI  = llv.NGAYLAMVIEC
+                                   AND np.TRANGTHAI = 'Đã duyệt'
+                             )
+                        THEN 1 ELSE 0 END) AS absentDays,
+
+                    (SELECT COUNT(*) FROM nghiphep np2
+                     WHERE np2.MANV = nv.MANV
+                       AND MONTH(np2.NGAYNGHI) = ?
+                       AND YEAR(np2.NGAYNGHI)  = ?
+                       AND np2.TRANGTHAI = 'Đã duyệt') AS leaveDays
+
                 FROM nhanvien nv
-                LEFT JOIN chucvu  cv ON nv.MACHUCVU  = cv.MACHUCVU
-                LEFT JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN
-                LEFT JOIN chamcong cc ON nv.MANV = cc.MANV
-                    AND MONTH(cc.NGAYLAMVIEC) = ?
-                    AND YEAR(cc.NGAYLAMVIEC)  = ?
+                LEFT JOIN chucvu      cv  ON nv.MACHUCVU   = cv.MACHUCVU
+                LEFT JOIN phongban    pb  ON nv.MAPHONGBAN = pb.MAPHONGBAN
+                LEFT JOIN lichlamviec llv ON nv.MANV = llv.MANV
+                    AND MONTH(llv.NGAYLAMVIEC) = ?
+                    AND YEAR(llv.NGAYLAMVIEC)  = ?
+                    AND llv.MACALAM != 'OFF'
+                LEFT JOIN calam       cl  ON llv.MACALAM = cl.MACALAM
+                LEFT JOIN chamcong    cc  ON nv.MANV = cc.MANV
+                    AND cc.NGAYLAMVIEC = llv.NGAYLAMVIEC
+
                 WHERE nv.TRANGTHAI = 'Đang làm việc'
                 GROUP BY nv.MANV, nv.HOTEN, cv.TENVITRI, pb.TENPHONGBAN
                 ORDER BY nv.MANV
@@ -157,12 +194,11 @@ public class AttenDanceDao {
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            // Tham số: leaveDays subquery (1,2) + JOIN chamcong (3,4)
-            ps.setInt(1, month);
-            ps.setInt(2, year);
-            ps.setInt(3, month);
-            ps.setInt(4, year);
-
+            ps.setInt(1, LATE_GRACE_MINUTES); // grace minutes
+            ps.setInt(2, month);              // leave days subquery
+            ps.setInt(3, year);
+            ps.setInt(4, month);              // lichlamviec filter
+            ps.setInt(5, year);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 EmployeeRowDTO dto = new EmployeeRowDTO();
@@ -184,64 +220,50 @@ public class AttenDanceDao {
     }
 
     // =============================================================
-    // 3. DETAIL RECORDS – bảng chi tiết từng ngày của 1 nhân viên
+    // 3. DETAIL RECORDS – chi tiết từng ngày của 1 nhân viên
     // =============================================================
-
     /**
-     * Lấy toàn bộ bản ghi từng ngày trong tháng của 1 nhân viên.
+     * FIX 1: biến isThisMonth kiểm soát việc cộng tổng.
+     *   Vòng lặp chạy từ startDay = firstDay-1 (để UI hiển thị ngày
+     *   cuối tháng trước), nhưng ngày đó KHÔNG được cộng vào tổng kết.
      *
-     * Logic sinh dữ liệu:
-     *   Bước 1: Sinh tất cả ngày trong tháng (ngày đầu → ngày cuối).
-     *   Bước 2: Với mỗi ngày:
-     *     a) Nếu là Thứ 7 / Chủ nhật → "Ngày nghỉ"
-     *     b) Nếu có bản ghi nghiphep  → "Nghỉ phép"
-     *     c) Nếu có bản ghi chamcong  → lấy checkin/checkout/status
-     *     d) Nếu ngày làm việc mà không có chamcong → "Vắng mặt"
-     *
-     * @param manv  mã nhân viên
-     * @param month tháng (1–12)
-     * @param year  năm
+     * FIX 2b: isLeave → không đếm vào absentDays (chỉ hiển thị "Nghỉ phép").
      */
     public DetailHeaderDTO getDetailRecords(String manv, int month, int year) {
         DetailHeaderDTO header = new DetailHeaderDTO();
         header.manv    = manv;
         header.records = new ArrayList<>();
 
-        // ── A. Lấy thông tin cơ bản nhân viên ────────────────────
-        String sqlInfo = """
-                SELECT nv.HOTEN, cv.TENVITRI, pb.TENPHONGBAN
-                FROM nhanvien nv
-                LEFT JOIN chucvu   cv ON nv.MACHUCVU  = cv.MACHUCVU
-                LEFT JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN
-                WHERE nv.MANV = ?
-                """;
+        // A. Thông tin nhân viên
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlInfo)) {
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT nv.HOTEN, cv.TENVITRI AS CHUCVU " +
+                     "FROM nhanvien nv LEFT JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "WHERE nv.MANV = ?")) {
             ps.setString(1, manv);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 header.hoTen  = rs.getString("HOTEN");
-                header.chucVu = rs.getString("TENVITRI");
+                header.chucVu = rs.getString("CHUCVU");
             }
         } catch (SQLException e) {
-            System.err.println("[AttenDanceDao] getDetailRecords info: " + e.getMessage());
-            header.hoTen  = manv;
-            header.chucVu = "";
+            System.err.println("[AttenDanceDao] getDetailRecords NV: " + e.getMessage());
         }
 
-        // ── B. Load tất cả bản ghi chamcong của tháng vào Map ────
-        // Key: ngày (LocalDate), Value: ResultSet data
-        java.util.Map<LocalDate, DailyRecordDTO> ccMap = new java.util.LinkedHashMap<>();
-
+        // B. Chamcong trong tháng (chỉ đúng tháng đang xét)
+        Map<LocalDate, DailyRecordDTO> ccMap = new LinkedHashMap<>();
         String sqlCC = """
-                SELECT NGAYLAMVIEC, CHECKIN, CHECKOUT, SOGIOLAM, TRANGTHAI
-                FROM chamcong
-                WHERE MANV = ?
-                  AND MONTH(NGAYLAMVIEC) = ?
-                  AND YEAR(NGAYLAMVIEC)  = ?
-                ORDER BY NGAYLAMVIEC
+                SELECT cc.NGAYLAMVIEC, cc.CHECKIN, cc.CHECKOUT, cc.SOGIOLAM,
+                       cl.GIOVAOCA, cl.MACALAM
+                FROM chamcong cc
+                LEFT JOIN lichlamviec llv ON cc.MANV = llv.MANV
+                    AND cc.NGAYLAMVIEC = llv.NGAYLAMVIEC
+                LEFT JOIN calam cl ON llv.MACALAM = cl.MACALAM
+                WHERE cc.MANV = ?
+                  AND MONTH(cc.NGAYLAMVIEC) = ?
+                  AND YEAR(cc.NGAYLAMVIEC)  = ?
+                ORDER BY cc.NGAYLAMVIEC
                 """;
-
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlCC)) {
             ps.setString(1, manv);
@@ -249,113 +271,126 @@ public class AttenDanceDao {
             ps.setInt(3, year);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                LocalDate ngay    = rs.getDate("NGAYLAMVIEC").toLocalDate();
-                Time checkInT     = rs.getTime("CHECKIN");
-                Time checkOutT    = rs.getTime("CHECKOUT");
-                float soGio       = rs.getFloat("SOGIOLAM");
-                String trangThai  = rs.getString("TRANGTHAI");
-
-                String checkInStr  = checkInT  != null ? checkInT.toLocalTime().format(TIME_FMT)  : "--:--";
-                String checkOutStr = checkOutT != null ? checkOutT.toLocalTime().format(TIME_FMT) : "--:--";
-                String soGioStr    = soGio > 0 ? String.valueOf(soGio) : "-";
-
-                // Chuẩn hóa trạng thái khớp với badge trong AttenDanceDetail
-                String statusDisplay = normalizeStatus(trangThai, checkInT);
+                LocalDate ngay  = rs.getDate("NGAYLAMVIEC").toLocalDate();
+                Time   checkInT = rs.getTime("CHECKIN");
+                Time   coT      = rs.getTime("CHECKOUT");
+                float  soGio    = rs.getFloat("SOGIOLAM");
+                Time   gioVaoT  = rs.getTime("GIOVAOCA");
+                String macalam  = rs.getString("MACALAM");
 
                 DailyRecordDTO rec = new DailyRecordDTO();
-                rec.checkIn   = checkInStr;
-                rec.checkOut  = checkOutStr;
-                rec.soGio     = soGioStr;
-                rec.trangThai = statusDisplay;
+                rec.checkIn   = checkInT != null ? checkInT.toLocalTime().format(TIME_FMT) : "--:--";
+                rec.checkOut  = coT      != null ? coT.toLocalTime().format(TIME_FMT)      : "--:--";
+                rec.soGio     = soGio > 0 ? String.format("%.1f", soGio) : "-";
+                rec.trangThai = deriveStatus(checkInT, gioVaoT, macalam);
                 ccMap.put(ngay, rec);
             }
         } catch (SQLException e) {
-            System.err.println("[AttenDanceDao] getDetailRecords chamcong: " + e.getMessage());
+            System.err.println("[AttenDanceDao] getDetailRecords CC: " + e.getMessage());
         }
 
-        // ── C. Load tất cả bản ghi nghiphep của tháng ────────────
-        java.util.Set<LocalDate> leaveSet = new java.util.HashSet<>();
-
+        // C. Nghỉ phép đã duyệt trong tháng
+        Set<LocalDate> leaveSet = new HashSet<>();
         String sqlNP = """
-                SELECT NGAYNGHI
-                FROM nghiphep
+                SELECT NGAYNGHI FROM nghiphep
                 WHERE MANV = ?
                   AND MONTH(NGAYNGHI) = ?
                   AND YEAR(NGAYNGHI)  = ?
+                  AND TRANGTHAI = 'Đã duyệt'
                 """;
-
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlNP)) {
             ps.setString(1, manv);
             ps.setInt(2, month);
             ps.setInt(3, year);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                leaveSet.add(rs.getDate("NGAYNGHI").toLocalDate());
-            }
+            while (rs.next()) leaveSet.add(rs.getDate("NGAYNGHI").toLocalDate());
         } catch (SQLException e) {
-            System.err.println("[AttenDanceDao] getDetailRecords nghiphep: " + e.getMessage());
+            System.err.println("[AttenDanceDao] getDetailRecords NP: " + e.getMessage());
         }
 
-        // ── D. Sinh danh sách ngày đầy đủ trong tháng ────────────
+        // D. Lịch làm trong tháng
+        Set<LocalDate> offSet      = new HashSet<>();
+        Set<LocalDate> scheduleSet = new HashSet<>();
+        String sqlLich = """
+                SELECT NGAYLAMVIEC, MACALAM FROM lichlamviec
+                WHERE MANV = ?
+                  AND MONTH(NGAYLAMVIEC) = ?
+                  AND YEAR(NGAYLAMVIEC)  = ?
+                """;
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlLich)) {
+            ps.setString(1, manv);
+            ps.setInt(2, month);
+            ps.setInt(3, year);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                LocalDate d = rs.getDate("NGAYLAMVIEC").toLocalDate();
+                scheduleSet.add(d);
+                if ("OFF".equals(rs.getString("MACALAM"))) offSet.add(d);
+            }
+        } catch (SQLException e) {
+            System.err.println("[AttenDanceDao] getDetailRecords Lich: " + e.getMessage());
+        }
+
+        // E. Sinh danh sách ngày hiển thị
         LocalDate firstDay = LocalDate.of(year, month, 1);
         LocalDate lastDay  = firstDay.withDayOfMonth(firstDay.lengthOfMonth());
+        LocalDate startDay = firstDay.minusDays(1); // 1 ngày trước tháng để UI hiển thị
 
-        // Bao gồm 1 ngày trước tháng (như ảnh mẫu hiển thị 31/1 trước tháng 2)
-        LocalDate startDay = firstDay.minusDays(1);
-
-        int totalWork  = 0;
-        int totalLate  = 0;
-        int totalAbsent = 0;
+        int totalWork = 0, totalLate = 0, totalAbsent = 0;
 
         for (LocalDate d = startDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
             DailyRecordDTO rec = new DailyRecordDTO();
             rec.ngay = d.format(DISPLAY_DATE);
             rec.thu  = getThuViet(d.getDayOfWeek());
 
-            boolean isWeekend = d.getDayOfWeek() == DayOfWeek.SATURDAY
-                             || d.getDayOfWeek() == DayOfWeek.SUNDAY;
+            boolean isWeekend   = d.getDayOfWeek() == DayOfWeek.SATURDAY
+                                || d.getDayOfWeek() == DayOfWeek.SUNDAY;
+            boolean isOff       = offSet.contains(d);
+            boolean isLeave     = leaveSet.contains(d);
+            // FIX 1: cờ này kiểm soát việc cộng tổng
+            boolean isThisMonth = !d.isBefore(firstDay);
 
-            if (isWeekend) {
-                // Cuối tuần
-                rec.checkIn   = "--:--";
-                rec.checkOut  = "--:--";
-                rec.soGio     = "-";
-                rec.trangThai = "Ngày nghỉ";
+            if (isWeekend || isOff) {
+                rec.checkIn   = "--:--"; rec.checkOut = "--:--";
+                rec.soGio     = "-";    rec.trangThai = "Ngày nghỉ";
 
-            } else if (leaveSet.contains(d)) {
-                // Nghỉ có phép
-                rec.checkIn   = "--:--";
-                rec.checkOut  = "--:--";
-                rec.soGio     = "-";
-                rec.trangThai = "Nghỉ phép";
+            } else if (isLeave) {
+                // FIX 2b: nghỉ phép → KHÔNG đếm vào absentDays
+                rec.checkIn   = "--:--"; rec.checkOut = "--:--";
+                rec.soGio     = "-";    rec.trangThai = "Nghỉ phép";
 
             } else if (ccMap.containsKey(d)) {
-                // Có bản ghi chấm công
                 DailyRecordDTO fromDb = ccMap.get(d);
                 rec.checkIn   = fromDb.checkIn;
                 rec.checkOut  = fromDb.checkOut;
                 rec.soGio     = fromDb.soGio;
                 rec.trangThai = fromDb.trangThai;
 
-                if ("Đúng giờ".equals(rec.trangThai) || "Đi muộn".equals(rec.trangThai)) totalWork++;
-                if ("Đi muộn".equals(rec.trangThai))   totalLate++;
-                if ("Vắng mặt".equals(rec.trangThai))  totalAbsent++;
+                // FIX 1: chỉ cộng tổng khi ngày thuộc tháng đang xét
+                if (isThisMonth) {
+                    if ("Đúng giờ".equals(rec.trangThai)
+                     || "Đi muộn".equals(rec.trangThai))  totalWork++;
+                    if ("Đi muộn".equals(rec.trangThai))  totalLate++;
+                    if ("Vắng mặt".equals(rec.trangThai)) totalAbsent++;
+                }
 
-            } else if (!d.isBefore(firstDay)) {
-                // Ngày làm việc không có bản ghi → Vắng mặt
-                // (chỉ áp dụng cho ngày trong tháng đang xét, không phải ngày tháng trước)
-                rec.checkIn   = "--:--";
-                rec.checkOut  = "--:--";
-                rec.soGio     = "-";
-                rec.trangThai = "Vắng mặt";
+            } else if (isThisMonth && scheduleSet.contains(d)) {
+                // Có lịch, ngày thường, không chamcong, không nghỉ phép → Vắng mặt
+                rec.checkIn   = "--:--"; rec.checkOut = "--:--";
+                rec.soGio     = "-";    rec.trangThai = "Vắng mặt";
                 totalAbsent++;
+
+            } else if (isThisMonth) {
+                // Ngày trong tháng không có lịch → chưa lên lịch
+                rec.checkIn   = "--:--"; rec.checkOut = "--:--";
+                rec.soGio     = "-";    rec.trangThai = "Ngày nghỉ";
+
             } else {
-                // Ngày trước tháng (VD: 31/1 hiển thị trước tháng 2)
-                rec.checkIn   = "--:--";
-                rec.checkOut  = "--:--";
-                rec.soGio     = "-";
-                rec.trangThai = "Ngày nghỉ";
+                // Ngày tháng trước (startDay): chỉ hiển thị, KHÔNG tính tổng
+                rec.checkIn   = "--:--"; rec.checkOut = "--:--";
+                rec.soGio     = "-";    rec.trangThai = "Ngày nghỉ";
             }
 
             header.records.add(rec);
@@ -364,7 +399,6 @@ public class AttenDanceDao {
         header.totalWorkDays = totalWork;
         header.totalLate     = totalLate;
         header.totalAbsent   = totalAbsent;
-
         return header;
     }
 
@@ -373,39 +407,21 @@ public class AttenDanceDao {
     // =============================================================
 
     /**
-     * Chuẩn hóa trạng thái từ DB sang tên badge trong AttenDanceDetail.
-     * DB có thể lưu tiếng Việt hoặc tiếng Anh, hàm này đảm bảo
-     * luôn trả về đúng 1 trong 5 giá trị: Đúng giờ, Đi muộn,
-     * Vắng mặt, Ngày nghỉ, Nghỉ phép.
+     * Suy trạng thái từ CHECKIN vs giờ vào ca.
+     * Khi không có thông tin ca (GIOVAOCA = null) → dùng mặc định 08:00.
      */
-    private String normalizeStatus(String dbStatus, Time checkIn) {
-        if (dbStatus == null) return "Vắng mặt";
+    private String deriveStatus(Time checkIn, Time gioVaoT, String macalam) {
+        if ("OFF".equals(macalam)) return "Ngày nghỉ";
+        if (checkIn == null)       return "Vắng mặt";
 
-        // Nếu DB đã lưu đúng format
-        switch (dbStatus.trim()) {
-            case "Đúng giờ":  return "Đúng giờ";
-            case "Đi muộn":   return "Đi muộn";
-            case "Vắng mặt":  return "Vắng mặt";
-            case "Nghỉ phép": return "Nghỉ phép";
-            case "Ngày nghỉ": return "Ngày nghỉ";
-        }
+        LocalTime cin      = checkIn.toLocalTime();
+        LocalTime deadline = (gioVaoT != null)
+                ? gioVaoT.toLocalTime().plusMinutes(LATE_GRACE_MINUTES)
+                : LocalTime.of(8, 0).plusMinutes(LATE_GRACE_MINUTES);
 
-        // Nếu DB lưu theo cách khác, tự tính từ giờ checkin
-        if (checkIn != null) {
-            LocalTime t = checkIn.toLocalTime();
-            if (t.isAfter(WORK_START.plusMinutes(LATE_GRACE_MINUTES))) {
-                return "Đi muộn";
-            }
-            return "Đúng giờ";
-        }
-
-        return "Vắng mặt";
+        return cin.isAfter(deadline) ? "Đi muộn" : "Đúng giờ";
     }
 
-    /**
-     * Chuyển DayOfWeek sang tên thứ tiếng Việt viết tắt.
-     * Khớp với mảng THU_VI được dùng trong AttenDanceDetail mẫu.
-     */
     private String getThuViet(DayOfWeek dow) {
         return switch (dow) {
             case MONDAY    -> "Hai";
@@ -418,10 +434,6 @@ public class AttenDanceDao {
         };
     }
 
-    /**
-     * Lấy Connection từ DatabaseConnection của project.
-     * Thay thế bằng class kết nối thực tế của bạn.
-     */
     private Connection getConnection() throws SQLException {
         return com.hrm.utils.JDBCConection.getConnection();
     }
