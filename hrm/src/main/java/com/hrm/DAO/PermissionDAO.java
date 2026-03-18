@@ -122,16 +122,17 @@ public class PermissionDAO {
     public List<PermissionDTO> getPermissionsByUser(String manv, String roleId) {
         List<PermissionDTO> permissions = new ArrayList<>();
         String sql = "SELECT ? AS ROLEID, ? AS MANV, c.MACHUCNANG, c.TENCHUCNANG, " +
-                     "COALESCE(u.QUYEN_XEM, r.QUYEN_XEM, 0) AS QUYEN_XEM, " +
-                     "COALESCE(u.QUYEN_THEM, r.QUYEN_THEM, 0) AS QUYEN_THEM, " +
-                     "COALESCE(u.QUYEN_SUA, r.QUYEN_SUA, 0) AS QUYEN_SUA, " +
-                     "COALESCE(u.QUYEN_XOA, r.QUYEN_XOA, 0) AS QUYEN_XOA, " +
-                     "COALESCE(u.QUYEN_DUYET, r.QUYEN_DUYET, 0) AS QUYEN_DUYET, " +
-                     "COALESCE(u.QUYEN_XUAT_BC, r.QUYEN_XUAT_BC, 0) AS QUYEN_XUAT_BC, " +
-                     "CASE WHEN u.MANV IS NULL THEN 0 ELSE 1 END AS USER_OVERRIDE " +
+                     "COALESCE(MAX(u.QUYEN_XEM), r.QUYEN_XEM, 0) AS QUYEN_XEM, " +
+                     "COALESCE(MAX(u.QUYEN_THEM), r.QUYEN_THEM, 0) AS QUYEN_THEM, " +
+                     "COALESCE(MAX(u.QUYEN_SUA), r.QUYEN_SUA, 0) AS QUYEN_SUA, " +
+                     "COALESCE(MAX(u.QUYEN_XOA), r.QUYEN_XOA, 0) AS QUYEN_XOA, " +
+                     "COALESCE(MAX(u.QUYEN_DUYET), r.QUYEN_DUYET, 0) AS QUYEN_DUYET, " +
+                     "COALESCE(MAX(u.QUYEN_XUAT_BC), r.QUYEN_XUAT_BC, 0) AS QUYEN_XUAT_BC, " +
+                     "CASE WHEN MAX(u.MANV) IS NULL THEN 0 ELSE 1 END AS USER_OVERRIDE " +
                      "FROM chucnang c " +
                      "LEFT JOIN phanquyen_chitiet r ON r.MACHUCNANG = c.MACHUCNANG AND r.ROLEID = ? " +
                      "LEFT JOIN phanquyen_theo_user u ON u.MACHUCNANG = c.MACHUCNANG AND u.MANV = ? " +
+                     "GROUP BY c.MACHUCNANG, c.TENCHUCNANG " +
                      "ORDER BY c.MACHUCNANG";
 
         try (Connection conn = JDBCConection.getConnection()) {

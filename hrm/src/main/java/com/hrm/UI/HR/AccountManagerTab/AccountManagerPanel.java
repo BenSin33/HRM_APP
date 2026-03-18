@@ -33,11 +33,29 @@ public class AccountManagerPanel extends JPanel {
         // Phần A: Thống kê tài khoản (Summary)
         content.add(new AccountSummary(), java.awt.BorderLayout.NORTH);
 
-        // Phần B: Bảng dữ liệu tài khoản
-        accountTableContent = new AccountTable();
+        // Phần B: Filter panel
+        javax.swing.JPanel filterContainer = new javax.swing.JPanel();
+        filterContainer.setLayout(new java.awt.BorderLayout());
+        filterContainer.setOpaque(false);
+        filterContainer.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        AccountTable accountTableContent = new AccountTable();
+        AccountFilter filter = new AccountFilter();
+        filter.setFilterCallback(e -> {
+            String searchText = filter.getSearchText();
+            accountTableContent.applyFilter(searchText);
+        });
+        filterContainer.add(filter, java.awt.BorderLayout.CENTER);
+        content.add(filterContainer, java.awt.BorderLayout.NORTH);
+
+        // Phần C: Bảng dữ liệu tài khoản
+        this.accountTableContent = accountTableContent;
         content.add(accountTableContent, java.awt.BorderLayout.CENTER);
 
         this.add(content, java.awt.BorderLayout.CENTER);
+        
+        // Load dữ liệu lúc khởi tạo
+        this.accountTableContent.refreshData();
     }
 
     private void handleAddAccount() {

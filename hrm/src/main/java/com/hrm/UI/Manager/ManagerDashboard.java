@@ -15,6 +15,9 @@ import com.hrm.UI.Manager.evaluation.EvaluationPanel;
 import com.hrm.UI.Manager.team.TeamPanel;
 import com.hrm.UI.component.Sidebar;
 import com.hrm.UI.component.SidebarTab;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
+import com.hrm.utils.SessionManager;
 
 public class ManagerDashboard extends JFrame {
     
@@ -27,8 +30,12 @@ public class ManagerDashboard extends JFrame {
     private SchedulePanel schedulePanel;
     private LeaveApprovalPanel leavePanel;
     private EvaluationPanel evaluationPanel;
+    private PermissionService permissionService;
     
     public ManagerDashboard() {
+        permissionService = new PermissionService();
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
 
@@ -54,11 +61,26 @@ public class ManagerDashboard extends JFrame {
 
         // Cấu hình sidebar
         List<SidebarTab> ManagerTabs = new ArrayList<>();
-        ManagerTabs.add(new SidebarTab("TỔNG QUAN", "MANAGER_DASHBOARD"));
-        ManagerTabs.add(new SidebarTab("QUẢN LÝ ĐỘI NHÓM", "TEAM_MANAGEMENT"));
-        ManagerTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
-        ManagerTabs.add(new SidebarTab("DUYỆT NGHỈ PHÉP", "LEAVE_APPROVAL"));
-        ManagerTabs.add(new SidebarTab("ĐÁNH GIÁ HIỆU SUẤT", "PERFORMANCE_EVALUATION"));
+        // NOTE: Use base CNxx codes (stored in DB) to make permissions effective.
+        if (permissionService.canView(currentUser, "CN01")) { // CN01: Quản lý nhân sự (dashboard entry point)
+            ManagerTabs.add(new SidebarTab("TỔNG QUAN", "MANAGER_DASHBOARD"));
+        }
+        // NOTE: Team management maps to CN01 in DB.
+        if (permissionService.canView(currentUser, "CN01")) {
+            ManagerTabs.add(new SidebarTab("QUẢN LÝ ĐỘI NHÓM", "TEAM_MANAGEMENT"));
+        }
+        // NOTE: Schedule maps to CN10 in DB.
+        if (permissionService.canView(currentUser, "CN10")) {
+            ManagerTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
+        }
+        // NOTE: Leave approval maps to CN04 in DB.
+        if (permissionService.canView(currentUser, "CN04")) { // Assuming LEAVE_APPROVAL uses the same permission as LEAVE_MANAGEMENT
+            ManagerTabs.add(new SidebarTab("DUYỆT NGHỈ PHÉP", "LEAVE_APPROVAL"));
+        }
+        // NOTE: Evaluation maps to CN05 in DB.
+        if (permissionService.canView(currentUser, "CN05")) { // Assuming PERFORMANCE_EVALUATION uses the same permission
+            ManagerTabs.add(new SidebarTab("ĐÁNH GIÁ HIỆU SUẤT", "PERFORMANCE_EVALUATION"));
+        }
         ManagerTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, ManagerTabs);

@@ -5,6 +5,7 @@ import javax.swing.*;
 import com.hrm.Service.AuthenticationService;
 import com.hrm.DTO.UserDTO;
 import com.hrm.utils.IconResize;
+import com.hrm.utils.SessionManager;
 
 import java.awt.*;
 import java.net.URL;
@@ -113,6 +114,9 @@ public class LoginUI extends JFrame{
         UserDTO userInfo = authService.authenticateByMaNV(manv, pass);
 
         if(userInfo != null){
+            // Lưu user vào session
+            SessionManager.getInstance().setCurrentUser(userInfo);
+            
             this.setVisible(false);
             this.dispose();
 

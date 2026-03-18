@@ -14,6 +14,7 @@ import java.util.List;
 import com.hrm.DTO.ContractDTO;
 import com.hrm.UI.component.IFormInput;
 import com.hrm.utils.JDBCConection;
+import com.hrm.utils.FormValidator;
 
 public class ContractAddForm extends JPanel implements IFormInput<ContractDTO> {
     private JTextField txtMaHopDong;
@@ -181,26 +182,78 @@ public class ContractAddForm extends JPanel implements IFormInput<ContractDTO> {
 
     @Override
     public boolean validateForm() {
-        if (txtMaHopDong.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập mã hợp đồng!");
+        String maHopDong = txtMaHopDong.getText().trim();
+        String loaiHopDong = txtLoaiHopDong.getText().trim();
+        String ngayKy = txtNgayKy.getText().trim();
+        String ngayHetHan = txtNgayHetHan.getText().trim();
+        String luongCoBan = txtLuongCoBan.getText().trim();
+        
+        // Validate Mã hợp đồng
+        if (maHopDong.isEmpty()) {
+            FormValidator.showError(this, "Vui lòng nhập mã hợp đồng!");
             return false;
         }
+        if (!maHopDong.matches("[A-Z0-9]+")) {
+            FormValidator.showError(this, "Mã hợp đồng chỉ chứa chữ hoa và số!");
+            return false;
+        }
+        
+        // Validate Nhân viên
         if (cbMaNV.getSelectedIndex() < 0) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên!");
+            FormValidator.showError(this, "Vui lòng chọn nhân viên!");
             return false;
         }
-        if (txtLoaiHopDong.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập loại hợp đồng!");
+        
+        // Validate Loại hợp đồng
+        if (loaiHopDong.isEmpty()) {
+            FormValidator.showError(this, "Vui lòng nhập loại hợp đồng!");
             return false;
         }
-        if (txtNgayKy.getText().trim().isEmpty() || txtNgayHetHan.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ ngày ký và ngày hết hạn!");
+        
+        // Validate Ngày ký và Ngày hết hạn
+        LocalDate dateKy = null, dateHetHan = null;
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            dateKy = LocalDate.parse(ngayKy, formatter);
+            dateHetHan = LocalDate.parse(ngayHetHan, formatter);
+        } catch (Exception e) {
+            FormValidator.showError(this, "Định dạng ngày không hợp lệ! (Sử dụng dd/MM/yyyy)");
             return false;
         }
-        if (txtLuongCoBan.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập lương cơ bản!");
+        
+        // Ngày hết hạn phải sau ngày ký
+        if (dateHetHan.isBefore(dateKy) || dateHetHan.isEqual(dateKy)) {
+            FormValidator.showError(this, "Ngày hết hạn phải sau ngày ký!");
             return false;
         }
+        
+        // Ngày hết hạn không được quá 30 năm
+        if (dateHetHan.isAfter(dateKy.plusYears(30))) {
+            FormValidator.showError(this, "Thời hạn hợp đồng không được vượt quá 30 năm!");
+            return false;
+        }
+        
+        // Validate Lương cơ bản
+        if (luongCoBan.isEmpty()) {
+            FormValidator.showError(this, "Vui lòng nhập lương cơ bản!");
+            return false;
+        }
+        
+        try {
+            BigDecimal salary = new BigDecimal(luongCoBan.replaceAll("[^0-9]", ""));
+            if (salary.compareTo(BigDecimal.ZERO) <= 0) {
+                FormValidator.showError(this, "Lương cơ bản phải lớn hơn 0!");
+                return false;
+            }
+            if (salary.compareTo(new BigDecimal("1000000000")) > 0) {
+                FormValidator.showError(this, "Lương cơ bản quá lớn!");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            FormValidator.showError(this, "Lương cơ bản phải là số!");
+            return false;
+        }
+        
         return true;
     }
 }

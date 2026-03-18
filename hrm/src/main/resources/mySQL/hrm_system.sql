@@ -168,7 +168,7 @@ INSERT INTO `chucnang` (`MACHUCNANG`, `TENCHUCNANG`) VALUES
 ('CN06', 'Quản lý hợp đồng'),
 ('CN07', 'Quản lý phòng ban'),
 ('CN08', 'Quản lý quyền'),
-('CN09', 'Báo cáo & Thống kê'),
+('CN09', 'Quản lý danh mục'),
 ('CN10', 'Lịch làm việc');
 
 -- --------------------------------------------------------
@@ -516,8 +516,11 @@ CREATE TABLE `phanquyen_theo_user` (
   `QUYEN_DUYET` tinyint(1) DEFAULT NULL,
   `QUYEN_XUAT_BC` tinyint(1) DEFAULT NULL,
   `NGAY_CAP` date DEFAULT NULL,
-  `NGAY_HET_HAN` date DEFAULT NULL,
-  `GHI_CHU` varchar(255) DEFAULT NULL
+  `GHI_CHU` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`MANV`, `MACHUCNANG`),
+  KEY `fk_pq_user_cn` (`MACHUCNANG`),
+  CONSTRAINT `fk_pq_user_cn` FOREIGN KEY (`MACHUCNANG`) REFERENCES `chucnang` (`MACHUCNANG`),
+  CONSTRAINT `fk_pq_user_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Phân quyền đặc biệt theo từng user (ghi đè role)';
 
 -- --------------------------------------------------------
