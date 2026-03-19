@@ -107,20 +107,10 @@ public class ContractManagement extends JPanel {
     }
 
     private void handleExportContract() {
-        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (!permissionService.canExport(currentUser, "CN09_CONTRACT")) {
-            JOptionPane.showMessageDialog(this, "Bạn không có quyền xuất dữ liệu.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
         ContractExcelHelper.handleContractExport(contractTable.getContractTable(), this);
     }
 
     private void handleImportContract() {
-        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (!permissionService.canAdd(currentUser, "CN09_CONTRACT")) {
-            JOptionPane.showMessageDialog(this, "Bạn không có quyền nhập dữ liệu.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
         ContractExcelHelper.handleContractImport(contractTable.getContractTable(), this);
         refreshData();
     }
