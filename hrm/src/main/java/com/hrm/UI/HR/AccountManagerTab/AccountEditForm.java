@@ -21,16 +21,20 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
     private JTextField txtEmail;
     private JTextField txtDienThoai;
     private JTextField txtPhongBan;
+    private JTextField txtChucVu;
     private JComboBox<String> cbRole;
     private JComboBox<String> cbStatus;
     private JPasswordField txtPassword;
     private List<String> roleIds;
     private Map<String, String> roleMap;
+    private String currentUserMaNV;
+    private String currentUserPosition;
+    private String currentUserDepartment;
 
     public AccountEditForm() {
         roleIds = new ArrayList<>();
         roleMap = new HashMap<>();
-        setLayout(new GridLayout(8, 2, 10, 10));
+        setLayout(new GridLayout(9, 2, 10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Mã nhân viên
@@ -60,6 +64,12 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         txtPhongBan = new JTextField();
         txtPhongBan.setEditable(false);
         add(txtPhongBan);
+
+        // Chức vụ
+        add(new JLabel("Chức vụ:"));
+        txtChucVu = new JTextField();
+        txtChucVu.setEditable(false);
+        add(txtChucVu);
 
         // Vai trò
         add(new JLabel("Vai trò:"));
@@ -99,6 +109,12 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         }
     }
 
+    public void setCurrentUser(String maNV, String chucVu, String phongBan) {
+        this.currentUserMaNV = maNV;
+        this.currentUserPosition = chucVu;
+        this.currentUserDepartment = phongBan;
+    }
+
     @Override
     public void setFormData(AccountManagerDTO account) {
         if (account != null) {
@@ -107,9 +123,37 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
             txtEmail.setText(account.email != null ? account.email : "");
             txtDienThoai.setText(account.dienThoai != null ? account.dienThoai : "");
             txtPhongBan.setText(account.phongBan);
+            txtChucVu.setText(getChucVuName(account.maNV));
             cbRole.setSelectedItem(account.roleName);
             cbStatus.setSelectedIndex(account.status == 1 ? 0 : 1);
+            
+            // Chỉ cho phép sửa role nếu người dùng hiện tại là Trưởng phòng
+            boolean isHeadOfDepartment = "CV01".equals(currentUserPosition);
+            cbRole.setEnabled(isHeadOfDepartment);
+            if (!isHeadOfDepartment) {
+                cbRole.setToolTipText("Chỉ Trưởng phòng mới có thể thay đổi vai trò");
+            } else {
+                cbRole.setToolTipText("Chọn vai trò cho nhân viên");
+            }
         }
+    }
+
+    private String getChucVuName(String maNV) {
+        String sql = "SELECT cv.TENVITRI FROM nhanvien nv " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "WHERE nv.MANV = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("TENVITRI");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     @Override
@@ -134,6 +178,7 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         txtEmail.setText("");
         txtDienThoai.setText("");
         txtPhongBan.setText("");
+        txtChucVu.setText("");
         cbRole.setSelectedIndex(0);
         cbStatus.setSelectedIndex(0);
         txtPassword.setText("");
@@ -168,20 +213,6 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         }
         
         return true;
-    }
-
-    private boolean isValidEmail(String email) {
-        return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
-    }
-    
-    private boolean isValidPhone(String phone) {
-        // Chỉ cho phép số, dấu +, dấu gạch ngang, khoảng trắng, và dấu ngoặc
-        if (!phone.matches("[0-9+\\-\\s()]*")) {
-            return false;
-        }
-        // Phải có ít nhất 9 chữ số
-        long digitCount = phone.replaceAll("[^0-9]", "").length();
-        return digitCount >= 9;
     }
 
     public String getPassword() {
