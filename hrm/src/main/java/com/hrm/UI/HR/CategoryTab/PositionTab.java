@@ -6,9 +6,12 @@ import com.hrm.DTO.PositionDTO;
 import com.hrm.UI.component.CRUDDialog;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,13 +23,16 @@ public class PositionTab extends JPanel {
     private PositionDAO positionDAO;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
+    private List<PositionDTO> allPositions;
+    private JTextField searchField;
 
     public PositionTab() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
-
+        
         positionDAO = new PositionDAO();
+        allPositions = new ArrayList<>();
 
         add(createButtonPanel(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
@@ -35,10 +41,14 @@ public class PositionTab extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JPanel panel = new JPanel(new BorderLayout(10, 0));
         panel.putClientProperty(FlatClientProperties.STYLE, "background: #ffffff");
         panel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
 
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        buttonPanel.setOpaque(false);
+        
         JButton btnAdd = new JButton("Thêm mới");
         btnAdd.putClientProperty(FlatClientProperties.STYLE, "background: #4CAF50; foreground: #ffffff");
         btnAdd.addActionListener(e -> handleAdd());
@@ -47,8 +57,53 @@ public class PositionTab extends JPanel {
         btnRefresh.putClientProperty(FlatClientProperties.STYLE, "background: #2196F3; foreground: #ffffff");
         btnRefresh.addActionListener(e -> loadData());
 
-        panel.add(btnAdd);
-        panel.add(btnRefresh);
+        buttonPanel.add(btnAdd);
+        buttonPanel.add(btnRefresh);
+        
+        // Search panel
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setOpaque(true);
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        searchPanel.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
+        
+        searchField = new JTextField();
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        searchField.setText("Tìm kiếm...");
+        searchField.setForeground(new Color(180, 180, 180));
+        searchField.setPreferredSize(new Dimension(200, 28));
+        
+        searchField.addFocusListener(new java.awt.event.FocusListener() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                if (searchField.getText().equals("Tìm kiếm...")) {
+                    searchField.setText("");
+                    searchField.setForeground(Color.BLACK);
+                }
+            }
+            
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                if (searchField.getText().isEmpty()) {
+                    searchField.setText("Tìm kiếm...");
+                    searchField.setForeground(new Color(180, 180, 180));
+                }
+            }
+        });
+        
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) { applySearch(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { applySearch(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { applySearch(); }
+        });
+        
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        
+        panel.add(buttonPanel, BorderLayout.WEST);
+        panel.add(searchPanel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -209,15 +264,38 @@ public class PositionTab extends JPanel {
 
     private void loadData() {
         tableModel.setRowCount(0);
-        List<PositionDTO> positions = positionDAO.getAllPositions();
+        allPositions = positionDAO.getAllPositions();
 
-        for (PositionDTO position : positions) {
+        for (PositionDTO position : allPositions) {
             tableModel.addRow(new Object[]{
                     position.getMaChucVu(),
                     position.getTenViTri(),
                     String.format("%,.0f VND", position.getPhuCapChucVu() != null ? position.getPhuCapChucVu().doubleValue() : 0d),
                     ""
             });
+        }
+    }
+
+    private void applySearch() {
+        String searchText = searchField.getText();
+        if (searchText.equals("Tìm kiếm...") || searchText.trim().isEmpty()) {
+            loadData();
+            return;
+        }
+
+        tableModel.setRowCount(0);
+        String lowerKeyword = searchText.toLowerCase();
+
+        for (PositionDTO position : allPositions) {
+            if ((position.getMaChucVu() != null && position.getMaChucVu().toLowerCase().contains(lowerKeyword)) ||
+                (position.getTenViTri() != null && position.getTenViTri().toLowerCase().contains(lowerKeyword))) {
+                tableModel.addRow(new Object[]{
+                        position.getMaChucVu(),
+                        position.getTenViTri(),
+                        String.format("%,.0f VND", position.getPhuCapChucVu() != null ? position.getPhuCapChucVu().doubleValue() : 0d),
+                        ""
+                });
+            }
         }
     }
 }
