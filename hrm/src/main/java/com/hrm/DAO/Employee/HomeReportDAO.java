@@ -11,12 +11,17 @@ public class HomeReportDAO {
 
         try {
             // 1. Lấy lương gần nhất
-            String sqlLuong = "SELECT THANG, NAM, TRANGTHAI FROM bangluong WHERE MANV = ? ORDER BY NAM DESC, THANG DESC LIMIT 1";
+            String sqlLuong = "SELECT THANG, NAM, TRANGTHAI, THUCLINH FROM bangluong WHERE MANV = ? ORDER BY NAM DESC, THANG DESC LIMIT 1";
             PreparedStatement ps1 = conn.prepareStatement(sqlLuong);
             ps1.setString(1, manv);
             ResultSet rs1 = ps1.executeQuery();
             if (rs1.next()) {
-                dto.setActivityLuong("Bảng lương tháng " + rs1.getInt("THANG") + "/" + rs1.getInt("NAM") + ": " + rs1.getString("TRANGTHAI"));
+                int trangThai = rs1.getInt("TRANGTHAI");
+                String trangThaiText = (trangThai == 1) ? "Đã chốt" : "Chưa chốt";
+                double thucLinh = rs1.getDouble("THUCLINH");
+                String thucLinhFormatted = String.format("%,.0f", thucLinh);
+                dto.setActivityLuong("Bảng lương tháng " + rs1.getInt("THANG") + "/" + rs1.getInt("NAM") 
+                    + " - " + trangThaiText + " (" + thucLinhFormatted + " VNĐ)");
             } else { dto.setActivityLuong("Chưa có dữ liệu bảng lương"); }
 
             // 2. Lấy chấm công gần nhất

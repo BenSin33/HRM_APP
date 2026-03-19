@@ -14,6 +14,8 @@ public class ContractTableRenderer extends JPanel implements TableCellRenderer {
     private static final int PADDING = 5;
     
     private boolean isHovered = false;
+    private boolean editEnabled = true;
+    private boolean deleteEnabled = true;
 
     public ContractTableRenderer() {
         setLayout(new FlowLayout(FlowLayout.CENTER, BUTTON_SPACING, PADDING));
@@ -24,6 +26,16 @@ public class ContractTableRenderer extends JPanel implements TableCellRenderer {
         
         add(editBtn);
         add(deleteBtn);
+    }
+
+    public void setEditEnabled(boolean enabled) {
+        this.editEnabled = enabled;
+        editBtn.setVisible(enabled);
+    }
+
+    public void setDeleteEnabled(boolean enabled) {
+        this.deleteEnabled = enabled;
+        deleteBtn.setVisible(enabled);
     }
 
     private JButton createActionButton(Icon icon, String tooltip) {
@@ -45,6 +57,9 @@ public class ContractTableRenderer extends JPanel implements TableCellRenderer {
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, 
             boolean hasFocus, int row, int column) {
         
+        editBtn.setVisible(editEnabled);
+        deleteBtn.setVisible(deleteEnabled);
+
         if (isSelected) {
             setBackground(table.getSelectionBackground());
         } else {

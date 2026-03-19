@@ -5,6 +5,7 @@ import javax.swing.*;
 import com.hrm.Service.AuthenticationService;
 import com.hrm.DTO.UserDTO;
 import com.hrm.utils.IconResize;
+import com.hrm.utils.SessionManager;
 
 import java.awt.*;
 import java.net.URL;
@@ -98,6 +99,12 @@ public class LoginUI extends JFrame{
     btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
     btnLogin.setBounds(50, 310, 300, 45);
     
+    // Enter ở ô tài khoản -> focus sang ô mật khẩu
+    txtUserName.addActionListener(e -> txtPass.requestFocusInWindow());
+
+    // Enter ở ô mật khẩu -> bấm nút đăng nhập
+    txtPass.addActionListener(e -> btnLogin.doClick());
+
     // Xử lý sự kiện khi bấm nút Đăng nhập
     btnLogin.addActionListener(e -> {
         String manv = txtUserName.getText();
@@ -113,6 +120,9 @@ public class LoginUI extends JFrame{
         UserDTO userInfo = authService.authenticateByMaNV(manv, pass);
 
         if(userInfo != null){
+            // Lưu user vào session
+            SessionManager.getInstance().setCurrentUser(userInfo);
+            
             this.setVisible(false);
             this.dispose();
 

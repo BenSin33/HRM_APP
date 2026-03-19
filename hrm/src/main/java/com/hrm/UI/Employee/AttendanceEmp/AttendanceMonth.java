@@ -8,7 +8,7 @@ import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Map;
-import com.hrm.DAO.Employee.AttendanceDAO;
+import com.hrm.Service.Employee.AttendanceService;
 import com.hrm.DTO.Employee.AttendanceDTO;
 
 public class AttendanceMonth extends JPanel {
@@ -16,7 +16,7 @@ public class AttendanceMonth extends JPanel {
     private YearMonth currentMonth;
     private JPanel daysPanel;
     private JLabel lblMonthTitle;
-    private AttendanceDAO attendanceDAO = new AttendanceDAO();
+    private AttendanceService attendanceDAO = new AttendanceService();
 
     public AttendanceMonth(String manv) {
         this.manv = manv;
@@ -91,8 +91,8 @@ public class AttendanceMonth extends JPanel {
         daysPanel.removeAll();
         lblMonthTitle.setText("Tháng " + currentMonth.getMonthValue() + " / " + currentMonth.getYear());
 
-        Map<Integer, String> attendanceData = attendanceDAO.getAttendanceMap(manv, currentMonth.getMonthValue(),
-                currentMonth.getYear());
+        Map<Integer, AttendanceDTO> detailsMap = attendanceDAO.getMonthlyAttendanceDetails(manv,
+                currentMonth.getMonthValue(), currentMonth.getYear());
 
         LocalDate firstOfMonth = currentMonth.atDay(1);
         int dayOfWeek = firstOfMonth.getDayOfWeek().getValue(); // 1 = Mon
@@ -103,22 +103,34 @@ public class AttendanceMonth extends JPanel {
         int daysInMonth = currentMonth.lengthOfMonth();
         for (int day = 1; day <= daysInMonth; day++) {
             JPanel daySquare = new JPanel(new BorderLayout());
-            daySquare.setPreferredSize(new Dimension(60, 60));
+            daySquare.setPreferredSize(new Dimension(60, 70));
             daySquare.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             JLabel lblDay = new JLabel(String.valueOf(day), SwingConstants.CENTER);
             lblDay.setFont(new Font("Arial", Font.BOLD, 22));
             daySquare.add(lblDay, BorderLayout.CENTER);
 
-            String status = attendanceData.getOrDefault(day, "NGHI");
+            AttendanceDTO dto = detailsMap.get(day);
+            String status = (dto != null) ? dto.getTrangThai() : "NGHI";
+
             if ("1".equals(status) || "Đúng giờ".equals(status)) {
-                daySquare.setBackground(new Color(220, 252, 231)); // xanh lá nhạt
-                lblDay.setForeground(new Color(22, 101, 52)); // xanh lá đậm
+                daySquare.setBackground(new Color(220, 252, 231));
+                lblDay.setForeground(new Color(22, 101, 52));
             } else if ("0".equals(status) || "Đi muộn".equals(status) || "Về sớm".equals(status) || "Đi muộn/Về sớm".equals(status)) {
-                daySquare.setBackground(new Color(255, 247, 237)); // cam nhạt
-                lblDay.setForeground(new Color(154, 52, 18)); // cam đậm
+                daySquare.setBackground(new Color(255, 247, 237));
+                lblDay.setForeground(new Color(154, 52, 18));
             } else {
-                daySquare.setBackground(new Color(248, 249, 250)); // xám nhạt
+                daySquare.setBackground(new Color(248, 249, 250));
                 lblDay.setForeground(Color.LIGHT_GRAY);
+            }
+
+            // Hiển thị giờ checkin - checkout bên dưới
+            if (dto != null) {
+                String ci = dto.getCheckIn() != null ? dto.getCheckIn().toString().substring(0, 5) : "--:--";
+                String co = dto.getCheckOut() != null ? dto.getCheckOut().toString().substring(0, 5) : "--:--";
+                JLabel lblTime = new JLabel(ci + "-" + co, SwingConstants.CENTER);
+                lblTime.setFont(new Font("Arial", Font.PLAIN, 13));
+                lblTime.setForeground(lblDay.getForeground());
+                daySquare.add(lblTime, BorderLayout.SOUTH);
             }
 
             daySquare.setBorder(new LineBorder(new Color(200, 200, 200), 2));

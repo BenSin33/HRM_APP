@@ -3,21 +3,26 @@ package com.hrm.UI.Employee.PayrollEmp;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-import com.hrm.DAO.Employee.PayrollDAO;
+import com.hrm.Service.Employee.PayrollService;
 
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.Map;
 
 public class PayrollSummary extends JPanel {
+    private JLabel lblTitle;
+    private JLabel lblAmount;
+    private String manv;
+    private PayrollService service = new PayrollService();
+
     public PayrollSummary(String manv) {
+        this.manv = manv;
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
         setBorder(new EmptyBorder(10, 25, 10, 25));
 
         // Lấy dữ liệu thực lĩnh từ database
-        PayrollDAO dao = new PayrollDAO();
-        Map<String, Object> payroll = dao.getCurrentMonthPayroll(manv);
+        Map<String, Object> payroll = service.getCurrentMonthPayroll(manv);
         
         String amountDisplay = "0";
         String monthDisplay = "01/2026";
@@ -35,11 +40,11 @@ public class PayrollSummary extends JPanel {
         blueCard.setBackground(new Color(59, 130, 246));
         blueCard.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        JLabel lblTitle = new JLabel("Tổng lương thực lĩnh (Tháng " + monthDisplay + ")");
+        lblTitle = new JLabel("Tổng lương thực lĩnh (Tháng " + monthDisplay + ")");
         lblTitle.setForeground(new Color(219, 234, 254));
         lblTitle.setFont(new Font("Segoe UI", Font.PLAIN, 16));
 
-        JLabel lblAmount = new JLabel(amountDisplay + " đ");
+        lblAmount = new JLabel(amountDisplay + " đ");
         lblAmount.setForeground(Color.WHITE);
         lblAmount.setFont(new Font("Segoe UI", Font.BOLD, 42));
 
@@ -52,5 +57,17 @@ public class PayrollSummary extends JPanel {
         blueCard.add(lblIcon, BorderLayout.EAST);
 
         add(blueCard, BorderLayout.CENTER);
+    }
+
+    public void updateMonth(int thang, int nam) {
+        Map<String, Object> payroll = service.getPayrollByMonth(manv, thang, nam);
+        if (payroll != null && !payroll.isEmpty()) {
+            double thuclinh = (Double) payroll.get("thuclinh");
+            lblTitle.setText("Tổng lương thực lĩnh (Tháng " + String.format("%02d/%d", thang, nam) + ")");
+            lblAmount.setText(String.format("%,.0f", thuclinh) + " đ");
+        } else {
+            lblTitle.setText("Tổng lương thực lĩnh (Tháng " + String.format("%02d/%d", thang, nam) + ")");
+            lblAmount.setText("0 đ");
+        }
     }
 }

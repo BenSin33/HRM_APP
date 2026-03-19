@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import com.hrm.DTO.AccountManagerDTO;
 import com.hrm.UI.component.IFormInput;
+import com.hrm.utils.FormValidator;
 import com.hrm.utils.JDBCConection;
 
 public class AccountEditForm extends JPanel implements IFormInput<AccountManagerDTO> {
@@ -64,6 +65,8 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         add(new JLabel("Vai trò:"));
         cbRole = new JComboBox<>();
         loadRoles();
+        cbRole.setEnabled(false);
+        cbRole.setToolTipText("Vai trò được tự động phân theo chức vụ nhân viên");
         add(cbRole);
 
         // Trạng thái
@@ -138,19 +141,47 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
 
     @Override
     public boolean validateForm() {
-        if (txtEmail.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập email!");
+        String email = txtEmail.getText().trim();
+        String dienThoai = txtDienThoai.getText().trim();
+        
+        // Validate Email
+        if (email.isEmpty()) {
+            FormValidator.showError(this, "Vui lòng nhập email!");
             return false;
         }
-        if (!isValidEmail(txtEmail.getText())) {
-            JOptionPane.showMessageDialog(this, "Email không hợp lệ!");
+        if (!FormValidator.isValidEmail(email)) {
+            FormValidator.showError(this, "Email không hợp lệ! (Định dạng: abc@domain.com)");
             return false;
         }
+        
+        // Validate Điện thoại
+        if (!dienThoai.isEmpty() && !FormValidator.isValidPhone(dienThoai)) {
+            FormValidator.showError(this, "Điện thoại không hợp lệ! (Chỉ chứa số, tối thiểu 9 chữ số)");
+            return false;
+        }
+        
+        // Validate mật khẩu nếu nhập
+        String password = new String(txtPassword.getPassword()).trim();
+        if (!password.isEmpty() && password.length() < 4) {
+            FormValidator.showError(this, "Mật khẩu tối thiểu 4 ký tự!");
+            return false;
+        }
+        
         return true;
     }
 
     private boolean isValidEmail(String email) {
-        return email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
+        return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+    
+    private boolean isValidPhone(String phone) {
+        // Chỉ cho phép số, dấu +, dấu gạch ngang, khoảng trắng, và dấu ngoặc
+        if (!phone.matches("[0-9+\\-\\s()]*")) {
+            return false;
+        }
+        // Phải có ít nhất 9 chữ số
+        long digitCount = phone.replaceAll("[^0-9]", "").length();
+        return digitCount >= 9;
     }
 
     public String getPassword() {

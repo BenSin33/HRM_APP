@@ -1,6 +1,6 @@
 package com.hrm.UI.Employee.EvaluationEmp;
 
-import com.hrm.DAO.Employee.EvaluationDAO;
+import com.hrm.Service.Employee.EvaluationService;
 import com.hrm.DTO.Employee.EvaluationHistoryDTO;
 
 import javax.swing.*;
@@ -15,7 +15,7 @@ import java.util.List;
 public class EvaluationHistory extends JPanel {
 
     public EvaluationHistory(String manv) {
-        this(new EvaluationDAO().getEvaluationHistory(manv));
+        this(new EvaluationService().getEvaluationHistory(manv));
     }
 
     public EvaluationHistory(List<EvaluationHistoryDTO> histories) {

@@ -27,13 +27,13 @@ public class AccountManagerHeader extends JPanel {
             "background: #4CAF50; foreground: #ffffff; focusable: false; borderWidth: 0; arc: 5");
         addButton.addActionListener(addListener);
 
-        JButton importButton = new JButton("Nhập khẩu");
+        JButton importButton = new JButton("Nhập Excel");
         importButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         importButton.putClientProperty(FlatClientProperties.STYLE, 
             "background: #2196F3; foreground: #ffffff; focusable: false; borderWidth: 0; arc: 5");
         importButton.addActionListener(importListener);
 
-        JButton exportButton = new JButton("Xuất khẩu");
+        JButton exportButton = new JButton("xuất Excel");
         exportButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         exportButton.putClientProperty(FlatClientProperties.STYLE, 
             "background: #FF9800; foreground: #ffffff; focusable: false; borderWidth: 0; arc: 5");

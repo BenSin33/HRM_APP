@@ -13,7 +13,10 @@ import java.util.List;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.ContractDAO;
 import com.hrm.DTO.ContractDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.utils.SessionManager;
 
 public class ContractTable extends JPanel {
     private JTable contractTable;
@@ -21,6 +24,7 @@ public class ContractTable extends JPanel {
     private int hoveredRow = -1;
     private ContractTableRenderer renderer;
     private ContractDAO contractDAO;
+    private PermissionService permissionService;
     private DecimalFormat df = new DecimalFormat("#,###");
     private ContractManagement parentPanel;
     private List<ContractDTO> allContracts; // Store all contracts for filtering
@@ -29,6 +33,7 @@ public class ContractTable extends JPanel {
         setLayout(new BorderLayout());
         setOpaque(false);
         contractDAO = new ContractDAO();
+        permissionService = new PermissionService();
         allContracts = new ArrayList<>();
         initComponent();
     }
@@ -67,6 +72,9 @@ public class ContractTable extends JPanel {
         
         // Cấu hình cột
         renderer = new ContractTableRenderer();
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        renderer.setEditEnabled(permissionService.canEdit(currentUser, "CN09_CONTRACT"));
+        renderer.setDeleteEnabled(permissionService.canDelete(currentUser, "CN09_CONTRACT"));
         contractTable.getColumnModel().getColumn(8).setCellRenderer(renderer);
         contractTable.getColumnModel().getColumn(8).setPreferredWidth(120);
 
@@ -135,7 +143,11 @@ public class ContractTable extends JPanel {
     }
 
     private void handleEdit(Object contractId) {
-        System.out.println("Sửa hợp đồng: " + contractId);
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (!permissionService.canEdit(currentUser, "CN09_CONTRACT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa hợp đồng.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         
         // Tìm hợp đồng từ database
         ContractDTO contract = contractDAO.getContractByMa(contractId.toString());
@@ -171,6 +183,11 @@ public class ContractTable extends JPanel {
     }
 
     private void handleDelete(Object contractId) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (!permissionService.canDelete(currentUser, "CN09_CONTRACT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa hợp đồng.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         System.out.println("Xóa hợp đồng: " + contractId);
         int confirm = JOptionPane.showConfirmDialog(this,
             "Bạn chắc chắn muốn xóa hợp đồng: " + contractId + "?",

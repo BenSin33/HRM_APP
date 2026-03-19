@@ -2,12 +2,16 @@ package com.hrm.DTO;
 
 public class PermissionDTO {
     private String roleId;
+    private String manv;
     private String machucNang;
     private String tenChucNang;
     private boolean quyenXem;
     private boolean quyenThem;
     private boolean quyenSua;
     private boolean quyenXoa;
+    private boolean quyenDuyet;
+    private boolean quyenXuatBaoCao;
+    private boolean userOverride;
 
     // Constructor đầy đủ
     public PermissionDTO(String roleId, String machucNang, String tenChucNang, 
@@ -19,6 +23,22 @@ public class PermissionDTO {
         this.quyenThem = quyenThem;
         this.quyenSua = quyenSua;
         this.quyenXoa = quyenXoa;
+    }
+
+    public PermissionDTO(String roleId, String manv, String machucNang, String tenChucNang,
+                         boolean quyenXem, boolean quyenThem, boolean quyenSua, boolean quyenXoa,
+                         boolean quyenDuyet, boolean quyenXuatBaoCao, boolean userOverride) {
+        this.roleId = roleId;
+        this.manv = manv;
+        this.machucNang = machucNang;
+        this.tenChucNang = tenChucNang;
+        this.quyenXem = quyenXem;
+        this.quyenThem = quyenThem;
+        this.quyenSua = quyenSua;
+        this.quyenXoa = quyenXoa;
+        this.quyenDuyet = quyenDuyet;
+        this.quyenXuatBaoCao = quyenXuatBaoCao;
+        this.userOverride = userOverride;
     }
 
     // Constructor rỗng
@@ -36,6 +56,14 @@ public class PermissionDTO {
 
     public String getMachucNang() {
         return machucNang;
+    }
+
+    public String getManv() {
+        return manv;
+    }
+
+    public void setManv(String manv) {
+        this.manv = manv;
     }
 
     public void setMachucNang(String machucNang) {
@@ -82,16 +110,44 @@ public class PermissionDTO {
         this.quyenXoa = quyenXoa;
     }
 
+    public boolean isQuyenDuyet() {
+        return quyenDuyet;
+    }
+
+    public void setQuyenDuyet(boolean quyenDuyet) {
+        this.quyenDuyet = quyenDuyet;
+    }
+
+    public boolean isQuyenXuatBaoCao() {
+        return quyenXuatBaoCao;
+    }
+
+    public void setQuyenXuatBaoCao(boolean quyenXuatBaoCao) {
+        this.quyenXuatBaoCao = quyenXuatBaoCao;
+    }
+
+    public boolean isUserOverride() {
+        return userOverride;
+    }
+
+    public void setUserOverride(boolean userOverride) {
+        this.userOverride = userOverride;
+    }
+
     @Override
     public String toString() {
         return "PermissionDTO{" +
                 "roleId='" + roleId + '\'' +
+            ", manv='" + manv + '\'' +
                 ", machucNang='" + machucNang + '\'' +
                 ", tenChucNang='" + tenChucNang + '\'' +
                 ", quyenXem=" + quyenXem +
                 ", quyenThem=" + quyenThem +
                 ", quyenSua=" + quyenSua +
-                ", quyenXoa=" + quyenXoa +
+            ", quyenXoa=" + quyenXoa +
+            ", quyenDuyet=" + quyenDuyet +
+            ", quyenXuatBaoCao=" + quyenXuatBaoCao +
+            ", userOverride=" + userOverride +
                 '}';
     }
 }

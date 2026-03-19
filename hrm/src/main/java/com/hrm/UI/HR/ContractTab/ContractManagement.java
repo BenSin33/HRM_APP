@@ -4,8 +4,11 @@ import javax.swing.*;
 import java.awt.*;
 import com.hrm.DTO.ContractDTO;
 import com.hrm.DAO.ContractDAO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
 import com.hrm.UI.component.CRUDDialog;
 import com.hrm.utils.ContractExcelHelper;
+import com.hrm.utils.SessionManager;
 
 /**
  * ContractManagement - Giao diện quản lý hợp đồng
@@ -19,8 +22,10 @@ import com.hrm.utils.ContractExcelHelper;
 public class ContractManagement extends JPanel {
     private ContractHeader header;
     private ContractTable contractTable;
+    private PermissionService permissionService;
 
     public ContractManagement() {
+        permissionService = new PermissionService();
         initComponent();
     }
 
@@ -33,6 +38,12 @@ public class ContractManagement extends JPanel {
 
         // 1. Header: Title + Stats Cards + Nút thêm + Export/Import
         header = new ContractHeader();
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        
+        header.setAddButtonEnabled(permissionService.canAdd(currentUser, "CN09_CONTRACT"));
+        header.setExportButtonEnabled(permissionService.canExport(currentUser, "CN09_CONTRACT"));
+        header.setImportButtonEnabled(permissionService.canAdd(currentUser, "CN09_CONTRACT")); // Import is a form of Add
+
         header.setOnAddCallback(() -> handleAddContract());
         header.setOnExportCallback(() -> handleExportContract());
         header.setOnImportCallback(() -> handleImportContract());
@@ -68,6 +79,11 @@ public class ContractManagement extends JPanel {
     }
 
     private void handleAddContract() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (!permissionService.canAdd(currentUser, "CN09_CONTRACT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm hợp đồng.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         ContractAddForm addForm = new ContractAddForm();
         CRUDDialog<ContractDTO> dialog = new CRUDDialog<>(
             (JFrame) SwingUtilities.getWindowAncestor(this),
@@ -91,10 +107,20 @@ public class ContractManagement extends JPanel {
     }
 
     private void handleExportContract() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (!permissionService.canExport(currentUser, "CN09_CONTRACT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xuất dữ liệu.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         ContractExcelHelper.handleContractExport(contractTable.getContractTable(), this);
     }
 
     private void handleImportContract() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (!permissionService.canAdd(currentUser, "CN09_CONTRACT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền nhập dữ liệu.", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         ContractExcelHelper.handleContractImport(contractTable.getContractTable(), this);
         refreshData();
     }

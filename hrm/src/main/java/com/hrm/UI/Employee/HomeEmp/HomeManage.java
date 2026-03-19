@@ -3,9 +3,11 @@ package com.hrm.UI.Employee.HomeEmp;
 import javax.swing.*;
 import java.awt.*;
 
+import com.hrm.UI.component.Sidebar;
+
 public class HomeManage extends JPanel {
 
-    public HomeManage(String manv, CardLayout cardLayout, JPanel cardContainer) {
+    public HomeManage(String manv, CardLayout cardLayout, JPanel cardContainer, Sidebar sidebar) {
         setLayout(new BorderLayout());
         setBackground(new Color(248, 249, 250));
 
@@ -17,8 +19,8 @@ public class HomeManage extends JPanel {
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(new HomeReport(manv));
         contentPanel.add(Box.createVerticalStrut(10));
-        // Truyền mã nhân viên, cardLayout và cardContainer cho HomeFooter
-        contentPanel.add(new HomeFooter(manv, cardLayout, cardContainer));
+        // Truyền mã nhân viên, cardLayout, cardContainer và sidebar cho HomeFooter
+        contentPanel.add(new HomeFooter(manv, cardLayout, cardContainer, sidebar));
         contentPanel.add(Box.createVerticalGlue());
 
         JScrollPane scrollPane = new JScrollPane(contentPanel);

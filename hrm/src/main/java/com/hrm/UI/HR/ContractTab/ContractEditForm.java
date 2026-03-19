@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import com.hrm.DTO.ContractDTO;
 import com.hrm.UI.component.IFormInput;
+import com.hrm.utils.FormValidator;
 import com.toedter.calendar.JDateChooser;
 import java.util.Date;
 import java.util.Calendar;
@@ -181,15 +182,15 @@ public class ContractEditForm extends JPanel implements IFormInput<ContractDTO> 
     @Override
     public boolean validateForm() {
         if (txtLoaiHopDong.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập loại hợp đồng!");
+            FormValidator.showError(this, "Vui lòng nhập loại hợp đồng!");
             return false;
         }
         if (dateNgayKy.getDate() == null || dateNgayHetHan.getDate() == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày ký và ngày hết hạn!");
+            FormValidator.showError(this, "Vui lòng chọn ngày ký và ngày hết hạn!");
             return false;
         }
         if (txtLuongCoBan.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập lương cơ bản!");
+            FormValidator.showError(this, "Vui lòng nhập lương cơ bản!");
             return false;
         }
         return true;

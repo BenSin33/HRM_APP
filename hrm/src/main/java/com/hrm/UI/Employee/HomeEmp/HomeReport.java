@@ -1,6 +1,6 @@
 package com.hrm.UI.Employee.HomeEmp;
 
-import com.hrm.DAO.Employee.HomeReportDAO;
+import com.hrm.Service.Employee.HomeService;
 import com.hrm.DTO.Employee.HomeReportDTO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -8,10 +8,10 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
 public class HomeReport extends JPanel {
-    private HomeReportDAO reportDAO = new HomeReportDAO();
+    private HomeService homeService = new HomeService();
 
     public HomeReport(String manv) {
-        HomeReportDTO data = reportDAO.getReportData(manv);
+        HomeReportDTO data = homeService.getReportData(manv);
         
         setLayout(new GridLayout(1, 2, 25, 0));
         setBackground(new Color(248, 249, 250));
