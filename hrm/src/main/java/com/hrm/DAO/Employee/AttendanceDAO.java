@@ -172,6 +172,29 @@ public class AttendanceDAO {
         return data;
     }
 
+    // Lấy chi tiết chấm công cả tháng (cho Calendar hiển thị giờ)
+    public Map<Integer, AttendanceDTO> getMonthlyAttendanceDetails(String manv, int month, int year) {
+        Map<Integer, AttendanceDTO> data = new HashMap<>();
+        String sql = "SELECT DAY(NGAYLAMVIEC) AS NGAY, CHECKIN, CHECKOUT, TRANGTHAI FROM chamcong WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = ? AND YEAR(NGAYLAMVIEC) = ?";
+        try (Connection conn = JDBCConection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, manv);
+            ps.setInt(2, month);
+            ps.setInt(3, year);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                AttendanceDTO dto = new AttendanceDTO();
+                dto.setCheckIn(rs.getTime("CHECKIN"));
+                dto.setCheckOut(rs.getTime("CHECKOUT"));
+                dto.setTrangThai(rs.getString("TRANGTHAI"));
+                data.put(rs.getInt("NGAY"), dto);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+
     // Hàm tra cứu chi tiết một ngày (Dùng cho Search Panel)
     public AttendanceDTO getAttendanceByDate(String manv, String date) {
         String sql = "SELECT * FROM chamcong WHERE MANV = ? AND NGAYLAMVIEC = ?";

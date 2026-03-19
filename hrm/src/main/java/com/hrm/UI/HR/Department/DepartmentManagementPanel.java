@@ -235,9 +235,9 @@ public class DepartmentManagementPanel extends JPanel {
         return wrapper;
     }
 
-    // ============== CARDS (GridLayout 1 hàng 3 cột = chiều ngang bằng nhau, wrapper để card không bị kéo cao) ==============
+    // ============== CARDS (GridLayout 0 hàng = tự wrap, 3 cột; chỉ cuộn dọc khi nhiều phòng ban) ==============
     private JScrollPane createCardsArea() {
-        cardsContainer = new JPanel(new GridLayout(1, 3, 20, 20)); // 1 hàng, 3 cột = 3 card chiều ngang bằng nhau
+        cardsContainer = new JPanel(new GridLayout(0, 3, 20, 20)); // 0 = bao nhiêu hàng cũng được, 3 cột → card xuống dòng khi nhiều PB
         cardsContainer.setOpaque(false);
         cardsContainer.setBorder(new EmptyBorder(24, 0, 0, 0));
 
@@ -268,13 +268,12 @@ public class DepartmentManagementPanel extends JPanel {
             cardsContainer.add(wrapper);
         }
 
-        // Bọc grid trong JScrollPane để có thể kéo xuống xem các phòng bên dưới
+        // Chỉ cuộn dọc khi nhiều phòng ban (nhiều hàng); không cuộn ngang
         JScrollPane scroll = new JScrollPane(cardsContainer);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         scroll.getViewport().setBackground(new Color(245, 247, 250));
-        // Cho phép kéo ngang khi không đủ chỗ hiển thị hết các phòng ban
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         return scroll;
     }

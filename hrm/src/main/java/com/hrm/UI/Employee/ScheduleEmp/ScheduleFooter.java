@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
-import com.hrm.DAO.Employee.ScheduleDAO;
+import com.hrm.Service.Employee.ScheduleService;
 import com.hrm.DTO.Employee.ScheduleDTO;
 
 public class ScheduleFooter extends JPanel {
@@ -28,7 +28,7 @@ public class ScheduleFooter extends JPanel {
 		legendPanel.setOpaque(false);
 
 		// Lấy danh sách ca làm từ database
-		ScheduleDAO dao = new ScheduleDAO();
+		ScheduleService dao = new ScheduleService();
 		List<ScheduleDTO> shifts = dao.getAllShifts();
 		Color[] bgColors = {new Color(255, 251, 235), new Color(239, 246, 255), new Color(245, 243, 255), new Color(236, 253, 245), new Color(255, 237, 237), new Color(237, 255, 245), new Color(237, 241, 255)};
 		Color[] fgColors = {new Color(245, 158, 11), new Color(59, 130, 246), new Color(139, 92, 246), new Color(16, 185, 129), new Color(220, 38, 38), new Color(13, 148, 136), new Color(59, 130, 246)};

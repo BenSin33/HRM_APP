@@ -26,6 +26,8 @@ public class CRUDDialog<T> extends JDialog {
         JPanel pnlBtns = new JPanel();
         btnSave.setBackground(new Color(102, 0, 204)); // Màu tím đặc trưng
         btnSave.setForeground(Color.WHITE);
+        btnSave.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnSave.setPreferredSize(new Dimension(140, 40));
         pnlBtns.add(btnSave);
         add(pnlBtns, BorderLayout.SOUTH);
 

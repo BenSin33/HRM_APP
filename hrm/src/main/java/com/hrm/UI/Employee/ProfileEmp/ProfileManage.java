@@ -3,14 +3,14 @@ package com.hrm.UI.Employee.ProfileEmp;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import com.hrm.DAO.Employee.ProfileDAO;
+import com.hrm.Service.Employee.ProfileService;
 import com.hrm.DTO.Employee.ProfileDTO;
 
 public class ProfileManage extends JPanel {
     
     public ProfileManage(String manv) {
         // 1. Lấy dữ liệu từ DAO theo chuẩn DTO
-        ProfileDAO dao = new ProfileDAO();
+        ProfileService dao = new ProfileService();
         // Phương thức getFullProfile sẽ trả về đối tượng EmployeeDTO chứa đầy đủ 
         // thông tin cá nhân, công việc và hợp đồng đã được JOIN từ SQL
         ProfileDTO dto = dao.getFullProfile(manv);

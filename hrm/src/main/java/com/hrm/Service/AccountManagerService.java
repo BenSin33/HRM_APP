@@ -43,6 +43,10 @@ public class AccountManagerService {
         return accountDAO.changePasswordByManv(manv, newPassword);
     }
 
+    public boolean verifyPassword(String manv, String rawPassword) {
+        return accountDAO.verifyPassword(manv, rawPassword);
+    }
+
     public boolean setAccountStatus(String maNV, int status) {
         return accountDAO.setAccountStatus(maNV, status);
     }

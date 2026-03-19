@@ -2,6 +2,9 @@ package com.hrm.UI.Employee.LeaveEmp;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Map;
+import com.hrm.UI.component.CRUDDialog;
+import com.hrm.Service.Employee.LeaveService;
 
 /**
  * Lớp quản lý chính cho tab Nghỉ phép của nhân viên.
@@ -49,12 +52,22 @@ public class LeaveManage extends JPanel {
     }
     
     private void openLeaveDialog() {
-        LeaveRequestDialog dialog = new LeaveRequestDialog(SwingUtilities.getWindowAncestor(this), manv);
+        LeaveFormPanel formPanel = new LeaveFormPanel();
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        CRUDDialog<Map<String, Object>> dialog = new CRUDDialog<>(frame, "Tạo đơn nghỉ phép", formPanel, null);
         dialog.setVisible(true);
-        
-        // Refresh lịch sử sau khi gửi đơn
-        if (dialog.isSubmitted()) {
-            refreshLeaveHistory();
+
+        Map<String, Object> result = dialog.getResult();
+        if (result != null) {
+            LeaveService dao = new LeaveService();
+            result.put("manghiphep", dao.generateLeaveRequestId());
+            result.put("manv", manv);
+            if (dao.insertLeaveRequest(result)) {
+                JOptionPane.showMessageDialog(this, "Gửi đơn nghỉ phép thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                refreshLeaveHistory();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi gửi đơn! Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     

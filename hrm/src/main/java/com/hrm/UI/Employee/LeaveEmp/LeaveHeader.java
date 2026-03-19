@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.LeaveEmp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import com.hrm.DAO.Employee.LeaveDAO;
+import com.hrm.Service.Employee.LeaveService;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
@@ -40,7 +40,7 @@ public class LeaveHeader extends JPanel {
         stats.setBorder(new EmptyBorder(20, 0, 10, 0));
         
         // Fetch leave statistics from database
-        LeaveDAO leaveDAO = new LeaveDAO();
+        LeaveService leaveDAO = new LeaveService();
         int approvedPaidLeave = leaveDAO.getApprovedPaidLeaveCount(manv);
         int totalLeaveRequests = leaveDAO.getTotalLeaveRequestCount(manv);
         int unpaidLeave = leaveDAO.getUnpaidLeaveCount(manv);

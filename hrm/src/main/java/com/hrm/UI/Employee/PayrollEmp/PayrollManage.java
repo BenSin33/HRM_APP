@@ -2,7 +2,7 @@ package com.hrm.UI.Employee.PayrollEmp;
 
 import javax.swing.*;
 
-import com.hrm.DAO.Employee.PayrollDAO;
+import com.hrm.Service.Employee.PayrollService;
 
 import java.awt.*;
 import java.util.List;
@@ -13,6 +13,7 @@ public class PayrollManage extends JPanel {
     private PayrollHeader header;
     private PayrollCurrentMonth currentMonthPanel;
     private PayrollDetails detailsPanel;
+    private PayrollSummary summaryPanel;
     
     public PayrollManage(String manv) {
         this.manv = manv;
@@ -20,7 +21,7 @@ public class PayrollManage extends JPanel {
         setBackground(new Color(248, 249, 250));
 
         // Lấy dữ liệu thực tế từ DAO
-        PayrollDAO dao = new PayrollDAO();
+        PayrollService dao = new PayrollService();
         List<Map<String, Object>> chartData = dao.getSalaryHistory(manv);
 
         JPanel contentPanel = new JPanel();
@@ -32,10 +33,7 @@ public class PayrollManage extends JPanel {
         header.addMonthChangeListener(e -> updatePayrollData());
 
         // 1. Thẻ tóm tắt lương
-        JPanel summaryPanel = new JPanel();
-        summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
-        summaryPanel.setBackground(new Color(248, 249, 250));
-        summaryPanel.add(new PayrollSummary(manv));
+        summaryPanel = new PayrollSummary(manv);
         contentPanel.add(summaryPanel);
 
         // 2. Chi tiết lương tháng
@@ -63,6 +61,7 @@ public class PayrollManage extends JPanel {
         int selectedYear = Integer.parseInt(parts[1]);
         
         // Cập nhật các panel
+        summaryPanel.updateMonth(selectedMonth, selectedYear);
         detailsPanel.updateMonth(selectedMonth, selectedYear);
     }
 }

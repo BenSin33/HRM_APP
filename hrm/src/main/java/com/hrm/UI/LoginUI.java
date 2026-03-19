@@ -98,6 +98,12 @@ public class LoginUI extends JFrame{
     btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
     btnLogin.setBounds(50, 310, 300, 45);
     
+    // Enter ở ô tài khoản -> focus sang ô mật khẩu
+    txtUserName.addActionListener(e -> txtPass.requestFocusInWindow());
+
+    // Enter ở ô mật khẩu -> bấm nút đăng nhập
+    txtPass.addActionListener(e -> btnLogin.doClick());
+
     // Xử lý sự kiện khi bấm nút Đăng nhập
     btnLogin.addActionListener(e -> {
         String manv = txtUserName.getText();

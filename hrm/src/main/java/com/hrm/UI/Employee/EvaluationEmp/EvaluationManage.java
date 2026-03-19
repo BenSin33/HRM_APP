@@ -1,6 +1,6 @@
 package com.hrm.UI.Employee.EvaluationEmp;
 
-import com.hrm.DAO.Employee.EvaluationDAO;
+import com.hrm.Service.Employee.EvaluationService;
 import com.hrm.DTO.Employee.EvaluationHistoryDTO;
 
 import javax.swing.*;
@@ -47,7 +47,7 @@ public class EvaluationManage extends JPanel {
         mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
         mainContent.setBackground(new Color(248, 249, 250));
 
-        EvaluationDAO evaluationDAO = new EvaluationDAO();
+        EvaluationService evaluationDAO = new EvaluationService();
         List<EvaluationHistoryDTO> histories = evaluationDAO.getEvaluationHistory(manv);
         EvaluationHistoryDTO latest = histories.isEmpty() ? null : histories.get(0);
 
