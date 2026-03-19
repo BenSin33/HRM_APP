@@ -735,13 +735,58 @@ public class EmployeeManagementPanel extends JPanel {
             return;
         }
 
-        JTextField idField = new JTextField(nv.getManv());
+        JTextField idField = new JTextField(nv.getManv() != null ? nv.getManv() : "");
         idField.setEditable(false);
-        JTextField nameField = new JTextField(nv.getHoten());
-        JTextField emailField = new JTextField(nv.getEmail());
-        JTextField deptField = new JTextField(nv.getMaphongban() != null ? nv.getMaphongban() : "");
-        String tenChucVu = chucVuDAO.getTenChucVu(nv.getMachucvu());
-        JTextField posField = new JTextField(tenChucVu != null ? tenChucVu : nv.getMachucvu());
+        JTextField nameField = new JTextField(nv.getHoten() != null ? nv.getHoten() : "");
+        JComboBox<String> genderBox = new JComboBox<>(new String[]{"Nam", "Nữ"});
+        if (nv.getGioitinh() != null) {
+            if (nv.getGioitinh().equals("Nữ")) genderBox.setSelectedItem("Nữ");
+            else genderBox.setSelectedItem("Nam");
+        }
+        JTextField emailField = new JTextField(nv.getEmail() != null ? nv.getEmail() : "");
+        JTextField phoneField = new JTextField(nv.getDienthoai() != null ? nv.getDienthoai() : "");
+        JTextField addressField = new JTextField(nv.getDiachi() != null ? nv.getDiachi() : "");
+
+        JComboBox<String> deptBox = new JComboBox<>();
+        deptBox.addItem("-- Chọn phòng ban --");
+        List<DepartmentDTO> departments = departmentService.getAllDepartments();
+        int deptSelectIdx = 0;
+        for (int i = 0; i < departments.size(); i++) {
+            DepartmentDTO d = departments.get(i);
+            String item = d.getMaPhongBan() + " - " + d.getTenPhongBan();
+            deptBox.addItem(item);
+            if (d.getMaPhongBan() != null && d.getMaPhongBan().equals(nv.getMaphongban())) deptSelectIdx = i + 1;
+        }
+        deptBox.setSelectedIndex(deptSelectIdx);
+
+        List<PositionDTO> positions = positionDAO.getAllPositions();
+        JComboBox<String> posBox = new JComboBox<>();
+        posBox.addItem("-- Chọn chức vụ --");
+        int posSelectIdx = 0;
+        for (int i = 0; i < positions.size(); i++) {
+            PositionDTO p = positions.get(i);
+            posBox.addItem(p.getTenViTri() != null ? p.getTenViTri() : p.getMaChucVu());
+            if (p.getMaChucVu() != null && p.getMaChucVu().equals(nv.getMachucvu())) posSelectIdx = i + 1;
+        }
+        posBox.setSelectedIndex(posSelectIdx);
+
+        List<TrinhDoDTO> trinhDoList = trinhDoDAO.getAllTrinhDo();
+        JComboBox<String> trinhDoBox = new JComboBox<>();
+        trinhDoBox.addItem("-- Chọn trình độ --");
+        int tdSelectIdx = 0;
+        for (int i = 0; i < trinhDoList.size(); i++) {
+            TrinhDoDTO td = trinhDoList.get(i);
+            trinhDoBox.addItem(td.getTrinhDo() != null ? td.getTrinhDo() : td.getMaTrinhDo());
+            if (td.getMaTrinhDo() != null && td.getMaTrinhDo().equals(nv.getMatrinhdo())) tdSelectIdx = i + 1;
+        }
+        trinhDoBox.setSelectedIndex(tdSelectIdx);
+
+        JTextField ngayVaoLamField = new JTextField(20);
+        ngayVaoLamField.setToolTipText("yyyy-MM-dd (ví dụ: 2024-01-15)");
+        if (nv.getNgayvaolam() != null) {
+            ngayVaoLamField.setText(nv.getNgayvaolam().format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
+        JTextField soNgayPhepField = new JTextField(String.valueOf(nv.getSongayphep()), 10);
         JComboBox<String> statusBox = new JComboBox<>(new String[]{"Đang làm việc", "Nghỉ việc"});
         statusBox.setSelectedItem(nv.getTrangthai() != null ? nv.getTrangthai() : "Đang làm việc");
 
@@ -750,12 +795,24 @@ public class EmployeeManagementPanel extends JPanel {
         form.add(idField);
         form.add(new JLabel("Họ và tên:"));
         form.add(nameField);
+        form.add(new JLabel("Giới tính:"));
+        form.add(genderBox);
         form.add(new JLabel("Email:"));
         form.add(emailField);
+        form.add(new JLabel("Điện thoại:"));
+        form.add(phoneField);
+        form.add(new JLabel("Địa chỉ:"));
+        form.add(addressField);
         form.add(new JLabel("Phòng ban:"));
-        form.add(deptField);
+        form.add(deptBox);
         form.add(new JLabel("Chức vụ:"));
-        form.add(posField);
+        form.add(posBox);
+        form.add(new JLabel("Trình độ:"));
+        form.add(trinhDoBox);
+        form.add(new JLabel("Ngày vào làm:"));
+        form.add(ngayVaoLamField);
+        form.add(new JLabel("Số ngày phép:"));
+        form.add(soNgayPhepField);
         form.add(new JLabel("Trạng thái:"));
         form.add(statusBox);
 
@@ -763,10 +820,72 @@ public class EmployeeManagementPanel extends JPanel {
                 "Sửa nhân viên", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
-            nv.setHoten(nameField.getText().trim());
-            nv.setEmail(emailField.getText().trim());
-            nv.setMaphongban(deptField.getText().trim());
-            nv.setMachucvu(chucVuDAO.getMaChucVuByTen(posField.getText().trim()));
+            String hoten = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String dienthoai = phoneField.getText().trim();
+
+            if (hoten.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Họ tên không được trống!");
+                return;
+            }
+            if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._-]+@company\\.com$")) {
+                JOptionPane.showMessageDialog(null, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)");
+                return;
+            }
+            if (!dienthoai.isEmpty() && !dienthoai.matches("^\\d{10}$")) {
+                JOptionPane.showMessageDialog(null, "Điện thoại phải là đúng 10 chữ số!");
+                return;
+            }
+
+            Object deptSel = deptBox.getSelectedItem();
+            if (deptSel == null || "-- Chọn phòng ban --".equals(deptSel.toString())) {
+                JOptionPane.showMessageDialog(null, "Phải chọn Phòng ban!");
+                return;
+            }
+            String maphongban = null;
+            String s = deptSel.toString();
+            maphongban = s.contains(" - ") ? s.substring(0, s.indexOf(" - ")).trim() : s;
+            nv.setMaphongban(maphongban);
+
+            int posIdx = posBox.getSelectedIndex();
+            if (posIdx <= 0) {
+                JOptionPane.showMessageDialog(null, "Phải chọn Chức vụ!");
+                return;
+            }
+            nv.setMachucvu(positions.get(posIdx - 1).getMaChucVu());
+
+            int tdIdx = trinhDoBox.getSelectedIndex();
+            if (tdIdx <= 0) {
+                JOptionPane.showMessageDialog(null, "Phải chọn Trình độ!");
+                return;
+            }
+            nv.setMatrinhdo(trinhDoList.get(tdIdx - 1).getMaTrinhDo());
+
+            String ngayStr = ngayVaoLamField.getText().trim();
+            if (!ngayStr.isEmpty()) {
+                try {
+                    nv.setNgayvaolam(LocalDate.parse(ngayStr, DateTimeFormatter.ISO_LOCAL_DATE));
+                } catch (DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(null, "Ngày vào làm không hợp lệ. Dùng định dạng yyyy-MM-dd.");
+                    return;
+                }
+            } else {
+                nv.setNgayvaolam(null);
+            }
+
+            try {
+                String sp = soNgayPhepField.getText().trim();
+                nv.setSongayphep(sp.isEmpty() ? 0 : Integer.parseInt(sp));
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(null, "Số ngày phép phải là số nguyên.");
+                return;
+            }
+
+            nv.setHoten(hoten);
+            nv.setGioitinh(String.valueOf(genderBox.getSelectedItem()));
+            nv.setEmail(email);
+            nv.setDienthoai(dienthoai);
+            nv.setDiachi(addressField.getText().trim());
             nv.setTrangthai(normalizeTrangThai(String.valueOf(statusBox.getSelectedItem())));
 
             if (nhanVienHRDAO.update(nv)) {
