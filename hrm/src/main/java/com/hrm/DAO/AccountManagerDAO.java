@@ -68,19 +68,22 @@ public class AccountManagerDAO {
                 String maPhongBan = rs.getString("MAPHONGBAN");
                 String maChucVu = rs.getString("MACHUCVU");
 
-                // Trưởng phòng Nhân sự (CV01 + PB01) → Admin, vì họ quản lý hệ thống HRM
-                if ("CV01".equals(maChucVu) && "PB01".equals(maPhongBan)) {
+                // Nhân viên phòng ban Nhân sự → Admin
+                if ("PB01".equals(maPhongBan)) {
                     return ROLE_ADMIN;
                 }
 
-                String role = roleFromPosition(maChucVu);
-
-                // Một phòng ban chỉ có 1 quản lý hoạt động.
-                if (ROLE_MANAGER.equals(role) && existsAnotherManagerInDepartment(conn, maPhongBan, maNV)) {
-                    return ROLE_EMPLOYEE;
+                // Trưởng phòng → Manager
+                if ("CV01".equals(maChucVu)) {
+                    // Một phòng ban chỉ có 1 quản lý hoạt động.
+                    if (existsAnotherManagerInDepartment(conn, maPhongBan, maNV)) {
+                        return ROLE_EMPLOYEE;
+                    }
+                    return ROLE_MANAGER;
                 }
 
-                return role;
+                // Các chức vụ khác → Employee
+                return ROLE_EMPLOYEE;
             }
         }
     }

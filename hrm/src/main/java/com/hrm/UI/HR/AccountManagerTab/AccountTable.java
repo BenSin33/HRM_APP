@@ -3,6 +3,7 @@ package com.hrm.UI.HR.AccountManagerTab;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.AccountManagerDAO;
 import com.hrm.DTO.AccountManagerDTO;
+import com.hrm.utils.SessionManager;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -158,6 +159,13 @@ public class AccountTable extends JPanel {
         }
         
         AccountEditForm editForm = new AccountEditForm();
+        
+        // Truyền thông tin người dùng hiện tại để check xem có thể sửa role không
+        String currentUserMaNV = SessionManager.getInstance().getCurrentUser().getManv();
+        String currentUserPosition = getCurrentUserPosition(currentUserMaNV);
+        String currentUserDepartment = getCurrentUserDepartment(currentUserMaNV);
+        editForm.setCurrentUser(currentUserMaNV, currentUserPosition, currentUserDepartment);
+        
         editForm.setFormData(account);
         
         int result = JOptionPane.showConfirmDialog(this, editForm, "Cập nhật tài khoản", JOptionPane.OK_CANCEL_OPTION);
@@ -170,6 +178,40 @@ public class AccountTable extends JPanel {
                 JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private String getCurrentUserPosition(String maNV) {
+        String sql = "SELECT cv.MACHUCVU FROM nhanvien nv " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "WHERE nv.MANV = ?";
+        try (var conn = com.hrm.utils.JDBCConection.getConnection();
+             var ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("MACHUCVU");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    private String getCurrentUserDepartment(String maNV) {
+        String sql = "SELECT MAPHONGBAN FROM nhanvien WHERE MANV = ?";
+        try (var conn = com.hrm.utils.JDBCConection.getConnection();
+             var ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("MAPHONGBAN");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     private void handleToggleStatus(String maNV) {
@@ -207,10 +249,6 @@ public class AccountTable extends JPanel {
         searchPanel.add(searchField, BorderLayout.CENTER);
         
         return searchPanel;
-    }
-
-    private void performSearch() {
-        // Method này không dùng nữa
     }
 
     public void applyFilter(String searchText) {
