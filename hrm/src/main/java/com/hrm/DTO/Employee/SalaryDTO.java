@@ -19,6 +19,7 @@ public class SalaryDTO {
     public LocalDate ngayChot;
     public String tinhTrangThanToan;
     public BigDecimal hesotrinhdo;  // Hệ số trình độ từ bảng trinhdo
+    public BigDecimal phucapChucVu;  // Phụ cấp chức vụ từ bảng chucvu
 
     public SalaryDTO() {}
 

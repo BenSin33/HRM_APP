@@ -99,8 +99,8 @@ public class PermissionService {
     }
 
     public boolean canExport(UserDTO user, String machucNang) {
-        // NOTE: Project only uses CRUD (Xem/Thêm/Sửa/Xóa). Export is disabled.
-        return false;
+        // Cho phép tất cả người dùng xuất dữ liệu
+        return true;
     }
 
     public List<PermissionDTO> getPermissionsByUser(String manv, String roleId) {

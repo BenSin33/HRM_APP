@@ -251,46 +251,48 @@ public class AccountTable extends JPanel {
         return searchPanel;
     }
 
-    public void applyFilter(String searchText) {
+    public void applyFilter(String searchText, String phongBan, String role) {
         tableModel.setRowCount(0);
         
-        if (searchText == null || searchText.trim().isEmpty()) {
-            // Hiển thị tất cả dữ liệu
-            for (AccountManagerDTO account : allAccounts) {
-                tableModel.addRow(new Object[]{
-                    account.maNV,
-                    account.hoTen,
-                    account.email != null ? account.email : "N/A",
-                    account.dienThoai != null ? account.dienThoai : "N/A",
-                    account.roleName,
-                    account.phongBan,
-                    account.getStatusText(),
-                    ""
-                });
-            }
-        } else {
-            // Tìm kiếm trong dữ liệu đã load
-            String lowerKeyword = searchText.toLowerCase();
-            
-            for (AccountManagerDTO account : allAccounts) {
-                if ((account.maNV != null && account.maNV.toLowerCase().contains(lowerKeyword)) ||
-                    (account.hoTen != null && account.hoTen.toLowerCase().contains(lowerKeyword)) ||
-                    (account.email != null && account.email.toLowerCase().contains(lowerKeyword)) ||
-                    (account.roleName != null && account.roleName.toLowerCase().contains(lowerKeyword))) {
-                    tableModel.addRow(new Object[]{
-                        account.maNV,
-                        account.hoTen,
-                        account.email != null ? account.email : "N/A",
-                        account.dienThoai != null ? account.dienThoai : "N/A",
-                        account.roleName,
-                        account.phongBan,
-                        account.getStatusText(),
-                        ""
-                    });
+        String lowerKeyword = (searchText == null || searchText.trim().isEmpty()) ? "" : searchText.toLowerCase();
+        
+        for (AccountManagerDTO account : allAccounts) {
+            // Filter theo text search
+            if (!lowerKeyword.isEmpty()) {
+                if (!((account.maNV != null && account.maNV.toLowerCase().contains(lowerKeyword)) ||
+                      (account.hoTen != null && account.hoTen.toLowerCase().contains(lowerKeyword)) ||
+                      (account.email != null && account.email.toLowerCase().contains(lowerKeyword)) ||
+                      (account.roleName != null && account.roleName.toLowerCase().contains(lowerKeyword)))) {
+                    continue;
                 }
             }
+            
+            // Filter theo phòng ban
+            if (phongBan != null && !phongBan.equals(account.phongBan)) {
+                continue;
+            }
+            
+            // Filter theo vai trò
+            if (role != null && !role.equals(account.roleName)) {
+                continue;
+            }
+            
+            tableModel.addRow(new Object[]{
+                account.maNV,
+                account.hoTen,
+                account.email != null ? account.email : "N/A",
+                account.dienThoai != null ? account.dienThoai : "N/A",
+                account.roleName,
+                account.phongBan,
+                account.getStatusText(),
+                ""
+            });
         }
         updatePageInfo(tableModel.getRowCount());
+    }
+
+    public void applyFilter(String searchText) {
+        applyFilter(searchText, null, null);
     }
 
     // Public method để refresh dữ liệu từ Tab

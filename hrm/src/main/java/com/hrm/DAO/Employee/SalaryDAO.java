@@ -17,11 +17,12 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
                      "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
                      "ORDER BY bl.THANG DESC, bl.NAM DESC";
         
         try (Connection conn = JDBCConection.getConnection();
@@ -47,6 +48,7 @@ public class SalaryDAO {
                     rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                 dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                 dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
+                dto.phucapChucVu = rs.getBigDecimal("PHUCAPCHUCVU");
                 list.add(dto);
             }
         } catch (SQLException e) {
@@ -60,11 +62,12 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
                      "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
                      "WHERE bl.THANG = ? AND bl.NAM = ? " +
                      "ORDER BY nv.HOTEN ASC";
         
@@ -94,6 +97,7 @@ public class SalaryDAO {
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                     dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
+                    dto.phucapChucVu = rs.getBigDecimal("PHUCAPCHUCVU");
                     list.add(dto);
                 }
             }
@@ -107,11 +111,12 @@ public class SalaryDAO {
     public SalaryDTO getSalaryByMaNV(String maNV, int thang, int nam) {
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
-                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO " +
+                     "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
                      "JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
                      "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
                      "WHERE bl.MANV = ? AND bl.THANG = ? AND bl.NAM = ?";
         
         try (Connection conn = JDBCConection.getConnection();
@@ -141,6 +146,7 @@ public class SalaryDAO {
                         rs.getDate("NGAYCHOTLUONG").toLocalDate() : null;
                     dto.tinhTrangThanToan = rs.getString("TINH_TRANG_TT");
                     dto.hesotrinhdo = rs.getBigDecimal("HESOTRINHDO");
+                    dto.phucapChucVu = rs.getBigDecimal("PHUCAPCHUCVU");
                     return dto;
                 }
             }

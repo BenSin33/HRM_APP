@@ -5,14 +5,20 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.sql.*;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.utils.JDBCConection;
 
 public class AccountFilter extends JPanel {
     private JTextField searchField;
+    private JComboBox<String> cbPhongBan;
+    private JComboBox<String> cbRole;
     private ActionListener filterCallback;
 
     public AccountFilter() {
         initComponent();
+        loadPhongBanData();
+        loadRoleData();
     }
 
     private void initComponent() {
@@ -69,6 +75,50 @@ public class AccountFilter extends JPanel {
         
         searchPanel.add(searchField, BorderLayout.CENTER);
         add(searchPanel, BorderLayout.CENTER);
+        
+        // Filter panel
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filterPanel.setOpaque(false);
+        
+        filterPanel.add(new JLabel("Phòng ban:"));
+        cbPhongBan = new JComboBox<>();
+        cbPhongBan.addItem("-- Tất cả --");
+        cbPhongBan.addActionListener(e -> triggerFilter());
+        filterPanel.add(cbPhongBan);
+        
+        filterPanel.add(new JLabel("Vai trò:"));
+        cbRole = new JComboBox<>();
+        cbRole.addItem("-- Tất cả --");
+        cbRole.addActionListener(e -> triggerFilter());
+        filterPanel.add(cbRole);
+        
+        add(filterPanel, BorderLayout.EAST);
+    }
+
+    private void loadPhongBanData() {
+        String sql = "SELECT TENPHONGBAN FROM phongban ORDER BY TENPHONGBAN ASC";
+        try (Connection conn = JDBCConection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                cbPhongBan.addItem(rs.getString("TENPHONGBAN"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadRoleData() {
+        String sql = "SELECT ROLENAME FROM role ORDER BY ROLENAME ASC";
+        try (Connection conn = JDBCConection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                cbRole.addItem(rs.getString("ROLENAME"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void triggerFilter() {
@@ -87,5 +137,21 @@ public class AccountFilter extends JPanel {
             return "";
         }
         return text.trim();
+    }
+
+    public String getSelectedPhongBan() {
+        Object selected = cbPhongBan.getSelectedItem();
+        if (selected != null && !selected.toString().equals("-- Tất cả --")) {
+            return selected.toString();
+        }
+        return null;
+    }
+
+    public String getSelectedRole() {
+        Object selected = cbRole.getSelectedItem();
+        if (selected != null && !selected.toString().equals("-- Tất cả --")) {
+            return selected.toString();
+        }
+        return null;
     }
 }
