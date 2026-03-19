@@ -3,22 +3,26 @@ package com.hrm.UI.HR.SalaryTab;
 import javax.swing.*;
 import java.awt.*;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import com.hrm.DTO.Employee.SalaryDTO;
 import com.hrm.UI.component.IFormInput;
 import com.hrm.DAO.AllowanceDAO;
 import com.hrm.DAO.DeductionDAO;
+import com.hrm.utils.JDBCConection;
 
 public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
     private JTextField txtMaLuong;  // Hidden field for maLuong
     private JTextField txtMaNV;
     private JTextField txtHoTen;
     private JTextField txtPhongBan;
-    private JSpinner spThang;
-    private JSpinner spNam;
+    private JTextField txtChucVu;
     private JTextField txtLuongCoBan;
     private JTextField txtHesoTrinhDo;
     private JTextField txtSoNgayCong;
-    private JTextField txtSoNgayCongThucTe; // Số ngày công thực tế (22 ngày)
+    private JTextField txtSoNgayCongThucTe;
     private JTextField txtTongPhucap;
     private JTextField txtTongKhauTru;
     private JTextField txtThucLinh;
@@ -26,87 +30,87 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
     private JComboBox<String> cbTinhTrangThanToan;
 
     public SalaryEditForm() {
-        setLayout(new GridLayout(14, 2, 10, 10));
+        setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(Color.WHITE);
 
         // Mã lương (ẩn)
         txtMaLuong = new JTextField();
         txtMaLuong.setVisible(false);
 
-        // Mã nhân viên
-        add(new JLabel("Mã NV:"));
-        txtMaNV = new JTextField();
-        txtMaNV.setEditable(false);
-        add(txtMaNV);
+        // Panel chính chứa các trường
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new GridLayout(7, 2, 20, 15));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Họ tên
-        add(new JLabel("Họ tên:"));
-        txtHoTen = new JTextField();
-        txtHoTen.setEditable(false);
-        add(txtHoTen);
+        // Thông tin nhân viên (read-only)
+        addFormField(mainPanel, "Mã NV:", txtMaNV = createReadOnlyField(), true);
+        addFormField(mainPanel, "Họ tên:", txtHoTen = createReadOnlyField(), true);
+        
+        addFormField(mainPanel, "Phòng ban:", txtPhongBan = createReadOnlyField(), true);
+        addFormField(mainPanel, "Chức vụ:", txtChucVu = createReadOnlyField(), true);
 
-        // Phòng ban
-        add(new JLabel("Phòng ban:"));
-        txtPhongBan = new JTextField();
-        txtPhongBan.setEditable(false);
-        add(txtPhongBan);
+        // Thông tin lương
+        addFormField(mainPanel, "Lương cơ bản (VND):", txtLuongCoBan = createReadOnlyField(), true);
+        addFormField(mainPanel, "Hệ số trình độ:", txtHesoTrinhDo = createReadOnlyField(), true);
 
-        // Tháng
-        add(new JLabel("Tháng:"));
-        spThang = new JSpinner(new SpinnerNumberModel(1, 1, 12, 1));
-        add(spThang);
+        // Ngày công
+        addFormField(mainPanel, "Số ngày công:", txtSoNgayCong = createEditableField(), false);
+        addFormField(mainPanel, "Số ngày công TT (mặc định 22):", txtSoNgayCongThucTe = createEditableField("22"), false);
 
-        // Năm
-        add(new JLabel("Năm:"));
-        spNam = new JSpinner(new SpinnerNumberModel(2024, 2000, 2100, 1));
-        add(spNam);
-
-        // Lương cơ bản
-        add(new JLabel("Lương cơ bản:"));
-        txtLuongCoBan = new JTextField();
-        add(txtLuongCoBan);
-
-        // Hệ số trình độ
-        add(new JLabel("Hệ số trình độ:"));
-        txtHesoTrinhDo = new JTextField();
-        txtHesoTrinhDo.setEditable(false);
-        add(txtHesoTrinhDo);
-
-        // Số ngày công (lấy từ chấm công)
-        add(new JLabel("Số ngày công:"));
-        txtSoNgayCong = new JTextField();
-        add(txtSoNgayCong);
-
-        // Số ngày công thực tế (mặc định 22 ngày)
-        add(new JLabel("Số ngày công TT (mặc định 22):"));
-        txtSoNgayCongThucTe = new JTextField("22");
-        add(txtSoNgayCongThucTe);
-
-        // Tổng phụ cấp
-        add(new JLabel("Tổng phụ cấp:"));
-        txtTongPhucap = new JTextField();
-        add(txtTongPhucap);
-
-        // Tổng khấu trừ
-        add(new JLabel("Tổng khấu trừ:"));
-        txtTongKhauTru = new JTextField();
-        add(txtTongKhauTru);
+        // Phụ cấp và khấu trừ
+        addFormField(mainPanel, "Tổng phụ cấp (VND):", txtTongPhucap = createReadOnlyField(), true);
+        addFormField(mainPanel, "Tổng khấu trừ (VND):", txtTongKhauTru = createReadOnlyField(), true);
 
         // Thực lĩnh
-        add(new JLabel("Thực lĩnh:"));
-        txtThucLinh = new JTextField();
-        txtThucLinh.setEditable(false);
-        add(txtThucLinh);
-
-        // Trạng thái
-        add(new JLabel("Trạng thái:"));
-        cbTrangThai = new JComboBox<>(new String[]{"Chưa khóa", "Đã khóa"});
-        add(cbTrangThai);
+        addFormField(mainPanel, "Thực lĩnh (VND):", txtThucLinh = createReadOnlyField(), true);
+        addFormField(mainPanel, "Trạng thái:", cbTrangThai = new JComboBox<>(new String[]{"Chưa khóa", "Đã khóa"}), false);
 
         // Tình trạng thanh toán
-        add(new JLabel("Tình trạng thanh toán:"));
-        cbTinhTrangThanToan = new JComboBox<>(new String[]{"Chưa thanh toán", "Đã thanh toán"});
-        add(cbTinhTrangThanToan);
+        addFormField(mainPanel, "Tình trạng thanh toán:", cbTinhTrangThanToan = new JComboBox<>(new String[]{"Chưa thanh toán", "Đã thanh toán"}), false);
+        mainPanel.add(new JLabel("")); // Placeholder
+
+        add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private JTextField createReadOnlyField() {
+        JTextField field = new JTextField();
+        field.setEditable(false);
+        field.setBackground(new Color(240, 240, 240));
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        return field;
+    }
+
+    private JTextField createEditableField() {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        return field;
+    }
+
+    private JTextField createEditableField(String defaultValue) {
+        JTextField field = new JTextField(defaultValue);
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        return field;
+    }
+
+    private void addFormField(JPanel panel, String labelText, JComponent field, boolean isReadOnly) {
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setForeground(new Color(60, 60, 60));
+        
+        panel.add(label);
+        
+        if (field instanceof JTextField && isReadOnly) {
+            ((JTextField) field).setEditable(false);
+            ((JTextField) field).setBackground(new Color(240, 240, 240));
+        } else if (field instanceof JComboBox) {
+            ((JComboBox<?>) field).setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        } else if (field instanceof JTextField) {
+            ((JTextField) field).setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        }
+        
+        panel.add(field);
     }
 
     @Override
@@ -116,33 +120,50 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             txtMaNV.setText(salary.maNV);
             txtHoTen.setText(salary.hoTen);
             txtPhongBan.setText(salary.phongBan);
-            spThang.setValue(salary.thang);
-            spNam.setValue(salary.nam);
-            txtLuongCoBan.setText(salary.luongCoBan != null ? salary.luongCoBan.toString() : "");
+            txtChucVu.setText(getChucVuName(salary.maNV));
+            txtLuongCoBan.setText(salary.luongCoBan != null ? String.format("%,.0f", salary.luongCoBan.doubleValue()) : "");
             txtHesoTrinhDo.setText(salary.hesotrinhdo != null ? salary.hesotrinhdo.toString() : "1.00");
             txtSoNgayCong.setText(salary.soNgayCong > 0 ? String.valueOf(salary.soNgayCong) : "");
-            txtSoNgayCongThucTe.setText("22"); // Mặc định 22 ngày công thực tế
+            txtSoNgayCongThucTe.setText(String.valueOf(salary.soNgayCong > 0 ? salary.soNgayCong : 22));
             
             // Tự động lấy tổng phụ cấp và khấu trừ từ database
             try {
                 AllowanceDAO allowanceDAO = new AllowanceDAO();
                 BigDecimal totalAllowance = allowanceDAO.getTotalAllowances();
-                txtTongPhucap.setText(totalAllowance.toString());
+                txtTongPhucap.setText(String.format("%,.0f", totalAllowance.doubleValue()));
                 
                 DeductionDAO deductionDAO = new DeductionDAO();
                 BigDecimal totalDeduction = deductionDAO.getTotalDeductions();
-                txtTongKhauTru.setText(totalDeduction.toString());
+                txtTongKhauTru.setText(String.format("%,.0f", totalDeduction.doubleValue()));
             } catch (Exception e) {
                 e.printStackTrace();
                 // Nếu lỗi, sử dụng giá trị từ salary object
-                txtTongPhucap.setText(salary.tongPhucap != null ? salary.tongPhucap.toString() : "");
-                txtTongKhauTru.setText(salary.tongKhauTru != null ? salary.tongKhauTru.toString() : "");
+                txtTongPhucap.setText(salary.tongPhucap != null ? String.format("%,.0f", salary.tongPhucap.doubleValue()) : "");
+                txtTongKhauTru.setText(salary.tongKhauTru != null ? String.format("%,.0f", salary.tongKhauTru.doubleValue()) : "");
             }
             
-            txtThucLinh.setText(salary.thucLinh != null ? salary.thucLinh.toString() : "");
+            txtThucLinh.setText(salary.thucLinh != null ? String.format("%,.0f", salary.thucLinh.doubleValue()) : "");
             cbTrangThai.setSelectedItem(salary.trangThai);
             cbTinhTrangThanToan.setSelectedItem(salary.tinhTrangThanToan != null ? salary.tinhTrangThanToan : "Chưa thanh toán");
         }
+    }
+
+    private String getChucVuName(String maNV) {
+        String sql = "SELECT cv.TENVITRI FROM nhanvien nv " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "WHERE nv.MANV = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("TENVITRI");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     @Override
@@ -155,8 +176,6 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         salary.maNV = txtMaNV.getText();
         salary.hoTen = txtHoTen.getText();
         salary.phongBan = txtPhongBan.getText();
-        salary.thang = (Integer) spThang.getValue();
-        salary.nam = (Integer) spNam.getValue();
         
         // Lương cơ bản - giữ nguyên decimal
         try {
@@ -229,15 +248,17 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             salary.tongKhauTru = BigDecimal.ZERO;
         }
         
-        // Công thức tính thực lĩnh:
-        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công thực tế)) + tổng phụ cấp - tổng khấu trừ
+        // Công thức tính thực lĩnh (Cập nhật):
+        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công thực tế)) + tổng phụ cấp + phụ cấp chức vụ - tổng khấu trừ
         BigDecimal heSoTrinhDo = salary.hesotrinhdo != null ? salary.hesotrinhdo : new BigDecimal("1.00");
+        BigDecimal phucapChucVu = salary.phucapChucVu != null ? salary.phucapChucVu : BigDecimal.ZERO;
         BigDecimal ngayCongRatio = new BigDecimal(salary.soNgayCong).divide(new BigDecimal(soNgayCongThucTe), 4, java.math.RoundingMode.HALF_UP);
         
         salary.thucLinh = salary.luongCoBan
                             .multiply(heSoTrinhDo)
                             .multiply(ngayCongRatio)
                             .add(salary.tongPhucap)
+                            .add(phucapChucVu)
                             .subtract(salary.tongKhauTru)
                             .setScale(2, java.math.RoundingMode.HALF_UP);
         
@@ -263,8 +284,6 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         txtMaNV.setText("");
         txtHoTen.setText("");
         txtPhongBan.setText("");
-        spThang.setValue(1);
-        spNam.setValue(2024);
         txtLuongCoBan.setText("");
         txtHesoTrinhDo.setText("");
         txtSoNgayCong.setText("");
@@ -278,14 +297,52 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
 
     @Override
     public boolean validateForm() {
-        if (txtLuongCoBan.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập lương cơ bản!");
-            return false;
-        }
-        if (txtSoNgayCong.getText().trim().isEmpty()) {
+        // Kiểm tra số ngày công
+        String soNgayCongStr = txtSoNgayCong.getText().trim();
+        if (soNgayCongStr.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập số ngày công!");
             return false;
         }
+        
+        try {
+            float soNgayCong = Float.parseFloat(soNgayCongStr);
+            if (soNgayCong < 0) {
+                JOptionPane.showMessageDialog(this, "Số ngày công không được âm!");
+                return false;
+            }
+            
+            // Giới hạn số ngày công theo tháng (tối đa 31)
+            if (soNgayCong > 31) {
+                JOptionPane.showMessageDialog(this, "Số ngày công không được vượt quá 31 ngày!");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Số ngày công phải là số hợp lệ!");
+            return false;
+        }
+        
+        // Kiểm tra số ngày công thực tế
+        String soNgayCongThucTeStr = txtSoNgayCongThucTe.getText().trim();
+        if (soNgayCongThucTeStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập số ngày công thực tế!");
+            return false;
+        }
+        
+        try {
+            float soNgayCongThucTe = Float.parseFloat(soNgayCongThucTeStr);
+            if (soNgayCongThucTe <= 0) {
+                JOptionPane.showMessageDialog(this, "Số ngày công thực tế phải lớn hơn 0!");
+                return false;
+            }
+            if (soNgayCongThucTe > 31) {
+                JOptionPane.showMessageDialog(this, "Số ngày công thực tế không được vượt quá 31 ngày!");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Số ngày công thực tế phải là số hợp lệ!");
+            return false;
+        }
+        
         return true;
     }
 }

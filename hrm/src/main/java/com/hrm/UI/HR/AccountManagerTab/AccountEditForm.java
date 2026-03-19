@@ -52,11 +52,13 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         // Email
         add(new JLabel("Email:"));
         txtEmail = new JTextField();
+        txtEmail.setEditable(false);
         add(txtEmail);
 
         // Điện thoại
         add(new JLabel("Điện thoại:"));
         txtDienThoai = new JTextField();
+        txtDienThoai.setEditable(false);
         add(txtDienThoai);
 
         // Phòng ban
@@ -171,6 +173,46 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         return account;
     }
 
+    private String getRolePositionMapping(String roleName) {
+        // Mapping vai trò với chức vụ phù hợp
+        if ("Admin".equals(roleName)) {
+            return "CV01 (Trưởng phòng) hoặc CV03 (Nhân viên nhân sự) ở phòng Nhân sự";
+        } else if ("Manager".equals(roleName)) {
+            return "CV01 (Trưởng phòng)";
+        } else if ("Employee".equals(roleName)) {
+            return "CV02 (Nhân viên) hoặc CV03 (Nhân viên nhân sự)";
+        }
+        return roleName;
+    }
+
+    private boolean isRolePositionCompatible(String roleName, String positionCode) {
+        // Kiểm tra xem chức vụ có phù hợp với vai trò không
+        if ("Admin".equals(roleName)) {
+            return "CV01".equals(positionCode) || "CV03".equals(positionCode);
+        } else if ("Manager".equals(roleName)) {
+            return "CV01".equals(positionCode);
+        } else if ("Employee".equals(roleName)) {
+            return "CV02".equals(positionCode) || "CV03".equals(positionCode);
+        }
+        return false;
+    }
+
+    private String getPositionCode(String maNV) {
+        String sql = "SELECT MACHUCVU FROM nhanvien WHERE MANV = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("MACHUCVU");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
     @Override
     public void clearForm() {
         txtMaNV.setText("");
@@ -209,6 +251,22 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         String password = new String(txtPassword.getPassword()).trim();
         if (!password.isEmpty() && password.length() < 4) {
             FormValidator.showError(this, "Mật khẩu tối thiểu 4 ký tự!");
+            return false;
+        }
+        
+        // Validate role-position compatibility
+        String selectedRole = (String) cbRole.getSelectedItem();
+        String maNV = txtMaNV.getText();
+        String positionCode = getPositionCode(maNV);
+        
+        if (selectedRole != null && !isRolePositionCompatible(selectedRole, positionCode)) {
+            String requiredPosition = getRolePositionMapping(selectedRole);
+            JOptionPane.showMessageDialog(this, 
+                "Chức vụ hiện tại không phù hợp với vai trò '" + selectedRole + "'!\n\n" +
+                "Vai trò '" + selectedRole + "' yêu cầu:\n" + requiredPosition + "\n\n" +
+                "Vui lòng thay đổi chức vụ của nhân viên trước khi phân công vai trò.",
+                "Lỗi kiểm tra chức vụ",
+                JOptionPane.WARNING_MESSAGE);
             return false;
         }
         

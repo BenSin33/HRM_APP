@@ -43,7 +43,9 @@ public class AccountManagerPanel extends JPanel {
         AccountFilter filter = new AccountFilter();
         filter.setFilterCallback(e -> {
             String searchText = filter.getSearchText();
-            accountTableContent.applyFilter(searchText);
+            String phongBan = filter.getSelectedPhongBan();
+            String role = filter.getSelectedRole();
+            accountTableContent.applyFilter(searchText, phongBan, role);
         });
         filterContainer.add(filter, java.awt.BorderLayout.CENTER);
         content.add(filterContainer, java.awt.BorderLayout.NORTH);
