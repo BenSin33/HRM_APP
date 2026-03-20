@@ -21,8 +21,11 @@ public class EvaluationDetailPanel extends JPanel {
     private JButton btnSave;
     private JButton btnReset;
     
-    private JComboBox<String> comboQuyetDinh;
+    private JTextField txtQuyetDinh;
     private JComboBox<String> comboLoaiQD;
+    private boolean isUpdatingCombos = false;
+
+    private static final String[] LOAI_QD_OPTIONS = new String[] { "Không có", "Thưởng", "Kỷ luật" };
     
     private List<ScoreRadioPanel> scorePanels;
     private Runnable onBackListener;
@@ -31,6 +34,8 @@ public class EvaluationDetailPanel extends JPanel {
     
     private String currentMaNV;
     private String currentMaDot;
+    private String currentHoTen;
+    private List<TieuChiDanhGiaDTO> currentCriteria;
 
     public interface SaveListener {
         void onSave(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD);
@@ -143,25 +148,23 @@ public class EvaluationDetailPanel extends JPanel {
         // Quyết định
         JLabel lblQuyetDinh = new JLabel("Quyết định:");
         lblQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        comboQuyetDinh = new JComboBox<>(new String[]{
-            "Giữ nguyên", "Khen thưởng", "Tăng lương 10%", "Tăng lương 15%",
-            "Thưởng quý", "Trừ lương tháng", "Cảnh cáo", "Không có"
-        });
-        comboQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtQuyetDinh = new JTextField();
+        txtQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtQuyetDinh.setColumns(30);
         
         // Loại quyết định
         JLabel lblLoaiQD = new JLabel("Loại quyết định:");
         lblLoaiQD.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         comboLoaiQD = new JComboBox<>(new String[]{
-            "Không có", "Thưởng", "Tăng lương", "Trừ lương", "Kỷ luật"
+            "Không có", "Thưởng", "Kỷ luật"
         });
         comboLoaiQD.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         
         qdContentPanel.add(lblQuyetDinh);
-        qdContentPanel.add(comboQuyetDinh);
+        qdContentPanel.add(txtQuyetDinh);
         qdContentPanel.add(lblLoaiQD);
         qdContentPanel.add(comboLoaiQD);
-        
+
         quyetDinhPanel.add(qdContentPanel, BorderLayout.CENTER);
         
         // === TỔNG HỢP NỘI DUNG CHÍNH - 1 SCROLLPANE CHO TẤT CẢ ===
@@ -212,6 +215,16 @@ public class EvaluationDetailPanel extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    private void applyDecisionOptionsByLoai(String loaiQD) {
+        // No-op: quyết định hiện là textbox để người dùng tự điền
+    }
+    
+    private void syncLoaiWithQuyetDinh() {
+        // No-op: quyết định hiện là textbox để người dùng tự điền
+    }
+
+    
+
     public void setData(String maNV, String hoTen, String maDot, 
                        List<TieuChiDanhGiaDTO> criteria, 
                        Map<String, Integer> savedScores,
@@ -221,11 +234,12 @@ public class EvaluationDetailPanel extends JPanel {
                        boolean locked) {
         System.out.println("🔍 DEBUG: EvaluationDetailPanel.setData() được gọi!");
         System.out.println("   maNV=" + maNV + ", quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD);
-        System.out.println("   comboQuyetDinh=" + comboQuyetDinh);
         System.out.println("   comboLoaiQD=" + comboLoaiQD);
         
         this.currentMaNV = maNV;
         this.currentMaDot = maDot;
+        this.currentHoTen = hoTen;
+        this.currentCriteria = criteria;
         
         titleLabel.setText("Chấm điểm - " + hoTen + " (" + maNV + ")");
         statusLabel.setText("Kỳ đánh giá: " + maDot + (locked ? " (Đã lưu)" : ""));
@@ -247,6 +261,11 @@ public class EvaluationDetailPanel extends JPanel {
                 locked  // Truyền locked để set enable/disable ban đầu
             );
             
+            // Khi điểm thay đổi thì tính lại tổng điểm và gợi ý quyết định
+            if (!locked) {
+                panel.setOnScoreChange(this::updateDecisionByScore);
+            }
+            
             scorePanels.add(panel);
             criteriaPanel.add(panel);
             criteriaPanel.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -255,20 +274,32 @@ public class EvaluationDetailPanel extends JPanel {
         txtNhanXet.setText(nhanXet != null ? nhanXet : "");
         txtNhanXet.setEditable(!locked);
         
-        // Set combo values
-        try {
-            comboQuyetDinh.setSelectedItem(quyetDinh != null ? quyetDinh : "Giữ nguyên");
-        } catch (Exception e) {
-            comboQuyetDinh.setSelectedIndex(0);
+        // Nếu phiếu đã khóa thì giữ nguyên quyết định đã lưu
+        if (locked) {
+            txtQuyetDinh.setText(quyetDinh != null ? quyetDinh : "");
+            
+            String normalizedLoaiQD = loaiQD;
+            if ("Trừ lương".equals(normalizedLoaiQD)) {
+                normalizedLoaiQD = "Kỷ luật";
+            }
+            if (normalizedLoaiQD == null) {
+                normalizedLoaiQD = "Không có";
+            }
+            
+            try {
+                comboLoaiQD.setSelectedItem(normalizedLoaiQD);
+            } catch (Exception e) {
+                comboLoaiQD.setSelectedIndex(0);
+            }
+            
+        } else {
+            // Chưa khóa: tự động gợi ý quyết định theo tổng điểm
+            txtQuyetDinh.setText("");
+            updateDecisionByScore();
         }
         
-        try {
-            comboLoaiQD.setSelectedItem(loaiQD != null ? loaiQD : "Không có");
-        } catch (Exception e) {
-            comboLoaiQD.setSelectedIndex(0);
-        }
-        
-        comboQuyetDinh.setEnabled(!locked);
+        txtQuyetDinh.setEnabled(!locked);
+        txtQuyetDinh.setEditable(!locked);
         comboLoaiQD.setEnabled(!locked);
         
         // Set trạng thái nút
@@ -302,38 +333,11 @@ public class EvaluationDetailPanel extends JPanel {
         boolean success = phieuDAO.resetEvaluation(currentMaNV, currentMaDot);
         
         if (success) {
-            // 1. Reset điểm về 0 trên giao diện
-            for (ScoreRadioPanel panel : scorePanels) {
-                panel.resetToZero();
-            }
-            txtNhanXet.setText("");
-            comboQuyetDinh.setSelectedItem("Giữ nguyên");
-            comboLoaiQD.setSelectedItem("Không có");
-            
-            // 2. ENABLE TẤT CẢ RADIO BUTTON ĐỂ CÓ THỂ NHẬP LẠI
-            for (ScoreRadioPanel panel : scorePanels) {
-                panel.setEnabled(true);
-            }
-            
-            // 3. Cập nhật nút
-            btnSave.setEnabled(true);    // Cho phép lưu
-            btnReset.setEnabled(false);  // Tạm thời disable reset
-            
-            // 4. Enable ô nhận xét
-            txtNhanXet.setEditable(true);
-            comboQuyetDinh.setEnabled(true);
-            comboLoaiQD.setEnabled(true);
-            
-            // 5. Cập nhật status label
-            statusLabel.setText("Kỳ đánh giá: " + currentMaDot);
-            
-            // 6. Cập nhật giao diện
-            criteriaPanel.revalidate();
-            criteriaPanel.repaint();
-            
-            JOptionPane.showMessageDialog(this, "Đã reset thành công! Có thể chấm điểm lại.", 
+            JOptionPane.showMessageDialog(this, "Đã reset thành công! Có thể chấm điểm lại.",
                                         "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            
+            // Gọi lại setData() fresh — giống hệt lúc mở nhân viên chưa có đánh giá
+            setData(currentMaNV, currentHoTen, currentMaDot,
+                    currentCriteria, null, "", "", "Không có", false);
         } else {
             JOptionPane.showMessageDialog(this, "Reset thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -345,11 +349,65 @@ public class EvaluationDetailPanel extends JPanel {
             scores.put(panel.getMaTieuChi(), panel.getSelectedScore());
         }
         
-        String quyetDinh = (String) comboQuyetDinh.getSelectedItem();
-        String loaiQD = (String) comboLoaiQD.getSelectedItem();
+        String loaiQD = String.valueOf(comboLoaiQD.getSelectedItem());
+        String quyetDinh = txtQuyetDinh.getText();
         
         if (onSaveListener != null) {
             onSaveListener.onSave(scores, txtNhanXet.getText(), quyetDinh, loaiQD);
+        }
+    }
+    
+    private void updateDecisionByScore() {
+        if (scorePanels.isEmpty()) {
+            return;
+        }
+        
+        int totalRaw = 0;
+        for (ScoreRadioPanel panel : scorePanels) {
+            totalRaw += panel.getSelectedScore();
+        }
+        
+        int maxRaw = scorePanels.size() * 10; // mỗi tiêu chí 0-10
+        if (maxRaw == 0) {
+            return;
+        }
+        
+        int percent = (int) (totalRaw * 100.0 / maxRaw); // lấy phần nguyên để khớp mốc
+        
+        isUpdatingCombos = true;
+        try {
+            // Khi chưa chấm gì (percent = 0) thì loại quyết định phải là "Không có"
+            if (percent == 0) {
+                // Trạng thái đầu tiên: khôi phục lại list đầy đủ
+                comboLoaiQD.setModel(new DefaultComboBoxModel<>(LOAI_QD_OPTIONS));
+                comboLoaiQD.setSelectedItem("Không có");
+                txtQuyetDinh.setText("");
+                comboLoaiQD.revalidate();
+                comboLoaiQD.repaint();
+                return;
+            }
+
+            // Quyết định hiện là textbox tự điền -> chỉ tự động set "Loại quyết định"
+            if (percent >= 75) {
+                // 75-100: Thưởng
+                comboLoaiQD.setModel(new DefaultComboBoxModel<>(new String[] { "Thưởng" }));
+                comboLoaiQD.setSelectedItem("Thưởng");
+            } else if (percent >= 65) {
+                // 65-74: Giữ nguyên
+                comboLoaiQD.setModel(new DefaultComboBoxModel<>(new String[] { "Không có" }));
+                comboLoaiQD.setSelectedItem("Không có");
+            } else {
+                // <65: Phạt (nhắc nhở / cảnh cáo / kỷ luật)
+                comboLoaiQD.setModel(new DefaultComboBoxModel<>(new String[] { "Kỷ luật" }));
+                comboLoaiQD.setSelectedItem("Kỷ luật");
+            }
+            
+            // Không auto-fill nội dung quyết định
+            txtQuyetDinh.setText("");
+            comboLoaiQD.revalidate();
+            comboLoaiQD.repaint();
+        } finally {
+            isUpdatingCombos = false;
         }
     }
 }

@@ -45,7 +45,7 @@ public class TeamPanel extends JPanel {
     }
 
     // ← METHOD MỚI: TỰ GỌI SERVICE
-    private void loadData() {
+   private void loadData() {
     Object[][] data = nhanVienService.getTableDataForTeam();
 
     int total = data != null ? data.length : 0;
@@ -69,16 +69,17 @@ public class TeamPanel extends JPanel {
 
             // CV02 = Senior, CV01 = Junior
             if ("CV02".equalsIgnoreCase(chucVu)) {
-                senior++;
-            } else if ("CV01".equalsIgnoreCase(chucVu)) {
                 junior++;
+            } else if ("CV01".equalsIgnoreCase(chucVu)) {
+                senior++;
             }
-        }
+            
     }
 
     stats.updateStats(total, active, senior, junior);
     table.setData(data);
 }
+   }
     
     // ← GIỮ LẠI METHOD NÀY ĐỂ REFRESH
     public void refresh() {
