@@ -11,6 +11,7 @@ public class ScoreRadioPanel extends JPanel {
     private ButtonGroup buttonGroup;
     private JRadioButton[] radioButtons;
     private boolean locked;
+    private Runnable onScoreChange;
 
     public ScoreRadioPanel(String maTieuChi, String tenTieuChi, int selectedScore, boolean locked) {
         this.maTieuChi = maTieuChi;
@@ -71,14 +72,10 @@ public class ScoreRadioPanel extends JPanel {
                 rb.setSelected(true);
             }
             
-            // THÊM MOUSE LISTENER ĐỂ KIỂM TRA CLICK
-            final int score = i;
-            rb.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    if (!locked) {
-                        System.out.println("Đã chọn điểm " + score + " cho " + maTieuChi);
-                    }
+            // Lắng nghe thay đổi điểm để panel cha có thể tính tổng
+            rb.addActionListener(e -> {
+                if (!locked && onScoreChange != null) {
+                    onScoreChange.run();
                 }
             });
             
@@ -104,14 +101,34 @@ public class ScoreRadioPanel extends JPanel {
     }
 
     public void resetToZero() {
-        if (!locked) {
-            radioButtons[0].setSelected(true);
+        // Dùng ButtonGroup.setSelected() thay vì radioButtons[0].setSelected(true)
+        // để KHÔNG fire actionListener → tránh trigger updateDecisionByScore() sớm.
+        if (radioButtons != null && radioButtons.length > 0) {
+            buttonGroup.setSelected(radioButtons[0].getModel(), true);
         }
     }
+    
     public void setEnabled(boolean enabled) {
-    for (JRadioButton rb : radioButtons) {
-        rb.setEnabled(enabled);
+        for (JRadioButton rb : radioButtons) {
+            rb.setEnabled(enabled);
+        }
+        repaint();
     }
-    repaint();
-}
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+        for (JRadioButton rb : radioButtons) {
+            rb.setEnabled(!locked);
+            if (locked) {
+                rb.setToolTipText("Đã khóa, không thể chỉnh sửa");
+            } else {
+                rb.setToolTipText(null);
+            }
+        }
+        repaint();
+    }
+    
+    public void setOnScoreChange(Runnable onScoreChange) {
+        this.onScoreChange = onScoreChange;
+    }
 }
