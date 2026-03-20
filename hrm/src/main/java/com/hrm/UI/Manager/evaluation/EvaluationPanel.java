@@ -130,7 +130,8 @@ public class EvaluationPanel extends JPanel {
         boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet, quyetDinh, loaiQD);
         if (success) {
             JOptionPane.showMessageDialog(this, "Lưu điểm thành công!");
-            backToList();
+            // Ở lại panel, reload lại để hiển thị trạng thái đã lưu (locked)
+            showDetailPanel(currentMaNV, currentHoTen);
         } else {
             JOptionPane.showMessageDialog(this, "Lưu điểm thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
