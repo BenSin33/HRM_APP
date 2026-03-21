@@ -11,7 +11,8 @@ public class SalaryDTO {
     public int thang;
     public int nam;
     public BigDecimal luongCoBan;
-    public float soNgayCong;
+    public float soNgayCong;  // Số ngày công thực tế
+    public float soNgayCongChuan;  // Số ngày công chuẩn
     public BigDecimal tongPhucap;
     public BigDecimal tongKhauTru;
     public BigDecimal thucLinh;

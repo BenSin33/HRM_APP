@@ -2,12 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
-
--- Host: 127.0.0.1
--- Generation Time: Mar 17, 2026 at 09:26 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
-
+-- Máy chủ: 127.0.0.1
+-- Thời gian đã tạo: Th3 21, 2026 lúc 08:11 AM
+-- Phiên bản máy phục vụ: 10.4.32-MariaDB
+-- Phiên bản PHP: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -20,428 +18,13 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `hrm_system`
+-- Cơ sở dữ liệu: `hrm_system`
 --
-
--- ========================================
--- BƯỚC 1: Tạo các bảng tham chiếu (không có FK)
--- ========================================
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `phongban`
---
-
-CREATE TABLE `phongban` (
-  `MAPHONGBAN` varchar(10) NOT NULL,
-  `TENPHONGBAN` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `phongban`
---
-
-INSERT INTO `phongban` (`MAPHONGBAN`, `TENPHONGBAN`) VALUES
-('PB01', 'Nhân sự'),
-('PB02', 'Kỹ thuật'),
-('PB03', 'Kinh doanh'),
-('PB04', 'Kế toán - Tài chính');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `chucvu`
---
-
-CREATE TABLE `chucvu` (
-  `MACHUCVU` varchar(10) NOT NULL,
-  `TENVITRI` varchar(100) NOT NULL,
-  `PHUCAPCHUCVU` decimal(18,2) DEFAULT 0.00
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `chucvu`
---
-
-INSERT INTO `chucvu` (`MACHUCVU`, `TENVITRI`, `PHUCAPCHUCVU`) VALUES
-('CV01', 'Trưởng phòng', 3000000.00),
-('CV02', 'Nhân viên', 1000000.00),
-('CV03', 'Nhân viên nhân sự', 1000000.00);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `trinhdo`
---
-
-CREATE TABLE `trinhdo` (
-  `MATRINHDO` varchar(10) NOT NULL,
-  `TRINHDO` varchar(50) NOT NULL,
-  `HESOTRINHDO` decimal(5,2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `trinhdo`
---
-
-INSERT INTO `trinhdo` (`MATRINHDO`, `TRINHDO`, `HESOTRINHDO`) VALUES
-('TD01', 'Đại học', 1.00),
-('TD02', 'Thạc sĩ', 1.50),
-('TD03', 'Tiến sĩ', 2.00);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `role`
---
-
-CREATE TABLE `role` (
-  `ROLEID` varchar(10) NOT NULL,
-  `ROLENAME` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `role`
---
-
-INSERT INTO `role` (`ROLEID`, `ROLENAME`) VALUES
-('R1', 'Admin'),
-('R2', 'Manager'),
-('R3', 'Employee');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `chucnang`
---
-
-CREATE TABLE `chucnang` (
-  `MACHUCNANG` varchar(10) NOT NULL,
-  `TENCHUCNANG` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `chucnang`
---
-
-INSERT INTO `chucnang` (`MACHUCNANG`, `TENCHUCNANG`) VALUES
-('CN01', 'Quản lý nhân sự'),
-('CN02', 'Quản lý lương'),
-('CN03', 'Chấm công'),
-('CN04', 'Nghỉ phép'),
-('CN05', 'Đánh giá hiệu suất'),
-('CN06', 'Quản lý hợp đồng'),
-('CN07', 'Quản lý phòng ban'),
-('CN08', 'Quản lý quyền'),
-('CN09', 'Quản lý danh mục'),
-('CN10', 'Lịch làm việc');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tieuchidanhgia`
---
-
-CREATE TABLE `tieuchidanhgia` (
-  `MATIEUCHI` varchar(10) NOT NULL,
-  `TENTIEUCHI` varchar(100) DEFAULT NULL,
-  `DIEM` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tieuchidanhgia`
---
-
-INSERT INTO `tieuchidanhgia` (`MATIEUCHI`, `TENTIEUCHI`, `DIEM`) VALUES
-('TC01', 'Năng suất làm việc', 10),
-('TC02', 'Thái độ phối hợp', 10),
-('TC03', 'Kỹ năng chuyên môn', 10),
-('TC04', 'Tuân thủ kỷ luật lao động', 10),
-('TC05', 'Sáng tạo và cải tiến', 10),
-('TC06', 'Kỹ năng giải quyết vấn đề', 10),
-('TC07', 'Khả năng làm việc nhóm', 10),
-('TC08', 'Khả năng chịu áp lực công việc', 10),
-('TC09', 'Giao tiếp và trình bày', 10),
-('TC10', 'Mức độ gắn bó với công ty', 10);
-
--- ========================================
--- BƯỚC 2: Tạo bảng nhanvien (phụ thuộc phongban, chucvu, trinhdo)
--- ========================================
-
--- --------------------------------------------------------
-
---
--- Table structure for table `nhanvien`
---
-
-CREATE TABLE `nhanvien` (
-  `MANV` varchar(10) NOT NULL,
-  `MAPHONGBAN` varchar(10) DEFAULT NULL,
-  `MACHUCVU` varchar(10) DEFAULT NULL,
-  `MATRINHDO` varchar(10) DEFAULT NULL,
-  `HOTEN` varchar(100) NOT NULL,
-  `GIOITINH` varchar(10) DEFAULT NULL,
-  `DIACHI` varchar(255) DEFAULT NULL,
-  `DIENTHOAI` varchar(15) DEFAULT NULL,
-  `EMAIL` varchar(100) DEFAULT NULL,
-  `NGAYVAOLAM` date DEFAULT NULL,
-  `SONGAYPHEP` int(11) DEFAULT 12,
-  `TRANGTHAI` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `nhanvien`
---
-
-INSERT INTO `nhanvien` (`MANV`, `MAPHONGBAN`, `MACHUCVU`, `MATRINHDO`, `HOTEN`, `GIOITINH`, `DIACHI`, `DIENTHOAI`, `EMAIL`, `NGAYVAOLAM`, `SONGAYPHEP`, `TRANGTHAI`) VALUES
-('NV01', 'PB01', 'CV03', 'TD02', 'Nguyễn Hoàng Nam', 'Nam', '123 Lê Lợi, Quận 1, TP.HCM', '0901234567', 'nam.nguyen@company.com', '2022-01-15', 12, 'Đang làm việc'),
-('NV02', 'PB02', 'CV02', 'TD01', 'Trần Thị Thu Thảo', 'Nữ', '456 Nguyễn Huệ, Quận 1, TP.HCM', '0912345678', 'thao.tran@company.com', '2024-02-01', 12, 'Đang làm việc'),
-('NV03', 'PB01', 'CV01', 'TD01', 'Lê Văn Tùng', 'Nam', '789 CMT8, Quận 3, TP.HCM', '0923456789', 'tung.le@company.com', '2024-06-15', 12, 'Đang làm việc'),
-('NV04', 'PB02', 'CV01', 'TD02', 'Phạm Minh Quang', 'Nam', '12 Hòa Bình, Quận Tân Phú, TP.HCM', '0934567890', 'quang.pham@company.com', '2022-03-20', 12, 'Đang làm việc'),
-('NV05', 'PB02', 'CV02', 'TD01', 'Hoàng Bảo Ngọc', 'Nữ', '88 Cộng Hòa, Quận Tân Bình, TP.HCM', '0945678901', 'ngoc.hoang@company.com', '2023-05-10', 12, 'Đang làm việc'),
-('NV06', 'PB03', 'CV01', 'TD01', 'Vũ Anh Tuấn', 'Nam', '202 Võ Văn Kiệt, Quận 5, TP.HCM', '0956789012', 'tuan.vu@company.com', '2023-08-15', 12, 'Đang làm việc'),
-('NV07', 'PB02', 'CV02', 'TD01', 'Ngô Thanh Sơn', 'Nam', '15 Trần Hưng Đạo, Quận 1, TP.HCM', '0967890123', 'son.ngo@company.com', '2025-01-10', 12, 'Đang làm việc'),
-('NV08', 'PB03', 'CV02', 'TD01', 'Đỗ Mỹ Linh', 'Nữ', '33 Phan Xích Long, Quận Phú Nhuận, TP.HCM', '0878901234', 'linh.do@company.com', '2025-01-20', 12, 'Đang làm việc'),
-('NV09', 'PB03', 'CV02', 'TD01', 'Đặng Quốc Huy', 'Nam', '55 Quang Trung, Quận Gò Vấp, TP.HCM', '0989012345', 'huy.dang@company.com', '2025-02-01', 12, 'Đang làm việc'),
-('NV10', 'PB04', 'CV02', 'TD01', 'Lý Hải Đăng', 'Nam', 'Quận 7, TP.HCM', '0901112221', 'dang.ly@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV11', 'PB04', 'CV02', 'TD01', 'Bùi Thị Xuân', 'Nữ', 'Quận 4, TP.HCM', '0901112222', 'xuan.bui@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV12', 'PB04', 'CV02', 'TD01', 'Ngô Kiến Huy', 'Nam', 'Quận 10, TP.HCM', '0901112223', 'huy.ngo@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV13', 'PB04', 'CV02', 'TD02', 'Võ Hoàng Yến', 'Nữ', 'Quận 3, TP.HCM', '0901112224', 'yen.vo@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV14', 'PB04', 'CV02', 'TD01', 'Trương Thế Vinh', 'Nam', 'Quận 5, TP.HCM', '0901112225', 'vinh.truong@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV15', 'PB01', 'CV02', 'TD01', 'Lê Khánh', 'Nữ', 'Quận Bình Thạnh, TP.HCM', '0901112226', 'khanh.le@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV16', 'PB01', 'CV02', 'TD01', 'Nguyễn Phi Hùng', 'Nam', 'Quận 12, TP.HCM', '0901112227', 'hung.nguyen@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV17', 'PB01', 'CV02', 'TD02', 'Phan Mạnh Quỳnh', 'Nam', 'Quận Tân Bình, TP.HCM', '0901112228', 'quynh.phan@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV18', 'PB02', 'CV02', 'TD01', 'Hòa Minzy', 'Nữ', 'Quận Gò Vấp, TP.HCM', '0901112229', 'hoa.min@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV19', 'PB02', 'CV02', 'TD01', 'Đức Phúc', 'Nam', 'Quận 7, TP.HCM', '0901112230', 'phuc.duc@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV20', 'PB02', 'CV02', 'TD01', 'Erik Trần', 'Nam', 'Quận 1, TP.HCM', '0901112231', 'erik.tran@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV21', 'PB03', 'CV02', 'TD01', 'Tóc Tiên', 'Nữ', 'Quận 2, TP.HCM', '0901112232', 'tien.toc@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV22', 'PB03', 'CV02', 'TD01', 'Soobin Hoàng Sơn', 'Nam', 'Quận Phú Nhuận, TP.HCM', '0901112233', 'soobin.hoang@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV23', 'PB03', 'CV02', 'TD01', 'Bích Phương', 'Nữ', 'Quận Bình Tân, TP.HCM', '0901112234', 'phuong.bich@company.com', '2026-03-15', 12, 'Đang làm việc'),
-('NV24', 'PB04', 'CV02', 'TD01', 'Hồ Ngọc Hà', 'Nữ', 'Quận 7, TP.HCM', '0901112235', 'ha.ho@company.com', '2026-03-15', 12, 'Đang làm việc');
-
--- ========================================
--- BƯỚC 3: Tạo bảng tài khoản (phụ thuộc role)
--- ========================================
-
--- --------------------------------------------------------
-
---
--- Table structure for table `taikhoan`
---
-
-CREATE TABLE `taikhoan` (
-  `MANV` varchar(10) NOT NULL,
-  `ROLEID` varchar(10) DEFAULT NULL,
-  `PASSWORD` varchar(255) NOT NULL DEFAULT '123',
-  `STATUS` int(11) DEFAULT 1 COMMENT '1: Hoạt động, 0: Bị khóa'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `taikhoan`
---
-
-INSERT INTO `taikhoan` (`MANV`, `ROLEID`, `PASSWORD`, `STATUS`) VALUES
-('NV01', 'R1', '$2a$10$k5pCrw5eJ/CFfMvijiPOHO29fMN7P3tzKfVa2Bd7Ec1FZEem1fd2C', 1),
-('NV02', 'R3', '123', 1),
-('NV03', 'R1', '$2a$10$vvQpSR6sVF32IEktxEgiR.fNDqA.TI.XSGNRZWGubfdatV.tq7qbm', 1),
-('NV04', 'R2', '$2a$10$i/S66NPy33bqOFvgd30KZegwRMpjPSS80VR2Z6HjeH/MxbAn18Ceu', 1),
-('NV05', 'R3', '$2a$10$d9pyZOH0FKQroXOZPLl/Tuzp63ajwa4CDY7HWEP1/zPqPDUL4WD0y', 1),
-('NV06', 'R2', '$2a$10$K0UCZyGB7rqSpdx8EMNVZuuEsKevFzEfZ0/SRNmFMF.nFaTwoLRCK', 1),
-('NV07', 'R3', '$2a$10$FuMgt4oA0qaGGh3WnT4LYekMMDCCN7122w.1BsfA33L5vNapzVJ5e', 1),
-('NV08', 'R3', '$2a$10$sU0xCtR0JyUsGryfeFcUMu9aFUPdaGtZriL9kBZSQG82wtmqWfwXm', 1),
-('NV09', 'R3', '$2a$10$FgpraoVoMbSA.Lo9i2L6z.Z9PKFR.Y65fhRLYVJ2E.CvqIMhPmnpW', 1);
-
--- ========================================
--- BƯỚC 4: Tạo bảng phân quyền (phụ thuộc role, chucnang)
--- ========================================
-
--- --------------------------------------------------------
-
---
--- Table structure for table `phanquyen_chitiet`
---
-
-CREATE TABLE `phanquyen_chitiet` (
-  `ROLEID` varchar(10) NOT NULL,
-  `MACHUCNANG` varchar(10) NOT NULL,
-  `QUYEN_XEM` tinyint(1) DEFAULT 0,
-  `QUYEN_THEM` tinyint(1) DEFAULT 0,
-  `QUYEN_SUA` tinyint(1) DEFAULT 0,
-  `QUYEN_XOA` tinyint(1) DEFAULT 0,
-  `QUYEN_DUYET` tinyint(1) DEFAULT 0 COMMENT 'Quyền duyệt (for approval workflows)',
-  `NGAY_TAO` timestamp NOT NULL DEFAULT current_timestamp(),
-  `NGAY_CAP_NHAT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `phanquyen_chitiet`
---
-
-INSERT INTO `phanquyen_chitiet` (`ROLEID`, `MACHUCNANG`, `QUYEN_XEM`, `QUYEN_THEM`, `QUYEN_SUA`, `QUYEN_XOA`, `QUYEN_DUYET`, `NGAY_TAO`, `NGAY_CAP_NHAT`) VALUES
-('R1', 'CN01', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN02', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN03', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN04', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN05', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN06', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN07', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN08', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN09', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R1', 'CN10', 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN01', 1, 0, 1, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN02', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN03', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN04', 1, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN05', 1, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN06', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN07', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN08', 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN09', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R2', 'CN10', 1, 1, 1, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN01', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN02', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN03', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN04', 1, 1, 1, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN05', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN06', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN07', 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN08', 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN09', 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
-('R3', 'CN10', 1, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `phanquyen_theo_user`
---
-
-CREATE TABLE `phanquyen_theo_user` (
-  `MANV` varchar(10) NOT NULL,
-  `MACHUCNANG` varchar(10) NOT NULL,
-  `QUYEN_XEM` tinyint(1) DEFAULT NULL,
-  `QUYEN_THEM` tinyint(1) DEFAULT NULL,
-  `QUYEN_SUA` tinyint(1) DEFAULT NULL,
-  `QUYEN_XOA` tinyint(1) DEFAULT NULL,
-  `QUYEN_DUYET` tinyint(1) DEFAULT NULL,
-  `NGAY_CAP` date DEFAULT NULL,
-  `GHI_CHU` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`MANV`, `MACHUCNANG`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Phân quyền đặc biệt theo từng user (ghi đè role)';
-
---
--- Dumping data for table `phanquyen_theo_user`
---
-
-INSERT INTO `phanquyen_theo_user` (`MANV`, `MACHUCNANG`, `QUYEN_XEM`, `QUYEN_THEM`, `QUYEN_SUA`, `QUYEN_XOA`, `QUYEN_DUYET`, `NGAY_CAP`, `GHI_CHU`) VALUES
--- NV01 (R1 - Admin): Toàn quyền cho tất cả chức năng
-('NV01', 'CN01', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN02', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN03', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN04', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN05', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN06', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN07', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN08', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN09', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
-('NV01', 'CN10', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - Toàn quyền'),
--- NV02 (R3 - Employee): Theo role R3
-('NV02', 'CN01', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN04', 1, 1, 1, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN05', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN07', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN09', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV02', 'CN10', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
--- NV03 (R1 - Admin): TOÀN BỘ QUYỀN - KHÔNG CÓ GIỚI HẠN
-('NV03', 'CN01', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN02', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN03', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN04', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN05', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN06', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN07', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN08', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN09', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
-('NV03', 'CN10', 1, 1, 1, 1, 1, '2026-03-21', 'Admin - TOÀN QUYỀN, KHÔNG GIỚI HẠN'),
--- NV04 (R2 - Manager): Theo role R2
-('NV04', 'CN01', 1, 0, 1, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN04', 1, 0, 0, 0, 1, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN05', 1, 0, 0, 0, 1, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN07', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN09', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV04', 'CN10', 1, 1, 1, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
--- NV05 (R3 - Employee): Theo role R3
-('NV05', 'CN01', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN04', 1, 1, 1, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN05', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN07', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN09', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV05', 'CN10', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
--- NV06 (R2 - Manager): Theo role R2
-('NV06', 'CN01', 1, 0, 1, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN04', 1, 0, 0, 0, 1, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN05', 1, 0, 0, 0, 1, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN07', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN09', 1, 0, 0, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
-('NV06', 'CN10', 1, 1, 1, 0, 0, '2026-03-21', 'Manager - Theo role R2'),
--- NV07 (R3 - Employee): Theo role R3
-('NV07', 'CN01', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN04', 1, 1, 1, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN05', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN07', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN09', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV07', 'CN10', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
--- NV08 (R3 - Employee): Theo role R3
-('NV08', 'CN01', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN04', 1, 1, 1, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN05', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN07', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN09', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV08', 'CN10', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
--- NV09 (R3 - Employee): Theo role R3
-('NV09', 'CN01', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN02', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN03', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN04', 1, 1, 1, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN05', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN06', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN07', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN08', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN09', 0, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3'),
-('NV09', 'CN10', 1, 0, 0, 0, 0, '2026-03-21', 'Employee - Theo role R3');
-
--- ========================================
--- BƯỚC 5: Tạo các bảng liên quan đến nhân viên
--- ========================================
-
--- --------------------------------------------------------
-
---
--- Table structure for table `bangluong`
+-- Cấu trúc bảng cho bảng `bangluong`
 --
 
 CREATE TABLE `bangluong` (
@@ -450,8 +33,7 @@ CREATE TABLE `bangluong` (
   `THANG` int(11) DEFAULT NULL,
   `NAM` int(11) DEFAULT NULL,
   `LUONGCOBAN_SNAPSHOT` decimal(18,2) DEFAULT NULL,
-  `SONGAYCONG` float DEFAULT 0 COMMENT 'Số ngày công thực tế',
-  `SONGAYCONG_CHUAN` float DEFAULT 26 COMMENT 'Số ngày công chuẩn (công ty quy định)',
+  `SONGAYCONG` float DEFAULT 0,
   `TONG_PHUCAP` decimal(18,2) DEFAULT 0.00,
   `TONG_KHAUTRU` decimal(18,2) DEFAULT 0.00,
   `NGAYCHOTLUONG` date DEFAULT NULL,
@@ -461,23 +43,48 @@ CREATE TABLE `bangluong` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `bangluong`
+-- Đang đổ dữ liệu cho bảng `bangluong`
 --
 
-INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `SONGAYCONG_CHUAN`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`, `TINH_TRANG_TT`) VALUES
-('ML01', 'NV07', 1, 2026, 8000000.00, 26, 26, 1800000.00, 700000.00, NULL, 10554545.45, 1, 'Chưa thanh toán'),
-('ML08', 'NV01', 2, 2026, 25000000.00, 22, 26, 1800000.00, 700000.00, '2026-02-28', 26100000.00, 1, 'Chưa thanh toán'),
-('ML09', 'NV02', 2, 2026, 15000000.00, 23, 26, 1800000.00, 700000.00, '2026-02-28', 16781818.18, 1, 'Chưa thanh toán'),
-('ML10', 'NV04', 2, 2026, 20000000.00, 24, 26, 1800000.00, 700000.00, NULL, 22918181.82, 1, 'Chưa thanh toán'),
-('ML11', 'NV05', 2, 2026, 18000000.00, 22, 26, 1800000.00, 700000.00, NULL, 19100000.00, 1, 'Chưa thanh toán'),
-('ML12', 'NV07', 2, 2026, 8000000.00, 24, 26, 1800000.00, 700000.00, NULL, 9827272.73, 1, 'Chưa thanh toán'),
-('ML13', 'NV08', 2, 2026, 9000000.00, 24, 26, 1800000.00, 700000.00, NULL, 10918181.82, 1, 'Chưa thanh toán'),
-('ML14', 'NV09', 2, 2026, 8500000.00, 20, 26, 1800000.00, 700000.00, NULL, 8827272.73, 1, 'Chưa thanh toán');
+INSERT INTO `bangluong` (`MALUONG`, `MANV`, `THANG`, `NAM`, `LUONGCOBAN_SNAPSHOT`, `SONGAYCONG`, `TONG_PHUCAP`, `TONG_KHAUTRU`, `NGAYCHOTLUONG`, `THUCLINH`, `TRANGTHAI`, `TINH_TRANG_TT`) VALUES
+('ML01', 'NV07', 1, 2026, 8000000.00, 26, 1800000.00, 700000.00, NULL, 10554545.45, 0, 'Chưa thanh toán'),
+('ML08', 'NV01', 2, 2026, 25000000.00, 22, 1800000.00, 700000.00, '2026-02-28', 26100000.00, 0, 'Chưa thanh toán'),
+('ML09', 'NV02', 2, 2026, 15000000.00, 23, 1800000.00, 700000.00, '2026-02-28', 16781818.18, 0, 'Chưa thanh toán'),
+('ML10', 'NV04', 2, 2026, 20000000.00, 24, 1800000.00, 700000.00, NULL, 22918181.82, 0, 'Chưa thanh toán'),
+('ML11', 'NV05', 2, 2026, 18000000.00, 22, 1800000.00, 700000.00, NULL, 19100000.00, 0, 'Chưa thanh toán'),
+('ML12', 'NV07', 2, 2026, 8000000.00, 24, 1800000.00, 700000.00, NULL, 9827272.73, 0, 'Chưa thanh toán'),
+('ML13', 'NV08', 2, 2026, 9000000.00, 24, 1800000.00, 700000.00, NULL, 10918181.82, 0, 'Chưa thanh toán'),
+('ML14', 'NV09', 2, 2026, 8500000.00, 20, 1800000.00, 700000.00, NULL, 8827272.73, 0, 'Chưa thanh toán');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `chamcong`
+-- Cấu trúc bảng cho bảng `calam`
+--
+
+CREATE TABLE `calam` (
+  `MACALAM` varchar(10) NOT NULL,
+  `TENCALAM` varchar(50) DEFAULT NULL,
+  `GIOVAOCA` time DEFAULT NULL,
+  `GIOTANCA` time DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `calam`
+--
+
+INSERT INTO `calam` (`MACALAM`, `TENCALAM`, `GIOVAOCA`, `GIOTANCA`) VALUES
+('C1', 'Hành chính', '08:00:00', '17:00:00'),
+('C2', 'Ca sáng', '06:00:00', '15:00:00'),
+('C3', 'Ca chiều', '14:00:00', '22:00:00'),
+('C4', 'Ca hành chính 2', '07:00:00', '16:00:00'),
+('C5', 'Ca hành chính 3', '09:00:00', '18:00:00'),
+('C6', 'Ca Chiều', '13:00:00', '21:00:00');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `chamcong`
 --
 
 CREATE TABLE `chamcong` (
@@ -1799,7 +1406,7 @@ INSERT INTO `chamcong` (`MACHAMCONG`, `MANV`, `NGAYLAMVIEC`, `SOGIOLAM`, `CHECKI
 -- --------------------------------------------------------
 
 --
--- Table structure for table `chitiet_luong_biendong`
+-- Cấu trúc bảng cho bảng `chitiet_luong_biendong`
 --
 
 CREATE TABLE `chitiet_luong_biendong` (
@@ -1811,7 +1418,7 @@ CREATE TABLE `chitiet_luong_biendong` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `chitiet_luong_biendong`
+-- Đang đổ dữ liệu cho bảng `chitiet_luong_biendong`
 --
 
 INSERT INTO `chitiet_luong_biendong` (`ID`, `MALUONG`, `TENKHOANTIEN`, `SOTIEN`, `LOAI`) VALUES
@@ -1821,7 +1428,123 @@ INSERT INTO `chitiet_luong_biendong` (`ID`, `MALUONG`, `TENKHOANTIEN`, `SOTIEN`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `hopdong`
+-- Cấu trúc bảng cho bảng `chucnang`
+--
+
+CREATE TABLE `chucnang` (
+  `MACHUCNANG` varchar(10) NOT NULL,
+  `TENCHUCNANG` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `chucnang`
+--
+
+INSERT INTO `chucnang` (`MACHUCNANG`, `TENCHUCNANG`) VALUES
+('CN01', 'Quản lý nhân sự'),
+('CN02', 'Quản lý lương'),
+('CN03', 'Chấm công'),
+('CN04', 'Nghỉ phép'),
+('CN05', 'Đánh giá hiệu suất'),
+('CN06', 'Quản lý hợp đồng'),
+('CN07', 'Quản lý phòng ban'),
+('CN08', 'Quản lý quyền'),
+('CN09', 'Quản lý danh mục'),
+('CN10', 'Lịch làm việc');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `chucvu`
+--
+
+CREATE TABLE `chucvu` (
+  `MACHUCVU` varchar(10) NOT NULL,
+  `TENVITRI` varchar(100) NOT NULL,
+  `PHUCAPCHUCVU` decimal(18,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `chucvu`
+--
+
+INSERT INTO `chucvu` (`MACHUCVU`, `TENVITRI`, `PHUCAPCHUCVU`) VALUES
+('CV01', 'Trưởng phòng', 3000000.00),
+('CV02', 'Nhân viên', 1000000.00),
+('CV03', 'Nhân viên nhân sự', 1000000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `danhmuc_khautru`
+--
+
+CREATE TABLE `danhmuc_khautru` (
+  `MAKHAUTRU` int(11) NOT NULL,
+  `TENKHAUTRU` varchar(100) DEFAULT NULL,
+  `SOTIEN_MACDINH` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `danhmuc_khautru`
+--
+
+INSERT INTO `danhmuc_khautru` (`MAKHAUTRU`, `TENKHAUTRU`, `SOTIEN_MACDINH`) VALUES
+(1, 'Bảo hiểm xã hội', 500000.00),
+(2, 'Phí công đoàn', 100000.00),
+(3, 'Phí gửi xe', 100000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `danhmuc_phucap`
+--
+
+CREATE TABLE `danhmuc_phucap` (
+  `MAPHUCAP` int(11) NOT NULL,
+  `TENPHUCAP` varchar(100) DEFAULT NULL,
+  `SOTIEN_MACDINH` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `danhmuc_phucap`
+--
+
+INSERT INTO `danhmuc_phucap` (`MAPHUCAP`, `TENPHUCAP`, `SOTIEN_MACDINH`) VALUES
+(1, 'Ăn trưa', 1000000.00),
+(2, 'Xăng xe', 500000.00),
+(3, 'Độc hại', 300000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `dotdanhgia`
+--
+
+CREATE TABLE `dotdanhgia` (
+  `MADOT` varchar(10) NOT NULL,
+  `TENDOT` varchar(100) DEFAULT NULL,
+  `KYKY` varchar(10) DEFAULT NULL,
+  `NAM` int(11) DEFAULT NULL,
+  `NGUOIDANHGIA` varchar(100) DEFAULT NULL,
+  `TRANGTHAI` varchar(50) DEFAULT 'Đang mở'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `dotdanhgia`
+--
+
+INSERT INTO `dotdanhgia` (`MADOT`, `TENDOT`, `KYKY`, `NAM`, `NGUOIDANHGIA`, `TRANGTHAI`) VALUES
+('Q1-2024', 'Đánh giá Quý 1 năm 2024', 'Q1', 2024, 'Trần Thị B', 'Đã đóng'),
+('Q1-2026', 'Đánh giá Quý 1 năm 2026', 'Q1', 2026, 'Trần Thị B', 'Đang mở'),
+('Q2-2024', 'Đánh giá Quý 2 năm 2024', 'Q2', 2024, 'Trần Thị B', 'Đã đóng'),
+('Q3-2024', 'Đánh giá Quý 3 năm 2024', 'Q3', 2024, 'Trần Thị B', 'Đã đóng'),
+('Q4-2024', 'Đánh giá Quý 4 năm 2024', 'Q4', 2024, 'Trần Thị B', 'Đã đóng');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `hopdong`
 --
 
 CREATE TABLE `hopdong` (
@@ -1834,7 +1557,7 @@ CREATE TABLE `hopdong` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `hopdong`
+-- Đang đổ dữ liệu cho bảng `hopdong`
 --
 
 INSERT INTO `hopdong` (`MAHOPDONG`, `MANV`, `LOAIHOPDONG`, `NGAYLAMHOPDONG`, `HANHOPDONG`, `LUONGCOBAN`) VALUES
@@ -1847,43 +1570,10 @@ INSERT INTO `hopdong` (`MAHOPDONG`, `MANV`, `LOAIHOPDONG`, `NGAYLAMHOPDONG`, `HA
 ('HD08', 'NV08', '1 năm', '2025-02-01', '2026-02-01', 9000000.00),
 ('HD09', 'NV09', '1 năm', '2025-02-01', '2026-02-01', 8500000.00);
 
--- ========================================
--- BƯỚC 6: Tạo bảng ca làm (không có FK)
--- ========================================
-
 -- --------------------------------------------------------
 
 --
--- Table structure for table `calam`
---
-
-CREATE TABLE `calam` (
-  `MACALAM` varchar(10) NOT NULL,
-  `TENCALAM` varchar(50) DEFAULT NULL,
-  `GIOVAOCA` time DEFAULT NULL,
-  `GIOTANCA` time DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Đang đổ dữ liệu cho bảng `calam`
---
-
-INSERT INTO `calam` (`MACALAM`, `TENCALAM`, `GIOVAOCA`, `GIOTANCA`) VALUES
-('C1', 'Hành chính', '08:00:00', '17:00:00'),
-('C2', 'Ca sáng', '06:00:00', '15:00:00'),
-('C3', 'Ca chiều', '14:00:00', '22:00:00'),
-('C4', 'Ca hành chính 2', '07:00:00', '16:00:00'),
-('C5', 'Ca hành chính 3', '09:00:00', '18:00:00'),
-('C6', 'Ca Chiều', '13:00:00', '21:00:00');
-
--- ========================================
--- BƯỚC 7: Tạo các bảng khác
--- ========================================
-
--- --------------------------------------------------------
-
---
--- Table structure for table `lichlamviec`
+-- Cấu trúc bảng cho bảng `lichlamviec`
 --
 
 CREATE TABLE `lichlamviec` (
@@ -1895,7 +1585,7 @@ CREATE TABLE `lichlamviec` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `lichlamviec`
+-- Đang đổ dữ liệu cho bảng `lichlamviec`
 --
 
 INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`) VALUES
@@ -3254,7 +2944,7 @@ INSERT INTO `lichlamviec` (`MALICH`, `MANV`, `MACALAM`, `NGAYLAMVIEC`, `GHICHU`)
 -- --------------------------------------------------------
 
 --
--- Table structure for table `nghiphep`
+-- Cấu trúc bảng cho bảng `nghiphep`
 --
 
 CREATE TABLE `nghiphep` (
@@ -3271,7 +2961,7 @@ CREATE TABLE `nghiphep` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `nghiphep`
+-- Đang đổ dữ liệu cho bảng `nghiphep`
 --
 
 INSERT INTO `nghiphep` (`MANGHIPHEP`, `MANV`, `LOAINGHI`, `LYDONGHI`, `NGAYNGHI`, `NGAYLAMLAI`, `NGUOIDUYET`, `NGAYDUYET`, `TRANGTHAI`, `LYDOTUCHOI`) VALUES
@@ -3304,33 +2994,171 @@ INSERT INTO `nghiphep` (`MANGHIPHEP`, `MANV`, `LOAINGHI`, `LYDONGHI`, `NGAYNGHI`
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dotdanhgia`
+-- Cấu trúc bảng cho bảng `nhanvien`
 --
 
-CREATE TABLE `dotdanhgia` (
-  `MADOT` varchar(10) NOT NULL,
-  `TENDOT` varchar(100) DEFAULT NULL,
-  `KYKY` varchar(10) DEFAULT NULL,
-  `NAM` int(11) DEFAULT NULL,
-  `NGUOIDANHGIA` varchar(100) DEFAULT NULL,
-  `TRANGTHAI` varchar(50) DEFAULT 'Đang mở'
+CREATE TABLE `nhanvien` (
+  `MANV` varchar(10) NOT NULL,
+  `MAPHONGBAN` varchar(10) DEFAULT NULL,
+  `MACHUCVU` varchar(10) DEFAULT NULL,
+  `MATRINHDO` varchar(10) DEFAULT NULL,
+  `HOTEN` varchar(100) NOT NULL,
+  `GIOITINH` varchar(10) DEFAULT NULL,
+  `DIACHI` varchar(255) DEFAULT NULL,
+  `DIENTHOAI` varchar(15) DEFAULT NULL,
+  `EMAIL` varchar(100) DEFAULT NULL,
+  `NGAYVAOLAM` date DEFAULT NULL,
+  `SONGAYPHEP` int(11) DEFAULT 12,
+  `TRANGTHAI` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `dotdanhgia`
+-- Đang đổ dữ liệu cho bảng `nhanvien`
 --
 
-INSERT INTO `dotdanhgia` (`MADOT`, `TENDOT`, `KYKY`, `NAM`, `NGUOIDANHGIA`, `TRANGTHAI`) VALUES
-('Q1-2024', 'Đánh giá Quý 1 năm 2024', 'Q1', 2024, 'Trần Thị B', 'Đã đóng'),
-('Q1-2026', 'Đánh giá Quý 1 năm 2026', 'Q1', 2026, 'Trần Thị B', 'Đang mở'),
-('Q2-2024', 'Đánh giá Quý 2 năm 2024', 'Q2', 2024, 'Trần Thị B', 'Đã đóng'),
-('Q3-2024', 'Đánh giá Quý 3 năm 2024', 'Q3', 2024, 'Trần Thị B', 'Đã đóng'),
-('Q4-2024', 'Đánh giá Quý 4 năm 2024', 'Q4', 2024, 'Trần Thị B', 'Đã đóng');
+INSERT INTO `nhanvien` (`MANV`, `MAPHONGBAN`, `MACHUCVU`, `MATRINHDO`, `HOTEN`, `GIOITINH`, `DIACHI`, `DIENTHOAI`, `EMAIL`, `NGAYVAOLAM`, `SONGAYPHEP`, `TRANGTHAI`) VALUES
+('NV01', 'PB01', 'CV03', 'TD02', 'Nguyễn Hoàng Nam', 'Nam', '123 Lê Lợi, Quận 1, TP.HCM', '0901234567', 'nam.nguyen@company.com', '2022-01-15', 12, 'Đang làm việc'),
+('NV02', 'PB02', 'CV02', 'TD01', 'Trần Thị Thu Thảo', 'Nữ', '456 Nguyễn Huệ, Quận 1, TP.HCM', '0912345678', 'thao.tran@company.com', '2024-02-01', 12, 'Đang làm việc'),
+('NV03', 'PB01', 'CV01', 'TD01', 'Lê Văn Tùng', 'Nam', '789 CMT8, Quận 3, TP.HCM', '0923456789', 'tung.le@company.com', '2024-06-15', 12, 'Đang làm việc'),
+('NV04', 'PB02', 'CV01', 'TD02', 'Phạm Minh Quang', 'Nam', '12 Hòa Bình, Quận Tân Phú, TP.HCM', '0934567890', 'quang.pham@company.com', '2022-03-20', 12, 'Đang làm việc'),
+('NV05', 'PB02', 'CV02', 'TD01', 'Hoàng Bảo Ngọc', 'Nữ', '88 Cộng Hòa, Quận Tân Bình, TP.HCM', '0945678901', 'ngoc.hoang@company.com', '2023-05-10', 12, 'Đang làm việc'),
+('NV06', 'PB03', 'CV01', 'TD01', 'Vũ Anh Tuấn', 'Nam', '202 Võ Văn Kiệt, Quận 5, TP.HCM', '0956789012', 'tuan.vu@company.com', '2023-08-15', 12, 'Đang làm việc'),
+('NV07', 'PB02', 'CV02', 'TD01', 'Ngô Thanh Sơn', 'Nam', '15 Trần Hưng Đạo, Quận 1, TP.HCM', '0967890123', 'son.ngo@company.com', '2025-01-10', 12, 'Đang làm việc'),
+('NV08', 'PB03', 'CV02', 'TD01', 'Đỗ Mỹ Linh', 'Nữ', '33 Phan Xích Long, Quận Phú Nhuận, TP.HCM', '0878901234', 'linh.do@company.com', '2025-01-20', 12, 'Đang làm việc'),
+('NV09', 'PB03', 'CV02', 'TD01', 'Đặng Quốc Huy', 'Nam', '55 Quang Trung, Quận Gò Vấp, TP.HCM', '0989012345', 'huy.dang@company.com', '2025-02-01', 12, 'Đang làm việc'),
+('NV10', 'PB04', 'CV02', 'TD01', 'Lý Hải Đăng', 'Nam', 'Quận 7, TP.HCM', '0901112221', 'dang.ly@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV11', 'PB04', 'CV02', 'TD01', 'Bùi Thị Xuân', 'Nữ', 'Quận 4, TP.HCM', '0901112222', 'xuan.bui@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV12', 'PB04', 'CV02', 'TD01', 'Ngô Kiến Huy', 'Nam', 'Quận 10, TP.HCM', '0901112223', 'huy.ngo@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV13', 'PB04', 'CV02', 'TD02', 'Võ Hoàng Yến', 'Nữ', 'Quận 3, TP.HCM', '0901112224', 'yen.vo@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV14', 'PB04', 'CV02', 'TD01', 'Trương Thế Vinh', 'Nam', 'Quận 5, TP.HCM', '0901112225', 'vinh.truong@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV15', 'PB01', 'CV02', 'TD01', 'Lê Khánh', 'Nữ', 'Quận Bình Thạnh, TP.HCM', '0901112226', 'khanh.le@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV16', 'PB01', 'CV02', 'TD01', 'Nguyễn Phi Hùng', 'Nam', 'Quận 12, TP.HCM', '0901112227', 'hung.nguyen@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV17', 'PB01', 'CV02', 'TD02', 'Phan Mạnh Quỳnh', 'Nam', 'Quận Tân Bình, TP.HCM', '0901112228', 'quynh.phan@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV18', 'PB02', 'CV02', 'TD01', 'Hòa Minzy', 'Nữ', 'Quận Gò Vấp, TP.HCM', '0901112229', 'hoa.min@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV19', 'PB02', 'CV02', 'TD01', 'Đức Phúc', 'Nam', 'Quận 7, TP.HCM', '0901112230', 'phuc.duc@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV20', 'PB02', 'CV02', 'TD01', 'Erik Trần', 'Nam', 'Quận 1, TP.HCM', '0901112231', 'erik.tran@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV21', 'PB03', 'CV02', 'TD01', 'Tóc Tiên', 'Nữ', 'Quận 2, TP.HCM', '0901112232', 'tien.toc@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV22', 'PB03', 'CV02', 'TD01', 'Soobin Hoàng Sơn', 'Nam', 'Quận Phú Nhuận, TP.HCM', '0901112233', 'soobin.hoang@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV23', 'PB03', 'CV02', 'TD01', 'Bích Phương', 'Nữ', 'Quận Bình Tân, TP.HCM', '0901112234', 'phuong.bich@company.com', '2026-03-15', 12, 'Đang làm việc'),
+('NV24', 'PB04', 'CV03', 'TD01', 'Hồ Ngọc Hà', 'Nữ', 'Quận 7, TP.HCM', '0901112235', 'ha.ho@company.com', '2026-03-15', 12, 'Đang làm việc');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `phieudanhgia`
+-- Cấu trúc bảng cho bảng `nhom_quyen`
+--
+
+CREATE TABLE `nhom_quyen` (
+  `GROUPID` varchar(10) NOT NULL,
+  `GROUPNAME` varchar(50) NOT NULL,
+  `MO_TA` varchar(255) DEFAULT NULL,
+  `NGAY_TAO` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Nhóm quyền để quản lý nhiều role cùng lúc';
+
+--
+-- Đang đổ dữ liệu cho bảng `nhom_quyen`
+--
+
+INSERT INTO `nhom_quyen` (`GROUPID`, `GROUPNAME`, `MO_TA`, `NGAY_TAO`) VALUES
+('GR1', 'Quản trị hệ thống', 'Quản lý toàn bộ hệ thống', '2026-03-17 08:02:29'),
+('GR2', 'Quản lý nhân sự', 'Quản lý nhân sự và lương', '2026-03-17 08:02:29'),
+('GR3', 'Quản lý tài chính', 'Quản lý lương và báo cáo tài chính', '2026-03-17 08:02:29'),
+('GR4', 'Nhân viên', 'Nhân viên thông thường', '2026-03-17 08:02:29');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phanquyen_chitiet`
+--
+
+CREATE TABLE `phanquyen_chitiet` (
+  `ROLEID` varchar(10) NOT NULL,
+  `MACHUCNANG` varchar(10) NOT NULL,
+  `QUYEN_XEM` tinyint(1) DEFAULT 0,
+  `QUYEN_THEM` tinyint(1) DEFAULT 0,
+  `QUYEN_SUA` tinyint(1) DEFAULT 0,
+  `QUYEN_XOA` tinyint(1) DEFAULT 0,
+  `QUYEN_DUYET` tinyint(1) DEFAULT 0 COMMENT 'Quyền duyệt (for approval workflows)',
+  `QUYEN_XUAT_BC` tinyint(1) DEFAULT 0 COMMENT 'Quyền xuất báo cáo',
+  `NGAY_TAO` timestamp NOT NULL DEFAULT current_timestamp(),
+  `NGAY_CAP_NHAT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `phanquyen_chitiet`
+--
+
+INSERT INTO `phanquyen_chitiet` (`ROLEID`, `MACHUCNANG`, `QUYEN_XEM`, `QUYEN_THEM`, `QUYEN_SUA`, `QUYEN_XOA`, `QUYEN_DUYET`, `QUYEN_XUAT_BC`, `NGAY_TAO`, `NGAY_CAP_NHAT`) VALUES
+('R1', 'CN01', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN02', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN03', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN04', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN05', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN06', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN07', 1, 1, 1, 1, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN08', 1, 1, 1, 1, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN09', 1, 0, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R1', 'CN10', 1, 1, 1, 1, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN01', 1, 0, 1, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN02', 1, 0, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN03', 1, 0, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN04', 1, 0, 0, 0, 1, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN05', 1, 0, 0, 0, 1, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN06', 1, 0, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN07', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN08', 0, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN09', 1, 0, 0, 0, 0, 1, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R2', 'CN10', 1, 1, 1, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN01', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN02', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN03', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN04', 1, 1, 1, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN05', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN06', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN07', 0, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN08', 0, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN09', 0, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39'),
+('R3', 'CN10', 1, 0, 0, 0, 0, 0, '2026-03-16 17:04:39', '2026-03-16 17:04:39');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phanquyen_theo_user`
+--
+
+CREATE TABLE `phanquyen_theo_user` (
+  `MANV` varchar(10) NOT NULL,
+  `MACHUCNANG` varchar(10) NOT NULL,
+  `QUYEN_XEM` tinyint(1) DEFAULT NULL,
+  `QUYEN_THEM` tinyint(1) DEFAULT NULL,
+  `QUYEN_SUA` tinyint(1) DEFAULT NULL,
+  `QUYEN_XOA` tinyint(1) DEFAULT NULL,
+  `QUYEN_DUYET` tinyint(1) DEFAULT NULL,
+  `QUYEN_XUAT_BC` tinyint(1) DEFAULT NULL,
+  `NGAY_CAP` date DEFAULT NULL,
+  `GHI_CHU` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Phân quyền đặc biệt theo từng user (ghi đè role)';
+
+--
+-- Đang đổ dữ liệu cho bảng `phanquyen_theo_user`
+--
+
+INSERT INTO `phanquyen_theo_user` (`MANV`, `MACHUCNANG`, `QUYEN_XEM`, `QUYEN_THEM`, `QUYEN_SUA`, `QUYEN_XOA`, `QUYEN_DUYET`, `QUYEN_XUAT_BC`, `NGAY_CAP`, `GHI_CHU`) VALUES
+('NV01', 'CN01', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN02', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN03', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN04', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN05', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN06', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN07', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN08', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN09', 1, 0, 0, 0, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền'),
+('NV01', 'CN10', 1, 1, 1, 1, 0, 0, '2026-03-19', 'Cập nhật từ tab phân quyền');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phieudanhgia`
 --
 
 CREATE TABLE `phieudanhgia` (
@@ -3347,7 +3175,7 @@ CREATE TABLE `phieudanhgia` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `phieudanhgia`
+-- Đang đổ dữ liệu cho bảng `phieudanhgia`
 --
 
 INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`, `NHANXET`, `QUYETDINH`, `NGAYDANHGIA`, `TRANGTHAI_DUYET`, `LOAIQUYETDINH`) VALUES
@@ -3361,318 +3189,152 @@ INSERT INTO `phieudanhgia` (`MAPHIEU`, `MANV`, `MADOT`, `MATIEUCHI`, `TONGDIEM`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `nhom_quyen`
+-- Cấu trúc bảng cho bảng `phongban`
 --
 
-CREATE TABLE `nhom_quyen` (
-  `GROUPID` varchar(10) NOT NULL,
-  `GROUPNAME` varchar(50) NOT NULL,
-  `MO_TA` varchar(255) DEFAULT NULL,
-  `NGAY_TAO` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Nhóm quyền để quản lý nhiều role cùng lúc';
+CREATE TABLE `phongban` (
+  `MAPHONGBAN` varchar(10) NOT NULL,
+  `TENPHONGBAN` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `nhom_quyen`
+-- Đang đổ dữ liệu cho bảng `phongban`
 --
 
-INSERT INTO `nhom_quyen` (`GROUPID`, `GROUPNAME`, `MO_TA`, `NGAY_TAO`) VALUES
-('GR1', 'Quản trị hệ thống', 'Quản lý toàn bộ hệ thống', '2026-03-17 08:02:29'),
-('GR2', 'Quản lý nhân sự', 'Quản lý nhân sự và lương', '2026-03-17 08:02:29'),
-('GR3', 'Quản lý tài chính', 'Quản lý lương và báo cáo tài chính', '2026-03-17 08:02:29'),
-('GR4', 'Nhân viên', 'Nhân viên thông thường', '2026-03-17 08:02:29');
+INSERT INTO `phongban` (`MAPHONGBAN`, `TENPHONGBAN`) VALUES
+('PB01', 'Nhân sự'),
+('PB02', 'Kỹ thuật'),
+('PB03', 'Kinh doanh'),
+('PB04', 'Kế toán - Tài chính');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `danhmuc_khautru`
+-- Cấu trúc bảng cho bảng `role`
 --
 
-CREATE TABLE `danhmuc_khautru` (
-  `MAKHAUTRU` int(11) NOT NULL,
-  `TENKHAUTRU` varchar(100) DEFAULT NULL,
-  `SOTIEN_MACDINH` decimal(18,2) DEFAULT NULL
+CREATE TABLE `role` (
+  `ROLEID` varchar(10) NOT NULL,
+  `ROLENAME` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `danhmuc_khautru`
+-- Đang đổ dữ liệu cho bảng `role`
 --
 
-INSERT INTO `danhmuc_khautru` (`MAKHAUTRU`, `TENKHAUTRU`, `SOTIEN_MACDINH`) VALUES
-(1, 'Bảo hiểm xã hội', 500000.00),
-(2, 'Phí công đoàn', 100000.00),
-(3, 'Phí gửi xe', 100000.00);
+INSERT INTO `role` (`ROLEID`, `ROLENAME`) VALUES
+('R1', 'Admin'),
+('R2', 'Manager'),
+('R3', 'Employee');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `danhmuc_phucap`
+-- Cấu trúc bảng cho bảng `taikhoan`
 --
 
-CREATE TABLE `danhmuc_phucap` (
-  `MAPHUCAP` int(11) NOT NULL,
-  `TENPHUCAP` varchar(100) DEFAULT NULL,
-  `SOTIEN_MACDINH` decimal(18,2) DEFAULT NULL
+CREATE TABLE `taikhoan` (
+  `MANV` varchar(10) NOT NULL,
+  `ROLEID` varchar(10) DEFAULT NULL,
+  `PASSWORD` varchar(255) NOT NULL DEFAULT '123',
+  `STATUS` int(11) DEFAULT 1 COMMENT '1: Hoạt động, 0: Bị khóa'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `danhmuc_phucap`
+-- Đang đổ dữ liệu cho bảng `taikhoan`
 --
 
-INSERT INTO `danhmuc_phucap` (`MAPHUCAP`, `TENPHUCAP`, `SOTIEN_MACDINH`) VALUES
-(1, 'Ăn trưa', 1000000.00),
-(2, 'Xăng xe', 500000.00),
-(3, 'Độc hại', 300000.00);
+INSERT INTO `taikhoan` (`MANV`, `ROLEID`, `PASSWORD`, `STATUS`) VALUES
+('NV01', 'R1', '$2a$10$k5pCrw5eJ/CFfMvijiPOHO29fMN7P3tzKfVa2Bd7Ec1FZEem1fd2C', 1),
+('NV02', 'R3', '123', 1),
+('NV03', 'R1', '$2a$10$vvQpSR6sVF32IEktxEgiR.fNDqA.TI.XSGNRZWGubfdatV.tq7qbm', 1),
+('NV04', 'R2', '$2a$10$i/S66NPy33bqOFvgd30KZegwRMpjPSS80VR2Z6HjeH/MxbAn18Ceu', 1),
+('NV05', 'R3', '$2a$10$d9pyZOH0FKQroXOZPLl/Tuzp63ajwa4CDY7HWEP1/zPqPDUL4WD0y', 1),
+('NV06', 'R2', '$2a$10$K0UCZyGB7rqSpdx8EMNVZuuEsKevFzEfZ0/SRNmFMF.nFaTwoLRCK', 1),
+('NV07', 'R3', '$2a$10$FuMgt4oA0qaGGh3WnT4LYekMMDCCN7122w.1BsfA33L5vNapzVJ5e', 1),
+('NV08', 'R3', '$2a$10$sU0xCtR0JyUsGryfeFcUMu9aFUPdaGtZriL9kBZSQG82wtmqWfwXm', 1),
+('NV09', 'R3', '$2a$10$FgpraoVoMbSA.Lo9i2L6z.Z9PKFR.Y65fhRLYVJ2E.CvqIMhPmnpW', 1);
+
+-- --------------------------------------------------------
 
 --
--- Indexes for dumped tables
+-- Cấu trúc bảng cho bảng `tieuchidanhgia`
+--
+
+CREATE TABLE `tieuchidanhgia` (
+  `MATIEUCHI` varchar(10) NOT NULL,
+  `TENTIEUCHI` varchar(100) DEFAULT NULL,
+  `DIEM` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `tieuchidanhgia`
+--
+
+INSERT INTO `tieuchidanhgia` (`MATIEUCHI`, `TENTIEUCHI`, `DIEM`) VALUES
+('TC01', 'Năng suất làm việc', 10),
+('TC02', 'Thái độ phối hợp', 10),
+('TC03', 'Kỹ năng chuyên môn', 10),
+('TC04', 'Tuân thủ kỷ luật lao động', 10),
+('TC05', 'Sáng tạo và cải tiến', 10),
+('TC06', 'Kỹ năng giải quyết vấn đề', 10),
+('TC07', 'Khả năng làm việc nhóm', 10),
+('TC08', 'Khả năng chịu áp lực công việc', 10),
+('TC09', 'Giao tiếp và trình bày', 10),
+('TC10', 'Mức độ gắn bó với công ty', 10);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `trinhdo`
+--
+
+CREATE TABLE `trinhdo` (
+  `MATRINHDO` varchar(10) NOT NULL,
+  `TRINHDO` varchar(50) NOT NULL,
+  `HESOTRINHDO` decimal(5,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `trinhdo`
+--
+
+INSERT INTO `trinhdo` (`MATRINHDO`, `TRINHDO`, `HESOTRINHDO`) VALUES
+('TD01', 'Đại học', 1.00),
+('TD02', 'Thạc sĩ', 1.50),
+('TD03', 'Tiến sĩ', 2.00);
+
+--
+-- Chỉ mục cho các bảng đã đổ
 --
 
 --
--- Indexes for table `bangluong`
+-- Chỉ mục cho bảng `bangluong`
 --
 ALTER TABLE `bangluong`
   ADD PRIMARY KEY (`MALUONG`),
   ADD KEY `fk_bl_nv` (`MANV`);
 
 --
--- Indexes for table `calam`
+-- Chỉ mục cho bảng `calam`
 --
 ALTER TABLE `calam`
   ADD PRIMARY KEY (`MACALAM`);
 
 --
--- Indexes for table `chamcong`
+-- Chỉ mục cho bảng `chamcong`
 --
 ALTER TABLE `chamcong`
   ADD PRIMARY KEY (`MACHAMCONG`),
   ADD KEY `fk_cc_nv` (`MANV`);
 
 --
--- Indexes for table `chitiet_luong_biendong`
---
-ALTER TABLE `chitiet_luong_biendong`
-  ADD PRIMARY KEY (`ID`),
-  ADD KEY `fk_ct_bl` (`MALUONG`);
-
---
--- Indexes for table `chucnang`
---
-ALTER TABLE `chucnang`
-  ADD PRIMARY KEY (`MACHUCNANG`);
-
---
--- Indexes for table `chucvu`
---
-ALTER TABLE `chucvu`
-  ADD PRIMARY KEY (`MACHUCVU`);
-
---
--- Indexes for table `danhmuc_khautru`
---
-ALTER TABLE `danhmuc_khautru`
-  ADD PRIMARY KEY (`MAKHAUTRU`);
-
---
--- Indexes for table `danhmuc_phucap`
---
-ALTER TABLE `danhmuc_phucap`
-  ADD PRIMARY KEY (`MAPHUCAP`);
-
---
--- Indexes for table `dotdanhgia`
---
-ALTER TABLE `dotdanhgia`
-  ADD PRIMARY KEY (`MADOT`);
-
---
--- Indexes for table `hopdong`
---
-ALTER TABLE `hopdong`
-  ADD PRIMARY KEY (`MAHOPDONG`),
-  ADD KEY `fk_hd_nv` (`MANV`);
-
---
--- Indexes for table `lichlamviec`
---
-ALTER TABLE `lichlamviec`
-  ADD PRIMARY KEY (`MALICH`),
-  ADD KEY `fk_llv_nv` (`MANV`),
-  ADD KEY `fk_llv_cl` (`MACALAM`);
-
---
--- Indexes for table `nghiphep`
---
-ALTER TABLE `nghiphep`
-  ADD PRIMARY KEY (`MANGHIPHEP`),
-  ADD KEY `fk_np_nv` (`MANV`);
-
---
--- Indexes for table `nhanvien`
---
-ALTER TABLE `nhanvien`
-  ADD PRIMARY KEY (`MANV`),
-  ADD KEY `fk_nv_pb` (`MAPHONGBAN`),
-  ADD KEY `fk_nv_cv` (`MACHUCVU`),
-  ADD KEY `fk_nv_td` (`MATRINHDO`);
-
---
--- Indexes for table `nhom_quyen`
---
-ALTER TABLE `nhom_quyen`
-  ADD PRIMARY KEY (`GROUPID`);
-
---
--- Indexes for table `phanquyen_chitiet`
---
-ALTER TABLE `phanquyen_chitiet`
-  ADD PRIMARY KEY (`ROLEID`,`MACHUCNANG`),
-  ADD KEY `fk_pq_cn` (`MACHUCNANG`);
-
---
--- Indexes for table `phanquyen_theo_user`
+-- Chỉ mục cho bảng `phanquyen_theo_user`
 --
 ALTER TABLE `phanquyen_theo_user`
-  ADD PRIMARY KEY (`MANV`,`MACHUCNANG`),
-  ADD KEY `fk_pq_user_cn` (`MACHUCNANG`);
-
---
--- Indexes for table `phieudanhgia`
---
-ALTER TABLE `phieudanhgia`
-  ADD PRIMARY KEY (`MAPHIEU`),
-  ADD KEY `fk_pdg_nv` (`MANV`),
-  ADD KEY `fk_pdg_tc` (`MATIEUCHI`);
-
---
--- Indexes for table `phongban`
---
-ALTER TABLE `phongban`
-  ADD PRIMARY KEY (`MAPHONGBAN`);
-
---
--- Indexes for table `role`
---
-ALTER TABLE `role`
-  ADD PRIMARY KEY (`ROLEID`);
-
---
--- Indexes for table `taikhoan`
---
-ALTER TABLE `taikhoan`
-  ADD PRIMARY KEY (`MANV`);
-
---
--- Indexes for table `tieuchidanhgia`
---
-ALTER TABLE `tieuchidanhgia`
-  ADD PRIMARY KEY (`MATIEUCHI`);
-
---
--- Indexes for table `trinhdo`
---
-ALTER TABLE `trinhdo`
-  ADD PRIMARY KEY (`MATRINHDO`);
-
---
--- AUTO_INCREMENT cho các bảng đã đổ
---
-
---
--- AUTO_INCREMENT cho bảng `chitiet_luong_biendong`
---
-ALTER TABLE `chitiet_luong_biendong`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT cho bảng `danhmuc_khautru`
---
-ALTER TABLE `danhmuc_khautru`
-  MODIFY `MAKHAUTRU` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT cho bảng `danhmuc_phucap`
---
-ALTER TABLE `danhmuc_phucap`
-  MODIFY `MAPHUCAP` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- Các ràng buộc cho các bảng đã đổ
---
-
---
--- Các ràng buộc cho bảng `bangluong`
---
-ALTER TABLE `bangluong`
-  ADD CONSTRAINT `fk_bl_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
-
---
--- Các ràng buộc cho bảng `chamcong`
---
-ALTER TABLE `chamcong`
-  ADD CONSTRAINT `fk_cc_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
-
---
--- Các ràng buộc cho bảng `chitiet_luong_biendong`
---
-ALTER TABLE `chitiet_luong_biendong`
-  ADD CONSTRAINT `fk_ct_bl` FOREIGN KEY (`MALUONG`) REFERENCES `bangluong` (`MALUONG`);
-
---
--- Các ràng buộc cho bảng `hopdong`
---
-ALTER TABLE `hopdong`
-  ADD CONSTRAINT `fk_hd_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
-
---
--- Các ràng buộc cho bảng `lichlamviec`
---
-ALTER TABLE `lichlamviec`
-  ADD CONSTRAINT `fk_llv_cl` FOREIGN KEY (`MACALAM`) REFERENCES `calam` (`MACALAM`),
-  ADD CONSTRAINT `fk_llv_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
-
---
--- Các ràng buộc cho bảng `nghiphep`
---
-ALTER TABLE `nghiphep`
-  ADD CONSTRAINT `fk_np_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`);
-
---
--- Các ràng buộc cho bảng `nhanvien`
---
-ALTER TABLE `nhanvien`
-  ADD CONSTRAINT `fk_nv_cv` FOREIGN KEY (`MACHUCVU`) REFERENCES `chucvu` (`MACHUCVU`),
-  ADD CONSTRAINT `fk_nv_pb` FOREIGN KEY (`MAPHONGBAN`) REFERENCES `phongban` (`MAPHONGBAN`),
-  ADD CONSTRAINT `fk_nv_td` FOREIGN KEY (`MATRINHDO`) REFERENCES `trinhdo` (`MATRINHDO`);
-
---
--- Các ràng buộc cho bảng `phanquyen_chitiet`
---
-ALTER TABLE `phanquyen_chitiet`
-  ADD CONSTRAINT `fk_pq_cn` FOREIGN KEY (`MACHUCNANG`) REFERENCES `chucnang` (`MACHUCNANG`),
-  ADD CONSTRAINT `fk_pq_role` FOREIGN KEY (`ROLEID`) REFERENCES `role` (`ROLEID`);
-
---
--- Các ràng buộc cho bảng `phanquyen_theo_user`
---
-ALTER TABLE `phanquyen_theo_user`
-  ADD CONSTRAINT `fk_pq_user_cn` FOREIGN KEY (`MACHUCNANG`) REFERENCES `chucnang` (`MACHUCNANG`),
-  ADD CONSTRAINT `fk_pq_user_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`) ON DELETE CASCADE;
-
---
--- Các ràng buộc cho bảng `phieudanhgia`
---
-ALTER TABLE `phieudanhgia`
-  ADD CONSTRAINT `fk_pdg_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`),
-  ADD CONSTRAINT `fk_pdg_tc` FOREIGN KEY (`MATIEUCHI`) REFERENCES `tieuchidanhgia` (`MATIEUCHI`);
-
---
--- Các ràng buộc cho bảng `taikhoan`
---
-ALTER TABLE `taikhoan`
-  ADD CONSTRAINT `fk_tk_nv` FOREIGN KEY (`MANV`) REFERENCES `nhanvien` (`MANV`) ON DELETE CASCADE;
-
+  ADD PRIMARY KEY (`MANV`,`MACHUCNANG`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

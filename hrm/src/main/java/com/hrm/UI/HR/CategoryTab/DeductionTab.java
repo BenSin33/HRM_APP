@@ -4,6 +4,9 @@ import com.hrm.DAO.DeductionDAO;
 import com.hrm.DTO.DeductionDTO;
 import com.hrm.UI.component.CRUDDialog;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +21,7 @@ public class DeductionTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private DeductionDAO deductionDAO;
+    private PermissionService permissionService;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
     private JButton btnAdd, btnRefresh;
@@ -28,6 +32,7 @@ public class DeductionTab extends JPanel {
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
         deductionDAO = new DeductionDAO();
+        permissionService = new PermissionService();
 
         // Panel nút bấm
         JPanel buttonPanel = createButtonPanel();
@@ -138,6 +143,12 @@ public class DeductionTab extends JPanel {
     }
 
     private void handleAdd() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm khấu trừ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         DeductionEditForm form = new DeductionEditForm();
         CRUDDialog<DeductionDTO> dialog = new CRUDDialog<>(
             (JFrame) SwingUtilities.getWindowAncestor(this),
@@ -159,6 +170,12 @@ public class DeductionTab extends JPanel {
     }
 
     private void handleEdit(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa khấu trừ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int maKhauTru = (int) tableModel.getValueAt(row, 0);
         DeductionDTO dto = deductionDAO.getDeductionById(maKhauTru);
 
@@ -185,6 +202,12 @@ public class DeductionTab extends JPanel {
     }
 
     private void handleDelete(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa khấu trừ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int maKhauTru = (int) tableModel.getValueAt(row, 0);
         int option = JOptionPane.showConfirmDialog(this,
             "Bạn có chắc chắn muốn xóa khấu trừ này?",

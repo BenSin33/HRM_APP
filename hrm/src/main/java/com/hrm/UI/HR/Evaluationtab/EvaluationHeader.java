@@ -2,6 +2,9 @@ package com.hrm.UI.HR.Evaluationtab;
 
 import com.hrm.DAO.HR.EvaluationDAO;
 import com.hrm.DTO.HR.EvaluationPeriodDTO;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,6 +12,7 @@ import java.awt.*;
 public class EvaluationHeader extends JPanel {
 
     private final EvaluationDAO dao = new EvaluationDAO();
+    private final PermissionService permissionService = new PermissionService();
 
     // Callback để báo EvaluationTable refresh khi tạo đợt mới xong
     private Runnable onPeriodCreated;
@@ -49,6 +53,13 @@ public class EvaluationHeader extends JPanel {
         createBtn.putClientProperty("FlatLaf.style",
                 "arc:10; background:#7C3AED; borderWidth:0");
         createBtn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        // Kiểm tra quyền: CN06_EVALUATION -> CN05 (Đánh giá hiệu suất)
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN06_EVALUATION")) {
+            createBtn.setEnabled(false);
+            createBtn.setToolTipText("Bạn không có quyền tạo đợt đánh giá");
+        }
 
         // Hover effect
         createBtn.addMouseListener(new java.awt.event.MouseAdapter() {

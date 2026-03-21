@@ -4,6 +4,9 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.TrinhDoDAO;
 import com.hrm.DTO.TrinhDoDTO;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +21,7 @@ public class TrinhDoTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private TrinhDoDAO trinhDoDAO;
+    private PermissionService permissionService;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
 
@@ -27,6 +31,7 @@ public class TrinhDoTab extends JPanel {
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
         trinhDoDAO = new TrinhDoDAO();
+        permissionService = new PermissionService();
 
         add(createButtonPanel(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
@@ -130,6 +135,12 @@ public class TrinhDoTab extends JPanel {
     }
 
     private void handleAdd() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm trình độ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         TrinhDoEditForm form = new TrinhDoEditForm();
         form.setMaTrinhDo(trinhDoDAO.generateNextMaTrinhDo());
 
@@ -159,6 +170,12 @@ public class TrinhDoTab extends JPanel {
     }
 
     private void handleEdit(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa trình độ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         String maTrinhDo = String.valueOf(tableModel.getValueAt(row, 0));
         TrinhDoDTO dto = trinhDoDAO.getTrinhDoById(maTrinhDo);
 
@@ -188,6 +205,12 @@ public class TrinhDoTab extends JPanel {
     }
 
     private void handleDelete(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa trình độ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         String maTrinhDo = String.valueOf(tableModel.getValueAt(row, 0));
         int option = JOptionPane.showConfirmDialog(this,
                 "Bạn có chắc chắn muốn xóa trình độ này?",

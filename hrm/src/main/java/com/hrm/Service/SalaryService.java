@@ -4,7 +4,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import com.hrm.DAO.Employee.SalaryDAO;
+import com.hrm.DAO.Employee.AttendanceDAO;
+import com.hrm.DAO.NhanVienDAO;
+import com.hrm.DAO.AllowanceDAO;
+import com.hrm.DAO.DeductionDAO;
+import com.hrm.DAO.ContractDAO;
 import com.hrm.DTO.Employee.SalaryDTO;
+import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.DTO.ContractDTO;
 
 public class SalaryService {
     private SalaryDAO salaryDAO;
@@ -29,12 +36,20 @@ public class SalaryService {
         return salaryDAO.updateSalary(salary);
     }
 
+    public boolean insertSalary(SalaryDTO salary) {
+        return salaryDAO.insertSalary(salary);
+    }
+
     public boolean lockSalariesByMonth(int thang, int nam) {
         return salaryDAO.lockSalariesByMonth(thang, nam);
     }
 
     public boolean unlockSalariesByMonth(int thang, int nam) {
         return salaryDAO.unlockSalariesByMonth(thang, nam);
+    }
+
+    public boolean updatePaymentStatusByMonth(int thang, int nam) {
+        return salaryDAO.updatePaymentStatusByMonth(thang, nam);
     }
 
     public List<SalaryDTO> getSalariesByMonthYearAndStatus(int thang, int nam, String trangThai) {
@@ -67,6 +82,124 @@ public class SalaryService {
         }
 
         return new SalaryStatistics(totalSalary, averageSalary, employeeCount);
+    }
+
+    // Tính lương cho khoảng tháng/năm
+    // Công thức: thực lĩnh = (lương cơ bản x hệ số trình độ x (số ngày công / số ngày công chuẩn)) + Tổng phụ cấp - tổng khấu trừ
+    public boolean calculateSalaryForMonthRange(int fromMonth, int fromYear, int toMonth, int toYear) {
+        try {
+            AttendanceDAO attendanceDAO = new AttendanceDAO();
+            NhanVienDAO nhanVienDAO = new NhanVienDAO();
+            AllowanceDAO allowanceDAO = new AllowanceDAO();
+            DeductionDAO deductionDAO = new DeductionDAO();
+            ContractDAO contractDAO = new ContractDAO();
+            
+            // Lấy tất cả nhân viên
+            List<NhanVienDTO> employees = nhanVienDAO.getAll();
+            
+            // Lấy allowances và deductions mặc định cho nhân viên
+            BigDecimal defaultAllowances = allowanceDAO.getTotalAllowances();
+            BigDecimal defaultDeductions = deductionDAO.getTotalDeductions();
+            
+            int successCount = 0;
+            
+            // Số ngày công chuẩn (công ty quy định) - mặc định 26 ngày
+            float soNgayCongChuan = 26;
+            
+            // Duyệt qua từng nhân viên và tính lương cho từng tháng
+            for (NhanVienDTO employee : employees) {
+                // Lấy hợp đồng hiện hành của nhân viên (lấy hợp đồng mới nhất)
+                List<ContractDTO> contracts = contractDAO.getContractsByMaNV(employee.getManv());
+                if (contracts.isEmpty()) {
+                    continue; // Bỏ qua nhân viên không có hợp đồng
+                }
+                
+                // Lấy hợp đồng mới nhất (đã sắp xếp theo thời gian giảm dần)
+                ContractDTO currentContract = contracts.get(0);
+                BigDecimal luongCoBanFromContract = currentContract.luongCoBan != null 
+                    ? currentContract.luongCoBan : BigDecimal.ZERO;
+                
+                java.time.YearMonth current = java.time.YearMonth.of(fromYear, fromMonth);
+                java.time.YearMonth to = java.time.YearMonth.of(toYear, toMonth);
+                
+                while (!current.isAfter(to)) {
+                    // Kiểm tra xem bản lương đã tồn tại chưa
+                    SalaryDTO existingSalary = getSalaryByMaNV(employee.getManv(), current.getMonthValue(), current.getYear());
+                    
+                    // Chỉ tính nếu chưa có bản lương hoặc trạng thái là nháp (0)
+                    if (existingSalary == null || "0".equals(existingSalary.trangThai)) {
+                        // Lấy dữ liệu nhân viên (lương cơ bản từ hợp đồng, hệ số trình độ, phụ cấp chức vụ)
+                        BigDecimal luongCoBan = luongCoBanFromContract; // Lấy từ hợp đồng
+                        BigDecimal hesoTrinhDo = existingSalary != null && existingSalary.hesotrinhdo != null 
+                            ? existingSalary.hesotrinhdo : new BigDecimal("1.00");
+                        BigDecimal phucapChucVu = existingSalary != null && existingSalary.phucapChucVu != null 
+                            ? existingSalary.phucapChucVu : BigDecimal.ZERO;
+                        
+                        // Lấy số ngày công từ bảng chấm công (chỉ tính những ngày TRANGTHAI = '1')
+                        float soNgayCong = attendanceDAO.getWorkingDaysForEmployeeInMonth(
+                            employee.getManv(), 
+                            current.getMonthValue(), 
+                            current.getYear()
+                        );
+                        
+                        // Tính toán thực lĩnh theo công thức:
+                        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công chuẩn)) + Tổng phụ cấp - tổng khấu trừ
+                        BigDecimal ngayCongRatio = new BigDecimal(soNgayCong)
+                            .divide(new BigDecimal(soNgayCongChuan), 4, RoundingMode.HALF_UP);
+                        
+                        BigDecimal thucLinh = luongCoBan
+                            .multiply(hesoTrinhDo)
+                            .multiply(ngayCongRatio)
+                            .add(defaultAllowances)
+                            .add(phucapChucVu)
+                            .subtract(defaultDeductions)
+                            .setScale(2, RoundingMode.HALF_UP);
+                        
+                        // Tạo hoặc cập nhật bản lương
+                        SalaryDTO salaryDTO = new SalaryDTO();
+                        if (existingSalary != null) {
+                            salaryDTO.maLuong = existingSalary.maLuong;
+                        }
+                        salaryDTO.maNV = employee.getManv();
+                        salaryDTO.hoTen = employee.getHoten();
+                        salaryDTO.phongBan = employee.getMaphongban(); // Mã phòng ban
+                        salaryDTO.thang = current.getMonthValue();
+                        salaryDTO.nam = current.getYear();
+                        salaryDTO.luongCoBan = luongCoBan;
+                        salaryDTO.soNgayCong = soNgayCong;
+                        salaryDTO.soNgayCongChuan = soNgayCongChuan; // Lưu số ngày công chuẩn
+                        salaryDTO.hesotrinhdo = hesoTrinhDo;
+                        salaryDTO.phucapChucVu = phucapChucVu;
+                        salaryDTO.tongPhucap = defaultAllowances;
+                        salaryDTO.tongKhauTru = defaultDeductions;
+                        salaryDTO.thucLinh = thucLinh;
+                        salaryDTO.trangThai = "0"; // Nháp
+                        salaryDTO.tinhTrangThanToan = "Chưa thanh toán";
+                        
+                        // INSERT nếu chưa tồn tại, UPDATE nếu đã tồn tại
+                        boolean success = false;
+                        if (existingSalary == null) {
+                            // Tạo mới - INSERT
+                            success = insertSalary(salaryDTO);
+                        } else {
+                            // Cập nhật - UPDATE
+                            success = updateSalary(salaryDTO);
+                        }
+                        
+                        if (success) {
+                            successCount++;
+                        }
+                    }
+                    
+                    current = current.plusMonths(1);
+                }
+            }
+            
+            return successCount > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public static class SalaryStatistics {

@@ -28,14 +28,18 @@ import javax.swing.event.DocumentListener;
 
 import com.hrm.DAO.HR.DepartmentDAO.EmployeeOption;
 import com.hrm.DTO.HR.DepartmentDTO;
+import com.hrm.DTO.UserDTO;
 import com.hrm.Service.DepartmentService;
+import com.hrm.Service.PermissionService;
 import com.hrm.utils.JDBCConection;
+import com.hrm.utils.SessionManager;
 
 public class DepartmentManagementPanel extends JPanel {
 
     private JPanel cardsContainer;
     private JTextField searchField;
     private DepartmentService departmentService = new DepartmentService();
+    private PermissionService permissionService = new PermissionService();
 
     public DepartmentManagementPanel() {
         setLayout(new BorderLayout());
@@ -455,6 +459,18 @@ public class DepartmentManagementPanel extends JPanel {
      * Xử lý xóa phòng ban: xóa trong database rồi refresh giao diện.
      */
     private void handleDeleteDepartment(String maPhongBan, String tenPhongBan, JPanel card) {
+        // Permission check
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN03_DEPARTMENT")) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Bạn không có quyền xóa phòng ban",
+                    "Từ chối truy cập",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
                 null,
                 "Bạn có chắc muốn xóa phòng \"" + tenPhongBan + "\"?",
@@ -487,6 +503,18 @@ public class DepartmentManagementPanel extends JPanel {
      */
     private void openEditDepartmentForm(String maPhongBan, String tenPhongBanHienTai,
                                         String managerName, String emailHienTai, String phoneHienTai) {
+        // Permission check
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN03_DEPARTMENT")) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Bạn không có quyền sửa phòng ban",
+                    "Từ chối truy cập",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
         JTextField nameField = new JTextField(tenPhongBanHienTai, 25);
         JLabel codeLabel = new JLabel(maPhongBan);
 
@@ -564,6 +592,18 @@ public class DepartmentManagementPanel extends JPanel {
 
     // ============== FORM THÊM PHÒNG BAN ==============
     private void openAddDepartmentForm() {
+        // Permission check
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN03_DEPARTMENT")) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Bạn không có quyền thêm phòng ban",
+                    "Từ chối truy cập",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
         JTextField nameField = new JTextField();
         JTextField codeField = new JTextField();
         JTextField employeesField = new JTextField();

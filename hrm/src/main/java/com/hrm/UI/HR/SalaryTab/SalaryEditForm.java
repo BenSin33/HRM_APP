@@ -22,7 +22,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
     private JTextField txtLuongCoBan;
     private JTextField txtHesoTrinhDo;
     private JTextField txtSoNgayCong;
-    private JTextField txtSoNgayCongThucTe;
+    private JTextField txtSoNgayCongChuan; // NEW: Số ngày công chuẩn
     private JTextField txtTongPhucap;
     private JTextField txtTongKhauTru;
     private JTextField txtThucLinh;
@@ -40,7 +40,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
 
         // Panel chính chứa các trường
         JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new GridLayout(7, 2, 20, 15));
+        mainPanel.setLayout(new GridLayout(8, 2, 20, 15));
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -57,7 +57,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
 
         // Ngày công
         addFormField(mainPanel, "Số ngày công:", txtSoNgayCong = createEditableField(), false);
-        addFormField(mainPanel, "Số ngày công TT (mặc định 22):", txtSoNgayCongThucTe = createEditableField("22"), false);
+        addFormField(mainPanel, "Số ngày công chuẩn:", txtSoNgayCongChuan = createEditableField("26"), false);
 
         // Phụ cấp và khấu trừ
         addFormField(mainPanel, "Tổng phụ cấp (VND):", txtTongPhucap = createReadOnlyField(), true);
@@ -124,7 +124,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             txtLuongCoBan.setText(salary.luongCoBan != null ? String.format("%,.0f", salary.luongCoBan.doubleValue()) : "");
             txtHesoTrinhDo.setText(salary.hesotrinhdo != null ? salary.hesotrinhdo.toString() : "1.00");
             txtSoNgayCong.setText(salary.soNgayCong > 0 ? String.valueOf(salary.soNgayCong) : "");
-            txtSoNgayCongThucTe.setText(String.valueOf(salary.soNgayCong > 0 ? salary.soNgayCong : 22));
+            txtSoNgayCongChuan.setText(salary.soNgayCongChuan > 0 ? String.valueOf(salary.soNgayCongChuan) : "26");
             
             // Tự động lấy tổng phụ cấp và khấu trừ từ database
             try {
@@ -213,15 +213,16 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             salary.soNgayCong = 0;
         }
 
-        // Số ngày công thực tế
-        float soNgayCongThucTe = 22; // Mặc định
+        // Số ngày công chuẩn (NEW)
         try {
-            String soNgayStr = txtSoNgayCongThucTe.getText().trim();
-            if (!soNgayStr.isEmpty()) {
-                soNgayCongThucTe = Float.parseFloat(soNgayStr);
+            String soNgayCongChuanStr = txtSoNgayCongChuan.getText().trim();
+            if (!soNgayCongChuanStr.isEmpty()) {
+                salary.soNgayCongChuan = Float.parseFloat(soNgayCongChuanStr);
+            } else {
+                salary.soNgayCongChuan = 26; // Mặc định 26 ngày
             }
         } catch (Exception e) {
-            soNgayCongThucTe = 22;
+            salary.soNgayCongChuan = 26;
         }
         
         // Tổng phụ cấp - giữ nguyên decimal
@@ -248,11 +249,11 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             salary.tongKhauTru = BigDecimal.ZERO;
         }
         
-        // Công thức tính thực lĩnh (Cập nhật):
-        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công thực tế)) + tổng phụ cấp + phụ cấp chức vụ - tổng khấu trừ
+        // Công thức tính thực lĩnh (Updated):
+        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công chuẩn)) + tổng phụ cấp + phụ cấp chức vụ - tổng khấu trừ
         BigDecimal heSoTrinhDo = salary.hesotrinhdo != null ? salary.hesotrinhdo : new BigDecimal("1.00");
         BigDecimal phucapChucVu = salary.phucapChucVu != null ? salary.phucapChucVu : BigDecimal.ZERO;
-        BigDecimal ngayCongRatio = new BigDecimal(salary.soNgayCong).divide(new BigDecimal(soNgayCongThucTe), 4, java.math.RoundingMode.HALF_UP);
+        BigDecimal ngayCongRatio = new BigDecimal(salary.soNgayCong).divide(new BigDecimal(salary.soNgayCongChuan), 4, java.math.RoundingMode.HALF_UP);
         
         salary.thucLinh = salary.luongCoBan
                             .multiply(heSoTrinhDo)
@@ -287,7 +288,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         txtLuongCoBan.setText("");
         txtHesoTrinhDo.setText("");
         txtSoNgayCong.setText("");
-        txtSoNgayCongThucTe.setText("22");
+        txtSoNgayCongChuan.setText("26");
         txtTongPhucap.setText("");
         txtTongKhauTru.setText("");
         txtThucLinh.setText("");
@@ -321,25 +322,26 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             return false;
         }
         
-        // Kiểm tra số ngày công thực tế
-        String soNgayCongThucTeStr = txtSoNgayCongThucTe.getText().trim();
-        if (soNgayCongThucTeStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập số ngày công thực tế!");
+        // Kiểm tra số ngày công chuẩn (NEW)
+        String soNgayCongChuanStr = txtSoNgayCongChuan.getText().trim();
+        if (soNgayCongChuanStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập số ngày công chuẩn!");
             return false;
         }
         
         try {
-            float soNgayCongThucTe = Float.parseFloat(soNgayCongThucTeStr);
-            if (soNgayCongThucTe <= 0) {
-                JOptionPane.showMessageDialog(this, "Số ngày công thực tế phải lớn hơn 0!");
+            float soNgayCongChuan = Float.parseFloat(soNgayCongChuanStr);
+            if (soNgayCongChuan <= 0) {
+                JOptionPane.showMessageDialog(this, "Số ngày công chuẩn phải > 0!");
                 return false;
             }
-            if (soNgayCongThucTe > 31) {
-                JOptionPane.showMessageDialog(this, "Số ngày công thực tế không được vượt quá 31 ngày!");
+            
+            if (soNgayCongChuan > 31) {
+                JOptionPane.showMessageDialog(this, "Số ngày công chuẩn không được vượt quá 31 ngày!");
                 return false;
             }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Số ngày công thực tế phải là số hợp lệ!");
+            JOptionPane.showMessageDialog(this, "Số ngày công chuẩn phải là số hợp lệ!");
             return false;
         }
         

@@ -2,12 +2,16 @@ package com.hrm.UI.Manager.ScheduleTab;
 
 import com.hrm.UI.Manager.color.ColorScheme;
 import com.hrm.Service.NhanVienService;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 
 public class SchedulePanel extends JPanel {
     private NhanVienService nhanVienService;
+    private PermissionService permissionService;
     
     private ScheduleHeader header;
     private ScheduleNavigator navigator;
@@ -22,6 +26,7 @@ public class SchedulePanel extends JPanel {
         setBackground(ColorScheme.MAIN_BG);
 
         nhanVienService = new NhanVienService();
+        permissionService = new PermissionService();
         currentMonday = calculateCurrentMonday();
 
         // Header
@@ -123,6 +128,12 @@ public class SchedulePanel extends JPanel {
     }
 
     private void onSave() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN13_SCHEDULE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền chỉnh sửa lịch làm việc", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         boolean success = table.savePendingChanges();
         if (success) {
             setSaveEnabled(false);
@@ -137,6 +148,12 @@ public class SchedulePanel extends JPanel {
      * Xử lý reset lịch làm việc của tuần hiện tại
      */
     private void onResetWeek() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN13_SCHEDULE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa lịch làm việc", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
                 this,
                 "Bạn có chắc muốn xóa toàn bộ lịch làm việc của tuần này (bao gồm OFF)?",

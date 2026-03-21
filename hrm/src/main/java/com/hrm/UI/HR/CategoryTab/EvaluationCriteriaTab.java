@@ -4,6 +4,9 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.EvaluationCriteriaDAO;
 import com.hrm.DTO.EvaluationCriteriaDTO;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +21,7 @@ public class EvaluationCriteriaTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private EvaluationCriteriaDAO criteriaDAO;
+    private PermissionService permissionService;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
 
@@ -27,6 +31,7 @@ public class EvaluationCriteriaTab extends JPanel {
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
         criteriaDAO = new EvaluationCriteriaDAO();
+        permissionService = new PermissionService();
 
         add(createButtonPanel(), BorderLayout.NORTH);
         add(createTablePanel(), BorderLayout.CENTER);
@@ -130,6 +135,12 @@ public class EvaluationCriteriaTab extends JPanel {
     }
 
     private void handleAdd() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm tiêu chí đánh giá", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         EvaluationCriteriaEditForm form = new EvaluationCriteriaEditForm();
         form.setMaTieuChi(criteriaDAO.generateNextMaTieuChi());
 
@@ -159,6 +170,12 @@ public class EvaluationCriteriaTab extends JPanel {
     }
 
     private void handleEdit(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa tiêu chí đánh giá", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         String maTieuChi = String.valueOf(tableModel.getValueAt(row, 0));
         EvaluationCriteriaDTO dto = criteriaDAO.getCriteriaById(maTieuChi);
 
@@ -188,6 +205,12 @@ public class EvaluationCriteriaTab extends JPanel {
     }
 
     private void handleDelete(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa tiêu chí đánh giá", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         String maTieuChi = String.valueOf(tableModel.getValueAt(row, 0));
         int option = JOptionPane.showConfirmDialog(this,
                 "Bạn có chắc chắn muốn xóa tiêu chí đánh giá này?",

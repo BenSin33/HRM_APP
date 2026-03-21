@@ -82,7 +82,7 @@ public class PermissionDAO {
                      "COALESCE(pq.QUYEN_SUA, 0) AS QUYEN_SUA, " +
                      "COALESCE(pq.QUYEN_XOA, 0) AS QUYEN_XOA, " +
                      "COALESCE(pq.QUYEN_DUYET, 0) AS QUYEN_DUYET, " +
-                     "COALESCE(pq.QUYEN_XUAT_BC, 0) AS QUYEN_XUAT_BC, " +
+                     "0 AS QUYEN_XUAT_BC, " +
                      "0 AS USER_OVERRIDE " +
                      "FROM chucnang c " +
                      "LEFT JOIN phanquyen_chitiet pq ON pq.MACHUCNANG = c.MACHUCNANG AND pq.ROLEID = ? " +
@@ -127,7 +127,7 @@ public class PermissionDAO {
                      "COALESCE(MAX(u.QUYEN_SUA), r.QUYEN_SUA, 0) AS QUYEN_SUA, " +
                      "COALESCE(MAX(u.QUYEN_XOA), r.QUYEN_XOA, 0) AS QUYEN_XOA, " +
                      "COALESCE(MAX(u.QUYEN_DUYET), r.QUYEN_DUYET, 0) AS QUYEN_DUYET, " +
-                     "COALESCE(MAX(u.QUYEN_XUAT_BC), r.QUYEN_XUAT_BC, 0) AS QUYEN_XUAT_BC, " +
+                     "0 AS QUYEN_XUAT_BC, " +
                      "CASE WHEN MAX(u.MANV) IS NULL THEN 0 ELSE 1 END AS USER_OVERRIDE " +
                      "FROM chucnang c " +
                      "LEFT JOIN phanquyen_chitiet r ON r.MACHUCNANG = c.MACHUCNANG AND r.ROLEID = ? " +
@@ -215,11 +215,11 @@ public class PermissionDAO {
                                    boolean quyenXem, boolean quyenThem,
                                    boolean quyenSua, boolean quyenXoa,
                                    boolean quyenDuyet, boolean quyenXuatBaoCao) {
-        String sql = "INSERT INTO phanquyen_chitiet (ROLEID, MACHUCNANG, QUYEN_XEM, QUYEN_THEM, QUYEN_SUA, QUYEN_XOA, QUYEN_DUYET, QUYEN_XUAT_BC) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+        String sql = "INSERT INTO phanquyen_chitiet (ROLEID, MACHUCNANG, QUYEN_XEM, QUYEN_THEM, QUYEN_SUA, QUYEN_XOA, QUYEN_DUYET) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?) " +
                      "ON DUPLICATE KEY UPDATE QUYEN_XEM = VALUES(QUYEN_XEM), QUYEN_THEM = VALUES(QUYEN_THEM), " +
                      "QUYEN_SUA = VALUES(QUYEN_SUA), QUYEN_XOA = VALUES(QUYEN_XOA), " +
-                     "QUYEN_DUYET = VALUES(QUYEN_DUYET), QUYEN_XUAT_BC = VALUES(QUYEN_XUAT_BC)";
+                     "QUYEN_DUYET = VALUES(QUYEN_DUYET)";
 
         try (Connection conn = JDBCConection.getConnection()) {
             if (conn == null) {
@@ -235,7 +235,6 @@ public class PermissionDAO {
                 ps.setInt(5, quyenSua ? 1 : 0);
                 ps.setInt(6, quyenXoa ? 1 : 0);
                 ps.setInt(7, quyenDuyet ? 1 : 0);
-                ps.setInt(8, quyenXuatBaoCao ? 1 : 0);
 
                 int rowsAffected = ps.executeUpdate();
                 return rowsAffected > 0;
@@ -252,11 +251,11 @@ public class PermissionDAO {
                                         boolean quyenXem, boolean quyenThem,
                                         boolean quyenSua, boolean quyenXoa,
                                         boolean quyenDuyet, boolean quyenXuatBaoCao) {
-        String sql = "INSERT INTO phanquyen_theo_user (MANV, MACHUCNANG, QUYEN_XEM, QUYEN_THEM, QUYEN_SUA, QUYEN_XOA, QUYEN_DUYET, QUYEN_XUAT_BC, NGAY_CAP, GHI_CHU) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+        String sql = "INSERT INTO phanquyen_theo_user (MANV, MACHUCNANG, QUYEN_XEM, QUYEN_THEM, QUYEN_SUA, QUYEN_XOA, QUYEN_DUYET, NGAY_CAP, GHI_CHU) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                      "ON DUPLICATE KEY UPDATE QUYEN_XEM = VALUES(QUYEN_XEM), QUYEN_THEM = VALUES(QUYEN_THEM), " +
                      "QUYEN_SUA = VALUES(QUYEN_SUA), QUYEN_XOA = VALUES(QUYEN_XOA), QUYEN_DUYET = VALUES(QUYEN_DUYET), " +
-                     "QUYEN_XUAT_BC = VALUES(QUYEN_XUAT_BC), NGAY_CAP = VALUES(NGAY_CAP), GHI_CHU = VALUES(GHI_CHU)";
+                     "NGAY_CAP = VALUES(NGAY_CAP), GHI_CHU = VALUES(GHI_CHU)";
 
         try (Connection conn = JDBCConection.getConnection()) {
             if (conn == null) {
@@ -272,9 +271,8 @@ public class PermissionDAO {
                 ps.setInt(5, quyenSua ? 1 : 0);
                 ps.setInt(6, quyenXoa ? 1 : 0);
                 ps.setInt(7, quyenDuyet ? 1 : 0);
-                ps.setInt(8, quyenXuatBaoCao ? 1 : 0);
-                ps.setDate(9, new Date(System.currentTimeMillis()));
-                ps.setString(10, "Cập nhật từ tab phân quyền");
+                ps.setDate(8, new Date(System.currentTimeMillis()));
+                ps.setString(9, "Cập nhật từ tab phân quyền");
 
                 return ps.executeUpdate() > 0;
             }
@@ -372,7 +370,7 @@ public class PermissionDAO {
     public Map<String, List<PermissionDTO>> getAllPermissions() {
         Map<String, List<PermissionDTO>> allPermissions = new HashMap<>();
         String sql = "SELECT pq.ROLEID, pq.MACHUCNANG, c.TENCHUCNANG, pq.QUYEN_XEM, pq.QUYEN_THEM, " +
-                     "pq.QUYEN_SUA, pq.QUYEN_XOA, pq.QUYEN_DUYET, pq.QUYEN_XUAT_BC " +
+                     "pq.QUYEN_SUA, pq.QUYEN_XOA, pq.QUYEN_DUYET, 0 AS QUYEN_XUAT_BC " +
                      "FROM phanquyen_chitiet pq " +
                      "JOIN chucnang c ON c.MACHUCNANG = pq.MACHUCNANG " +
                      "ORDER BY pq.ROLEID, pq.MACHUCNANG";

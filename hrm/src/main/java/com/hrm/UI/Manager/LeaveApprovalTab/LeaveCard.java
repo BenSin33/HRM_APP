@@ -1,6 +1,9 @@
 package com.hrm.UI.Manager.LeaveApprovalTab;
 
 import com.hrm.Service.NghiPhepService;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 import javax.swing.*;
 import java.awt.*;
 
@@ -17,6 +20,7 @@ public class LeaveCard extends JPanel {
     private String maNghiPhep;
     
     private NghiPhepService service;
+    private PermissionService permissionService;
     private Runnable refreshCallback;
 
     public LeaveCard(Object[] row, NghiPhepService service, Runnable refreshCallback) {
@@ -35,6 +39,7 @@ public class LeaveCard extends JPanel {
         this.ngayDuyet = "";                      // Không dùng
         
         this.service = service;
+        this.permissionService = new PermissionService();
         this.refreshCallback = refreshCallback;
 
         initComponent();
@@ -204,6 +209,12 @@ public class LeaveCard extends JPanel {
     }
     
     private void handleApprove() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN05_LEAVE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền duyệt đơn nghỉ phép", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
             this,
             "Bạn có chắc muốn duyệt đơn nghỉ phép của " + ten + "?",
@@ -235,6 +246,12 @@ public class LeaveCard extends JPanel {
     }
     
     private void handleReject() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN05_LEAVE")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền từ chối đơn nghỉ phép", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
             this,
             "Bạn có chắc muốn từ chối đơn nghỉ phép của " + ten + "?\n" +
