@@ -40,6 +40,26 @@ public class DepartmentDAO {
         return list;
     }
 
+    /**
+     * Sinh mã phòng ban tiếp theo (PB01, PB02, ...).
+     */
+    public String generateNextMaPhongBan() {
+        String sql = "SELECT COALESCE(MAX(CAST(SUBSTRING(maphongban, 3) AS UNSIGNED)), 0) AS MAX_ID FROM phongban WHERE maphongban LIKE 'PB%'";
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return "PB01";
+        try (conn;
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                int next = rs.getInt("MAX_ID") + 1;
+                return String.format("PB%02d", next);
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi DepartmentDAO.generateNextMaPhongBan(): " + e.getMessage());
+        }
+        return "PB01";
+    }
+
     public DepartmentDTO findById(String maPhongBan) {
         String sql = "SELECT * FROM phongban WHERE maphongban = ?";
         Connection conn = JDBCConection.getConnection();

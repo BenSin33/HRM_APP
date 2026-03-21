@@ -27,6 +27,13 @@ public class DepartmentService {
     }
 
     /**
+     * Sinh mã phòng ban tiếp theo (PB01, PB02, ...).
+     */
+    public String generateNextMaPhongBan() {
+        return departmentDAO.generateNextMaPhongBan();
+    }
+
+    /**
      * Tìm phòng ban theo mã.
      */
     public DepartmentDTO findDepartmentById(String maPhongBan) {

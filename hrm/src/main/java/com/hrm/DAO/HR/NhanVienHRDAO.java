@@ -54,6 +54,26 @@ public class NhanVienHRDAO {
     }
 
     /**
+     * Sinh mã nhân viên tiếp theo (NV01, NV02, ...).
+     */
+    public String generateNextManv() {
+        String sql = "SELECT COALESCE(MAX(CAST(SUBSTRING(manv, 3) AS UNSIGNED)), 0) AS MAX_ID FROM nhanvien WHERE manv REGEXP '^NV[0-9]+$'";
+        Connection conn = JDBCConection.getConnection();
+        if (conn == null) return "NV01";
+        try (conn;
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                int next = rs.getInt("MAX_ID") + 1;
+                return String.format("NV%02d", next);
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi NhanVienHRDAO.generateNextManv(): " + e.getMessage());
+        }
+        return "NV01";
+    }
+
+    /**
      * Lấy một nhân viên theo mã NV.
      */
     public NhanVienDTO findById(String manv) {
