@@ -35,6 +35,29 @@ public class TrinhDoDAO {
         return list;
     }
 
+    /**
+     * Lấy mã trình độ theo tên hoặc mã (vd: "Đại học" -> TD01, "TD02" -> TD02).
+     */
+    public String getMaTrinhDoByTenOrCode(String tenOrCode) {
+        if (tenOrCode == null || tenOrCode.trim().isEmpty()) return "TD01";
+        String s = tenOrCode.trim();
+        String sql = "SELECT matrinhdo FROM trinhdo WHERE UPPER(trinhdo) = UPPER(?) OR UPPER(matrinhdo) = UPPER(?)";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement pstmt = conn != null ? conn.prepareStatement(sql) : null) {
+            if (pstmt == null) return "TD01";
+            pstmt.setString(1, s);
+            pstmt.setString(2, s);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("matrinhdo");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "TD01";
+    }
+
     public TrinhDoDTO getTrinhDoById(String maTrinhDo) {
         String sql = "SELECT MATRINHDO, TRINHDO, HESOTRINHDO FROM trinhdo WHERE MATRINHDO = ?";
 

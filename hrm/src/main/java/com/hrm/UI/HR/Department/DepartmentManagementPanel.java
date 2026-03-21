@@ -14,6 +14,8 @@ import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -22,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -31,6 +34,7 @@ import com.hrm.DTO.HR.DepartmentDTO;
 import com.hrm.DTO.UserDTO;
 import com.hrm.Service.DepartmentService;
 import com.hrm.Service.PermissionService;
+import com.hrm.utils.DepartmentExcelHelper;
 import com.hrm.utils.JDBCConection;
 import com.hrm.utils.SessionManager;
 
@@ -223,18 +227,51 @@ public class DepartmentManagementPanel extends JPanel {
         wrapper.add(searchField);
         wrapper.add(Box.createHorizontalStrut(16));
 
-        // Nút thêm phòng ban màu tím ở góc phải
+        // Nút Xuất Excel, Nhập Excel, Thêm phòng ban
+        JButton exportExcelBtn = new JButton("Xuất Excel");
+        exportExcelBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        exportExcelBtn.setForeground(Color.WHITE);
+        exportExcelBtn.setBackground(new Color(56, 142, 60));
+        exportExcelBtn.setFocusPainted(false);
+        exportExcelBtn.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+        exportExcelBtn.setPreferredSize(new Dimension(120, 42));
+
+        JButton importExcelBtn = new JButton("Nhập Excel");
+        importExcelBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        importExcelBtn.setForeground(Color.WHITE);
+        importExcelBtn.setBackground(new Color(25, 118, 210));
+        importExcelBtn.setFocusPainted(false);
+        importExcelBtn.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+        importExcelBtn.setPreferredSize(new Dimension(120, 42));
+
         JButton addBtn = new JButton("+ Thêm phòng ban");
         addBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         addBtn.setForeground(Color.WHITE);
         addBtn.setBackground(new Color(151, 71, 255));
         addBtn.setFocusPainted(false);
         addBtn.setBorder(BorderFactory.createEmptyBorder(10, 22, 10, 22));
-        // Rộng hơn để luôn hiển thị hết chữ
         addBtn.setPreferredSize(new Dimension(170, 42));
 
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN03_DEPARTMENT")) {
+            addBtn.setEnabled(false);
+            addBtn.setToolTipText("Bạn không có quyền thêm phòng ban");
+            importExcelBtn.setEnabled(false);
+            importExcelBtn.setToolTipText("Bạn không có quyền nhập phòng ban");
+        }
+        if (currentUser == null || !permissionService.canExport(currentUser, "CN03_DEPARTMENT")) {
+            exportExcelBtn.setEnabled(false);
+            exportExcelBtn.setToolTipText("Bạn không có quyền xuất Excel");
+        }
+
+        exportExcelBtn.addActionListener(e -> DepartmentExcelHelper.handleDepartmentExport(this));
+        importExcelBtn.addActionListener(e -> DepartmentExcelHelper.handleDepartmentImport(this, this::refreshPanel));
         addBtn.addActionListener(e -> openAddDepartmentForm());
 
+        wrapper.add(exportExcelBtn);
+        wrapper.add(Box.createHorizontalStrut(10));
+        wrapper.add(importExcelBtn);
+        wrapper.add(Box.createHorizontalStrut(10));
         wrapper.add(addBtn);
         return wrapper;
     }
@@ -548,7 +585,8 @@ public class DepartmentManagementPanel extends JPanel {
             }
         });
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 10));
+        form.setBorder(new EmptyBorder(24, 28, 20, 28));
         form.add(new JLabel("Mã phòng ban:"));
         form.add(codeLabel);
         form.add(new JLabel("Tên phòng ban:"));
@@ -560,17 +598,36 @@ public class DepartmentManagementPanel extends JPanel {
         form.add(new JLabel("Điện thoại:"));
         form.add(phoneField);
 
-        int result = JOptionPane.showConfirmDialog(
-                null,
-                form,
-                "Sửa phòng ban (trừ Mô tả)",
-                JOptionPane.OK_CANCEL_OPTION
-        );
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentFrame, "Sửa phòng ban (trừ Mô tả)", true);
+        dialog.setLayout(new BorderLayout());
 
-        if (result == JOptionPane.OK_OPTION) {
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        btnPanel.setBorder(new EmptyBorder(0, 28, 20, 28));
+        JButton okBtn = new JButton("OK");
+        okBtn.setBackground(new Color(151, 71, 255));
+        okBtn.setForeground(Color.WHITE);
+        JButton cancelBtn = new JButton("Hủy");
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        okBtn.addActionListener(e -> {
             String tenPhongBanMoi = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String dienthoai = phoneField.getText().trim();
+
+            // Kiểm tra dữ liệu và focus vào trường sai
             if (tenPhongBanMoi.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Vui lòng nhập tên phòng ban!");
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập tên phòng ban!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { nameField.requestFocusInWindow(); nameField.selectAll(); });
+                return;
+            }
+            if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._-]+@company\\.com$")) {
+                JOptionPane.showMessageDialog(dialog, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { emailField.requestFocusInWindow(); emailField.selectAll(); });
+                return;
+            }
+            if (!dienthoai.isEmpty() && !dienthoai.matches("^\\d{10}$")) {
+                JOptionPane.showMessageDialog(dialog, "Điện thoại phải là đúng 10 chữ số!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { phoneField.requestFocusInWindow(); phoneField.selectAll(); });
                 return;
             }
 
@@ -581,13 +638,23 @@ public class DepartmentManagementPanel extends JPanel {
                 EmployeeOption emp = (EmployeeOption) sel;
                 if (!emp.manv.isEmpty()) {
                     departmentService.setDepartmentHead(maPhongBan, emp.manv);
-                    departmentService.updateEmployeeContact(emp.manv, emailField.getText().trim(), phoneField.getText().trim());
+                    departmentService.updateEmployeeContact(emp.manv, email, dienthoai);
                 }
             }
 
             refreshPanel();
-            JOptionPane.showMessageDialog(null, "Cập nhật phòng ban thành công!");
-        }
+            dialog.dispose();
+            JOptionPane.showMessageDialog(this, "Cập nhật phòng ban thành công!");
+        });
+        btnPanel.add(okBtn);
+        btnPanel.add(cancelBtn);
+
+        dialog.add(form, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setMinimumSize(new Dimension(420, 0));
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentFrame);
+        dialog.setVisible(true);
     }
 
     // ============== FORM THÊM PHÒNG BAN ==============
@@ -604,11 +671,17 @@ public class DepartmentManagementPanel extends JPanel {
             return;
         }
         
-        JTextField nameField = new JTextField();
-        JTextField codeField = new JTextField();
-        JTextField employeesField = new JTextField();
+        // Mã phòng ban tự động tăng
+        String nextMaPB = departmentService.generateNextMaPhongBan();
+        JTextField codeField = new JTextField(nextMaPB, 15);
+        codeField.setEditable(false);
+        codeField.setBackground(new Color(240, 240, 240));
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+        JTextField nameField = new JTextField(25);
+        JTextField employeesField = new JTextField("0", 10);
+
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 10));
+        form.setBorder(new EmptyBorder(24, 28, 20, 28));
         form.add(new JLabel("Tên phòng ban:"));
         form.add(nameField);
         form.add(new JLabel("Mã phòng ban:"));
@@ -616,68 +689,69 @@ public class DepartmentManagementPanel extends JPanel {
         form.add(new JLabel("Số nhân viên:"));
         form.add(employeesField);
 
-        int result = JOptionPane.showConfirmDialog(
-                null,
-                form,
-                "Thêm phòng ban mới",
-                JOptionPane.OK_CANCEL_OPTION
-        );
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentFrame, "Thêm phòng ban mới", true);
+        dialog.setLayout(new BorderLayout());
 
-        if (result == JOptionPane.OK_OPTION) {
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        btnPanel.setBorder(new EmptyBorder(0, 28, 20, 28));
+        JButton okBtn = new JButton("OK");
+        okBtn.setBackground(new Color(151, 71, 255));
+        okBtn.setForeground(Color.WHITE);
+        JButton cancelBtn = new JButton("Hủy");
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        okBtn.addActionListener(e -> {
             String tenPhongBan = nameField.getText().trim();
             String maPhongBan = codeField.getText().trim();
             String soNhanVienStr = employeesField.getText().trim();
 
-            // Kiểm tra không ô nào được bỏ trống
+            // Kiểm tra dữ liệu và focus vào trường sai
             if (tenPhongBan.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Tên phòng ban không được để trống!");
-                return;
-            }
-            if (maPhongBan.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Mã phòng ban không được để trống!");
-                return;
-            }
-            if (soNhanVienStr.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Số nhân viên không được để trống!");
+                JOptionPane.showMessageDialog(dialog, "Tên phòng ban không được để trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                nameField.requestFocusInWindow();
                 return;
             }
 
-            int soNhanVien;
-            try {
-                soNhanVien = Integer.parseInt(soNhanVienStr);
-                if (soNhanVien < 0) {
-                    JOptionPane.showMessageDialog(null, "Số nhân viên phải là số không âm!");
+            int soNhanVien = 0;
+            if (!soNhanVienStr.isEmpty()) {
+                try {
+                    soNhanVien = Integer.parseInt(soNhanVienStr.trim());
+                    if (soNhanVien < 0) {
+                        JOptionPane.showMessageDialog(dialog, "Số nhân viên phải là số không âm!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                        employeesField.requestFocusInWindow();
+                        return;
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(dialog, "Số nhân viên phải là số nguyên!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                    employeesField.requestFocusInWindow();
                     return;
                 }
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Số nhân viên phải là số nguyên!");
-                return;
-            }
-
-            // Kiểm tra mã phòng ban không trùng
-            DepartmentDTO existingByCode = departmentService.findDepartmentById(maPhongBan);
-            if (existingByCode != null) {
-                JOptionPane.showMessageDialog(null, "Mã phòng ban đã tồn tại!");
-                return;
             }
 
             // Kiểm tra tên phòng ban không trùng
             for (DepartmentDTO d : departmentService.getAllDepartments()) {
                 if (d.getTenPhongBan() != null && d.getTenPhongBan().trim().equalsIgnoreCase(tenPhongBan)) {
-                    JOptionPane.showMessageDialog(null, "Tên phòng ban đã tồn tại!");
+                    JOptionPane.showMessageDialog(dialog, "Tên phòng ban đã tồn tại!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                    nameField.requestFocusInWindow();
                     return;
                 }
             }
 
-            // Thêm vào database
             DepartmentDTO newDept = new DepartmentDTO(maPhongBan, tenPhongBan, soNhanVien);
             departmentService.addDepartment(newDept);
-
-            // Refresh toàn bộ panel
             refreshPanel();
+            dialog.dispose();
+            JOptionPane.showMessageDialog(this, "Thêm phòng ban thành công!");
+        });
+        btnPanel.add(okBtn);
+        btnPanel.add(cancelBtn);
 
-            JOptionPane.showMessageDialog(null, "Thêm phòng ban thành công!");
-        }
+        dialog.add(form, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setMinimumSize(new Dimension(420, 0));
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentFrame);
+        dialog.setVisible(true);
     }
 
     /**

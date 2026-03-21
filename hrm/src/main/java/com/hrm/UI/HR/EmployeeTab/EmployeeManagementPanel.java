@@ -9,6 +9,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -21,6 +22,8 @@ import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultCellEditor;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -35,6 +38,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.SwingUtilities;
 
 import com.hrm.DAO.PositionDAO;
 import com.hrm.DAO.TrinhDoDAO;
@@ -45,6 +49,7 @@ import com.hrm.DTO.TrinhDoDTO;
 import com.hrm.DTO.UserDTO;
 import com.hrm.Service.DepartmentService;
 import com.hrm.Service.PermissionService;
+import com.hrm.utils.EmployeeExcelHelper;
 import com.hrm.utils.SessionManager;
 
 public class EmployeeManagementPanel extends JPanel {
@@ -170,15 +175,31 @@ public class EmployeeManagementPanel extends JPanel {
         addBtn.setBackground(new Color(88, 63, 191));
         addBtn.setForeground(Color.WHITE);
 
+        JButton exportExcelBtn = new JButton("Xuất Excel");
+        exportExcelBtn.setBackground(new Color(56, 142, 60));
+        exportExcelBtn.setForeground(Color.WHITE);
+
+        JButton importExcelBtn = new JButton("Nhập Excel");
+        importExcelBtn.setBackground(new Color(25, 118, 210));
+        importExcelBtn.setForeground(Color.WHITE);
+
         // Kiểm tra quyền ADD cho chức năng nhân viên
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
         if (currentUser == null || !permissionService.canAdd(currentUser, "CN02_EMPLOYEE")) {
             addBtn.setEnabled(false);
             addBtn.setToolTipText("Bạn không có quyền thêm nhân viên");
+            importExcelBtn.setEnabled(false);
+            importExcelBtn.setToolTipText("Bạn không có quyền nhập nhân viên");
+        }
+        if (currentUser == null || !permissionService.canExport(currentUser, "CN02_EMPLOYEE")) {
+            exportExcelBtn.setEnabled(false);
+            exportExcelBtn.setToolTipText("Bạn không có quyền xuất Excel");
         }
 
         // Action mở form thêm nhân viên
         addBtn.addActionListener(e -> openAddEmployeeForm());
+        exportExcelBtn.addActionListener(e -> EmployeeExcelHelper.handleEmployeeExport(table, this));
+        importExcelBtn.addActionListener(e -> EmployeeExcelHelper.handleEmployeeImport(this, this::refreshDataFromImport));
 
         // Lọc phòng ban: khi chọn phòng ban thì chỉ hiện nhân viên thuộc phòng đó
         filterBox.addActionListener(e -> {
@@ -191,6 +212,8 @@ public class EmployeeManagementPanel extends JPanel {
 
         right.add(searchField);
         right.add(filterBox);
+        right.add(exportExcelBtn);
+        right.add(importExcelBtn);
         right.add(addBtn);
 
         header.add(left, BorderLayout.WEST);
@@ -267,6 +290,12 @@ public class EmployeeManagementPanel extends JPanel {
     /** Trả về chuỗi hiển thị, NULL trong DB hiển thị thành rỗng. */
     private static String str(Object o) {
         return o != null ? o.toString() : "";
+    }
+
+    /** Gọi sau khi nhập Excel để refresh bảng. */
+    public void refreshDataFromImport() {
+        loadMasterDataFromDb();
+        refreshTableFromMaster(currentKeyword, currentDeptFilter);
     }
 
     /** Tải lại toàn bộ dữ liệu từ bảng nhanvien trong database vào quản lý nhân viên. */
@@ -382,7 +411,12 @@ public class EmployeeManagementPanel extends JPanel {
             return;
         }
 
-        JTextField idField = new JTextField(20);
+        // Mã NV tự động tăng
+        String nextManv = nhanVienHRDAO.generateNextManv();
+        JTextField idField = new JTextField(nextManv, 20);
+        idField.setEditable(false);
+        idField.setBackground(new Color(240, 240, 240));
+
         JTextField nameField = new JTextField(20);
         JComboBox<String> genderBox = new JComboBox<>(new String[]{"Nam", "Nữ"});
         JTextField emailField = new JTextField(20);
@@ -414,7 +448,8 @@ public class EmployeeManagementPanel extends JPanel {
         JTextField soNgayPhepField = new JTextField("12", 10);
         JComboBox<String> statusBox = new JComboBox<>(new String[]{"Đang làm", "Nghỉ việc"});
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 10));
+        form.setBorder(new EmptyBorder(24, 28, 20, 28));
         form.add(new JLabel("Mã NV:"));
         form.add(idField);
         form.add(new JLabel("Họ và tên:"));
@@ -440,10 +475,20 @@ public class EmployeeManagementPanel extends JPanel {
         form.add(new JLabel("Trạng thái:"));
         form.add(statusBox);
 
-        int result = JOptionPane.showConfirmDialog(null, form,
-                "Thêm nhân viên mới", JOptionPane.OK_CANCEL_OPTION);
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentFrame, "Thêm nhân viên mới", true);
+        dialog.setLayout(new BorderLayout());
 
-        if (result == JOptionPane.OK_OPTION) {
+        dialog.add(form, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        btnPanel.setBorder(new EmptyBorder(0, 28, 20, 28));
+        JButton okBtn = new JButton("OK");
+        okBtn.setBackground(new Color(88, 63, 191));
+        okBtn.setForeground(Color.WHITE);
+        JButton cancelBtn = new JButton("Hủy");
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        okBtn.addActionListener(e -> {
             String manv = idField.getText().trim();
             String hoten = nameField.getText().trim();
             String gioitinh = String.valueOf(genderBox.getSelectedItem());
@@ -459,10 +504,44 @@ public class EmployeeManagementPanel extends JPanel {
             }
 
             int posIdx = posBox.getSelectedIndex();
-            String machucvu = (posIdx > 0 && posIdx <= positions.size()) ? positions.get(posIdx - 1).getMaChucVu() : "CV02";
-
             int tdIdx = trinhDoBox.getSelectedIndex();
-            String matrinhdo = (tdIdx > 0 && tdIdx <= trinhDoList.size()) ? trinhDoList.get(tdIdx - 1).getMaTrinhDo() : "TD01";
+
+            // ========== Kiểm tra dữ liệu và focus vào trường sai ==========
+            if (!manv.toUpperCase().startsWith("NV")) {
+                JOptionPane.showMessageDialog(dialog, "Mã NV phải bắt đầu bằng 'NV'!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> idField.requestFocusInWindow());
+                return;
+            }
+            if (hoten.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Họ tên không được trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { nameField.requestFocusInWindow(); nameField.selectAll(); });
+                return;
+            }
+            if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._-]+@company\\.com$")) {
+                JOptionPane.showMessageDialog(dialog, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { emailField.requestFocusInWindow(); emailField.selectAll(); });
+                return;
+            }
+            if (!dienthoai.isEmpty() && !dienthoai.matches("^\\d{10}$")) {
+                JOptionPane.showMessageDialog(dialog, "Điện thoại phải là đúng 10 chữ số!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { phoneField.requestFocusInWindow(); phoneField.selectAll(); });
+                return;
+            }
+            if (maphongban == null || maphongban.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Phải chọn Phòng ban!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> deptBox.requestFocusInWindow());
+                return;
+            }
+            if (posIdx <= 0) {
+                JOptionPane.showMessageDialog(dialog, "Phải chọn Chức vụ!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> posBox.requestFocusInWindow());
+                return;
+            }
+            if (tdIdx <= 0) {
+                JOptionPane.showMessageDialog(dialog, "Phải chọn Trình độ!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> trinhDoBox.requestFocusInWindow());
+                return;
+            }
 
             LocalDate ngayvaolam = null;
             String ngayStr = ngayVaoLamField.getText().trim();
@@ -470,65 +549,50 @@ public class EmployeeManagementPanel extends JPanel {
                 try {
                     ngayvaolam = LocalDate.parse(ngayStr, DateTimeFormatter.ISO_LOCAL_DATE);
                 } catch (DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(null, "Ngày vào làm không hợp lệ. Dùng định dạng yyyy-MM-dd.");
-                    return;
+                    try {
+                        ngayvaolam = LocalDate.parse(ngayStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    } catch (DateTimeParseException ex2) {
+                        JOptionPane.showMessageDialog(dialog, "Ngày vào làm không hợp lệ. Dùng định dạng yyyy-MM-dd hoặc dd/MM/yyyy.", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                        SwingUtilities.invokeLater(() -> { ngayVaoLamField.requestFocusInWindow(); ngayVaoLamField.selectAll(); });
+                        return;
+                    }
                 }
             }
 
             int songayphep = 12;
             try {
                 String sp = soNgayPhepField.getText().trim();
-                if (!sp.isEmpty()) songayphep = Integer.parseInt(sp);
+                if (!sp.isEmpty()) {
+                    songayphep = Integer.parseInt(sp);
+                    if (songayphep < 0) songayphep = 12;
+                }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(null, "Số ngày phép phải là số nguyên.");
+                JOptionPane.showMessageDialog(dialog, "Số ngày phép phải là số nguyên!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                SwingUtilities.invokeLater(() -> { soNgayPhepField.requestFocusInWindow(); soNgayPhepField.selectAll(); });
                 return;
             }
 
+            String machucvu = (posIdx > 0 && posIdx <= positions.size()) ? positions.get(posIdx - 1).getMaChucVu() : "CV02";
+            String matrinhdo = (tdIdx > 0 && tdIdx <= trinhDoList.size()) ? trinhDoList.get(tdIdx - 1).getMaTrinhDo() : "TD01";
             String trangthai = normalizeTrangThai(String.valueOf(statusBox.getSelectedItem()));
-
-            // ========== Kiểm tra dữ liệu đầu vào ==========
-            if (manv.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Mã NV không được trống!");
-                return;
-            }
-            if (nhanVienHRDAO.findById(manv) != null) {
-                JOptionPane.showMessageDialog(null, "Mã NV đã tồn tại (không trùng)!");
-                return;
-            }
-            if (hoten.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Họ tên không được trống!");
-                return;
-            }
-            if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._-]+@company\\.com$")) {
-                JOptionPane.showMessageDialog(null, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)");
-                return;
-            }
-            if (!dienthoai.isEmpty() && !dienthoai.matches("^\\d{10}$")) {
-                JOptionPane.showMessageDialog(null, "Điện thoại phải là đúng 10 chữ số!");
-                return;
-            }
-            if (maphongban == null || maphongban.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Phải chọn Phòng ban!");
-                return;
-            }
-            if (posIdx <= 0) {
-                JOptionPane.showMessageDialog(null, "Phải chọn Chức vụ!");
-                return;
-            }
-            if (tdIdx <= 0) {
-                JOptionPane.showMessageDialog(null, "Phải chọn Trình độ!");
-                return;
-            }
 
             NhanVienDTO dto = new NhanVienDTO(manv, maphongban, machucvu, matrinhdo, hoten, gioitinh, diachi, dienthoai, email, ngayvaolam, songayphep, trangthai);
             if (nhanVienHRDAO.insert(dto)) {
                 loadMasterDataFromDb();
                 refreshTableFromMaster(currentKeyword, currentDeptFilter);
-                JOptionPane.showMessageDialog(null, "Thêm nhân viên thành công!");
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Thêm nhân viên thành công!");
             } else {
-                JOptionPane.showMessageDialog(null, "Lỗi khi lưu vào database.");
+                JOptionPane.showMessageDialog(dialog, "Lỗi khi lưu vào database.");
             }
-        }
+        });
+        btnPanel.add(okBtn);
+        btnPanel.add(cancelBtn);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setMinimumSize(new Dimension(480, 0));
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentFrame);
+        dialog.setVisible(true);
     }
 
     // ================= BUTTON RENDERER =================
@@ -737,6 +801,7 @@ public class EmployeeManagementPanel extends JPanel {
 
         JTextField idField = new JTextField(nv.getManv() != null ? nv.getManv() : "");
         idField.setEditable(false);
+        idField.setBackground(new Color(240, 240, 240));
         JTextField nameField = new JTextField(nv.getHoten() != null ? nv.getHoten() : "");
         JComboBox<String> genderBox = new JComboBox<>(new String[]{"Nam", "Nữ"});
         if (nv.getGioitinh() != null) {
@@ -790,7 +855,8 @@ public class EmployeeManagementPanel extends JPanel {
         JComboBox<String> statusBox = new JComboBox<>(new String[]{"Đang làm việc", "Nghỉ việc"});
         statusBox.setSelectedItem(nv.getTrangthai() != null ? nv.getTrangthai() : "Đang làm việc");
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 10));
+        form.setBorder(new EmptyBorder(24, 28, 20, 28));
         form.add(new JLabel("Mã NV:"));
         form.add(idField);
         form.add(new JLabel("Họ và tên:"));
@@ -816,47 +882,63 @@ public class EmployeeManagementPanel extends JPanel {
         form.add(new JLabel("Trạng thái:"));
         form.add(statusBox);
 
-        int result = JOptionPane.showConfirmDialog(null, form,
-                "Sửa nhân viên", JOptionPane.OK_CANCEL_OPTION);
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentFrame, "Sửa nhân viên", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.add(form, BorderLayout.CENTER);
 
-        if (result == JOptionPane.OK_OPTION) {
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        btnPanel.setBorder(new EmptyBorder(0, 28, 20, 28));
+        JButton okBtn = new JButton("OK");
+        okBtn.setBackground(new Color(88, 63, 191));
+        okBtn.setForeground(Color.WHITE);
+        JButton cancelBtn = new JButton("Hủy");
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        okBtn.addActionListener(e -> {
             String hoten = nameField.getText().trim();
             String email = emailField.getText().trim();
             String dienthoai = phoneField.getText().trim();
 
+            // Kiểm tra dữ liệu và focus vào trường sai
             if (hoten.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Họ tên không được trống!");
+                JOptionPane.showMessageDialog(dialog, "Họ tên không được trống!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                nameField.requestFocusInWindow();
                 return;
             }
             if (!email.isEmpty() && !email.matches("^[a-zA-Z0-9._-]+@company\\.com$")) {
-                JOptionPane.showMessageDialog(null, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)");
+                JOptionPane.showMessageDialog(dialog, "Email phải đúng format: chữ@company.com (ví dụ: abc.xyz@company.com)", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                emailField.requestFocusInWindow();
                 return;
             }
             if (!dienthoai.isEmpty() && !dienthoai.matches("^\\d{10}$")) {
-                JOptionPane.showMessageDialog(null, "Điện thoại phải là đúng 10 chữ số!");
+                JOptionPane.showMessageDialog(dialog, "Điện thoại phải là đúng 10 chữ số!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                phoneField.requestFocusInWindow();
                 return;
             }
 
             Object deptSel = deptBox.getSelectedItem();
             if (deptSel == null || "-- Chọn phòng ban --".equals(deptSel.toString())) {
-                JOptionPane.showMessageDialog(null, "Phải chọn Phòng ban!");
+                JOptionPane.showMessageDialog(dialog, "Phải chọn Phòng ban!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                deptBox.requestFocusInWindow();
                 return;
             }
-            String maphongban = null;
+            String maphongban;
             String s = deptSel.toString();
             maphongban = s.contains(" - ") ? s.substring(0, s.indexOf(" - ")).trim() : s;
             nv.setMaphongban(maphongban);
 
             int posIdx = posBox.getSelectedIndex();
             if (posIdx <= 0) {
-                JOptionPane.showMessageDialog(null, "Phải chọn Chức vụ!");
+                JOptionPane.showMessageDialog(dialog, "Phải chọn Chức vụ!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                posBox.requestFocusInWindow();
                 return;
             }
             nv.setMachucvu(positions.get(posIdx - 1).getMaChucVu());
 
             int tdIdx = trinhDoBox.getSelectedIndex();
             if (tdIdx <= 0) {
-                JOptionPane.showMessageDialog(null, "Phải chọn Trình độ!");
+                JOptionPane.showMessageDialog(dialog, "Phải chọn Trình độ!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                trinhDoBox.requestFocusInWindow();
                 return;
             }
             nv.setMatrinhdo(trinhDoList.get(tdIdx - 1).getMaTrinhDo());
@@ -866,8 +948,13 @@ public class EmployeeManagementPanel extends JPanel {
                 try {
                     nv.setNgayvaolam(LocalDate.parse(ngayStr, DateTimeFormatter.ISO_LOCAL_DATE));
                 } catch (DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(null, "Ngày vào làm không hợp lệ. Dùng định dạng yyyy-MM-dd.");
-                    return;
+                    try {
+                        nv.setNgayvaolam(LocalDate.parse(ngayStr, DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                    } catch (DateTimeParseException ex2) {
+                        JOptionPane.showMessageDialog(dialog, "Ngày vào làm không hợp lệ. Dùng định dạng yyyy-MM-dd hoặc dd/MM/yyyy.", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                        ngayVaoLamField.requestFocusInWindow();
+                        return;
+                    }
                 }
             } else {
                 nv.setNgayvaolam(null);
@@ -877,7 +964,8 @@ public class EmployeeManagementPanel extends JPanel {
                 String sp = soNgayPhepField.getText().trim();
                 nv.setSongayphep(sp.isEmpty() ? 0 : Integer.parseInt(sp));
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(null, "Số ngày phép phải là số nguyên.");
+                JOptionPane.showMessageDialog(dialog, "Số ngày phép phải là số nguyên!", "Lỗi nhập liệu", JOptionPane.WARNING_MESSAGE);
+                soNgayPhepField.requestFocusInWindow();
                 return;
             }
 
@@ -891,11 +979,19 @@ public class EmployeeManagementPanel extends JPanel {
             if (nhanVienHRDAO.update(nv)) {
                 loadMasterDataFromDb();
                 refreshTableFromMaster(currentKeyword, currentDeptFilter);
-                JOptionPane.showMessageDialog(null, "Cập nhật nhân viên thành công!");
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Cập nhật nhân viên thành công!");
             } else {
-                JOptionPane.showMessageDialog(null, "Lỗi khi lưu vào database.");
+                JOptionPane.showMessageDialog(dialog, "Lỗi khi lưu vào database.");
             }
-        }
+        });
+        btnPanel.add(okBtn);
+        btnPanel.add(cancelBtn);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setMinimumSize(new Dimension(480, 0));
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentFrame);
+        dialog.setVisible(true);
     }
 
 }
