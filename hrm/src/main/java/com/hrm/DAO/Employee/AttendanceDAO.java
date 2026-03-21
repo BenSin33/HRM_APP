@@ -126,6 +126,30 @@ public class AttendanceDAO {
         }
     }
 
+    // Lấy số ngày công cho nhân viên trong tháng/năm
+    // Tính từ ngày đầu tháng đến ngày cuối tháng hoặc ngày hiện tại nếu chưa hết tháng
+    public float getWorkingDaysForEmployeeInMonth(String manv, int month, int year) {
+        String sql = "SELECT COUNT(*) as workingDays FROM chamcong " +
+                     "WHERE MANV = ? AND MONTH(NGAYLAMVIEC) = ? AND YEAR(NGAYLAMVIEC) = ? " +
+                     "AND TRANGTHAI = '1'";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, manv);
+            ps.setInt(2, month);
+            ps.setInt(3, year);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("workingDays");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     // Lấy thống kê tháng
     public Map<String, String> getMonthlyStats(String manv) {
         Map<String, String> stats = new HashMap<>();

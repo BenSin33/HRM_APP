@@ -11,6 +11,7 @@ public class SalaryHeader extends JPanel {
     private JButton btnExport;
     private JButton btnImport;
     private JButton btnRefresh;
+    private JButton btnPayment;
 
     public SalaryHeader(ActionListener lockListener, ActionListener unlockListener, 
                        ActionListener calculateListener) {
@@ -55,6 +56,9 @@ public class SalaryHeader extends JPanel {
         btnRefresh = new JButton("Làm mới");
         btnRefresh.putClientProperty("FlatLaf.style", "background: #6b7280; foreground: #fff; arc: 10");
 
+        btnPayment = new JButton("💳 Thanh toán");
+        btnPayment.putClientProperty("FlatLaf.style", "background: #dc2626; foreground: #fff; arc: 10");
+
         btnPanel.add(btnCalculate);
         btnPanel.add(btnUnlock);
         btnPanel.add(btnLock);
@@ -66,6 +70,7 @@ public class SalaryHeader extends JPanel {
         btnPanel.add(btnExport);
         btnPanel.add(btnImport);
         btnPanel.add(btnRefresh);
+        btnPanel.add(btnPayment);
 
         this.add(titlePanel, BorderLayout.WEST);
         this.add(btnPanel, BorderLayout.EAST);
@@ -97,5 +102,44 @@ public class SalaryHeader extends JPanel {
 
     public JButton getRefreshButton() {
         return btnRefresh;
+    }
+
+    public JButton getPaymentButton() {
+        return btnPayment;
+    }
+
+    public void setLockButtonEnabled(boolean enabled) {
+        btnLock.setEnabled(enabled);
+        if (!enabled) {
+            btnLock.setToolTipText("Bạn không có quyền khóa lương");
+        }
+    }
+
+    public void setUnlockButtonEnabled(boolean enabled) {
+        btnUnlock.setEnabled(enabled);
+        if (!enabled) {
+            btnUnlock.setToolTipText("Bạn không có quyền mở khóa lương");
+        }
+    }
+
+    public void setCalculateButtonEnabled(boolean enabled) {
+        btnCalculate.setEnabled(enabled);
+        if (!enabled) {
+            btnCalculate.setToolTipText("Bạn không có quyền tính lương");
+        }
+    }
+
+    public void setExportButtonEnabled(boolean enabled) {
+        btnExport.setEnabled(enabled);
+        if (!enabled) {
+            btnExport.setToolTipText("Bạn không có quyền xuất dữ liệu lương");
+        }
+    }
+
+    public void setImportButtonEnabled(boolean enabled) {
+        btnImport.setEnabled(enabled);
+        if (!enabled) {
+            btnImport.setToolTipText("Bạn không có quyền nhập dữ liệu lương");
+        }
     }
 }

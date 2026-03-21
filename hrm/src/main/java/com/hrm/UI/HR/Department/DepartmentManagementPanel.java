@@ -28,14 +28,18 @@ import javax.swing.event.DocumentListener;
 
 import com.hrm.DAO.HR.DepartmentDAO.EmployeeOption;
 import com.hrm.DTO.HR.DepartmentDTO;
+import com.hrm.DTO.UserDTO;
 import com.hrm.Service.DepartmentService;
+import com.hrm.Service.PermissionService;
 import com.hrm.utils.JDBCConection;
+import com.hrm.utils.SessionManager;
 
 public class DepartmentManagementPanel extends JPanel {
 
     private JPanel cardsContainer;
     private JTextField searchField;
     private DepartmentService departmentService = new DepartmentService();
+    private PermissionService permissionService = new PermissionService();
 
     public DepartmentManagementPanel() {
         setLayout(new BorderLayout());
@@ -235,9 +239,9 @@ public class DepartmentManagementPanel extends JPanel {
         return wrapper;
     }
 
-    // ============== CARDS (GridLayout 1 hàng 3 cột = chiều ngang bằng nhau, wrapper để card không bị kéo cao) ==============
+    // ============== CARDS (GridLayout 0 hàng = tự wrap, 3 cột; chỉ cuộn dọc khi nhiều phòng ban) ==============
     private JScrollPane createCardsArea() {
-        cardsContainer = new JPanel(new GridLayout(1, 3, 20, 20)); // 1 hàng, 3 cột = 3 card chiều ngang bằng nhau
+        cardsContainer = new JPanel(new GridLayout(0, 3, 20, 20)); // 0 = bao nhiêu hàng cũng được, 3 cột → card xuống dòng khi nhiều PB
         cardsContainer.setOpaque(false);
         cardsContainer.setBorder(new EmptyBorder(24, 0, 0, 0));
 
@@ -268,13 +272,12 @@ public class DepartmentManagementPanel extends JPanel {
             cardsContainer.add(wrapper);
         }
 
-        // Bọc grid trong JScrollPane để có thể kéo xuống xem các phòng bên dưới
+        // Chỉ cuộn dọc khi nhiều phòng ban (nhiều hàng); không cuộn ngang
         JScrollPane scroll = new JScrollPane(cardsContainer);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         scroll.getViewport().setBackground(new Color(245, 247, 250));
-        // Cho phép kéo ngang khi không đủ chỗ hiển thị hết các phòng ban
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         return scroll;
     }
@@ -456,6 +459,18 @@ public class DepartmentManagementPanel extends JPanel {
      * Xử lý xóa phòng ban: xóa trong database rồi refresh giao diện.
      */
     private void handleDeleteDepartment(String maPhongBan, String tenPhongBan, JPanel card) {
+        // Permission check
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN03_DEPARTMENT")) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Bạn không có quyền xóa phòng ban",
+                    "Từ chối truy cập",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
                 null,
                 "Bạn có chắc muốn xóa phòng \"" + tenPhongBan + "\"?",
@@ -488,6 +503,18 @@ public class DepartmentManagementPanel extends JPanel {
      */
     private void openEditDepartmentForm(String maPhongBan, String tenPhongBanHienTai,
                                         String managerName, String emailHienTai, String phoneHienTai) {
+        // Permission check
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN03_DEPARTMENT")) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Bạn không có quyền sửa phòng ban",
+                    "Từ chối truy cập",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
         JTextField nameField = new JTextField(tenPhongBanHienTai, 25);
         JLabel codeLabel = new JLabel(maPhongBan);
 
@@ -565,6 +592,18 @@ public class DepartmentManagementPanel extends JPanel {
 
     // ============== FORM THÊM PHÒNG BAN ==============
     private void openAddDepartmentForm() {
+        // Permission check
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN03_DEPARTMENT")) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Bạn không có quyền thêm phòng ban",
+                    "Từ chối truy cập",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
         JTextField nameField = new JTextField();
         JTextField codeField = new JTextField();
         JTextField employeesField = new JTextField();

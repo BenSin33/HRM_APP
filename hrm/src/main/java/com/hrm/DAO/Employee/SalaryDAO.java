@@ -16,7 +16,8 @@ public class SalaryDAO {
     public List<SalaryDTO> getAllSalaries() {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
-                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.SONGAYCONG_CHUAN, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+
                      "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
@@ -39,6 +40,7 @@ public class SalaryDAO {
                 dto.nam = rs.getInt("NAM");
                 dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
                 dto.soNgayCong = rs.getFloat("SONGAYCONG");
+                dto.soNgayCongChuan = rs.getFloat("SONGAYCONG_CHUAN");
                 dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                 dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                 dto.thucLinh = rs.getBigDecimal("THUCLINH");
@@ -61,7 +63,7 @@ public class SalaryDAO {
     public List<SalaryDTO> getSalariesByMonthYear(int thang, int nam) {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
-                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.SONGAYCONG_CHUAN, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
                      "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
@@ -88,6 +90,7 @@ public class SalaryDAO {
                     dto.nam = rs.getInt("NAM");
                     dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
                     dto.soNgayCong = rs.getFloat("SONGAYCONG");
+                    dto.soNgayCongChuan = rs.getFloat("SONGAYCONG_CHUAN");
                     dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
@@ -110,7 +113,7 @@ public class SalaryDAO {
     // Lấy bảng lương theo nhân viên
     public SalaryDTO getSalaryByMaNV(String maNV, int thang, int nam) {
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
-                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+                     "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.SONGAYCONG_CHUAN, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
                      "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
@@ -137,6 +140,7 @@ public class SalaryDAO {
                     dto.nam = rs.getInt("NAM");
                     dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
                     dto.soNgayCong = rs.getFloat("SONGAYCONG");
+                    dto.soNgayCongChuan = rs.getFloat("SONGAYCONG_CHUAN");
                     dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
                     dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                     dto.thucLinh = rs.getBigDecimal("THUCLINH");
@@ -158,8 +162,8 @@ public class SalaryDAO {
 
     // Cập nhật bảng lương
     public boolean updateSalary(SalaryDTO salary) {
-        String sql = "UPDATE bangluong SET LUONGCOBAN_SNAPSHOT = ?, SONGAYCONG = ?, TONG_PHUCAP = ?, " +
-                     "TONG_KHAUTRU = ?, THUCLINH = ?, TRANGTHAI = ?, NGAYCHOTLUONG = ?, TINH_TRANG_TT = ? " +
+        String sql = "UPDATE bangluong SET LUONGCOBAN_SNAPSHOT = ?, SONGAYCONG = ?, SONGAYCONG_CHUAN = ?, " +
+                     "TONG_PHUCAP = ?, TONG_KHAUTRU = ?, THUCLINH = ?, TRANGTHAI = ?, NGAYCHOTLUONG = ?, TINH_TRANG_TT = ? " +
                      "WHERE MALUONG = ?";
         
         try (Connection conn = JDBCConection.getConnection();
@@ -168,9 +172,10 @@ public class SalaryDAO {
             // Cập nhật lương cơ bản snapshot
             ps.setBigDecimal(1, salary.luongCoBan != null ? salary.luongCoBan : BigDecimal.ZERO);
             ps.setFloat(2, salary.soNgayCong);
-            ps.setBigDecimal(3, salary.tongPhucap != null ? salary.tongPhucap : BigDecimal.ZERO);
-            ps.setBigDecimal(4, salary.tongKhauTru != null ? salary.tongKhauTru : BigDecimal.ZERO);
-            ps.setBigDecimal(5, salary.thucLinh != null ? salary.thucLinh : BigDecimal.ZERO);
+            ps.setFloat(3, salary.soNgayCongChuan > 0 ? salary.soNgayCongChuan : 26);
+            ps.setBigDecimal(4, salary.tongPhucap != null ? salary.tongPhucap : BigDecimal.ZERO);
+            ps.setBigDecimal(5, salary.tongKhauTru != null ? salary.tongKhauTru : BigDecimal.ZERO);
+            ps.setBigDecimal(6, salary.thucLinh != null ? salary.thucLinh : BigDecimal.ZERO);
             
             // Chuyển đổi TRANGTHAI từ String sang Integer
             // 0: Chưa khóa (Nháp), 1: Đã khóa (Đã chốt)
@@ -180,23 +185,82 @@ public class SalaryDAO {
             } catch (NumberFormatException e) {
                 trangThaiValue = 0;
             }
-            ps.setInt(6, trangThaiValue);
+            ps.setInt(7, trangThaiValue);
             
             // Chuyển đổi LocalDate sang java.sql.Date
             if (salary.ngayChot != null) {
-                ps.setDate(7, java.sql.Date.valueOf(salary.ngayChot));
+                ps.setDate(8, java.sql.Date.valueOf(salary.ngayChot));
             } else {
-                ps.setNull(7, java.sql.Types.DATE);
+                ps.setNull(8, java.sql.Types.DATE);
             }
             
-            ps.setString(8, salary.tinhTrangThanToan);
-            ps.setString(9, salary.maLuong);
+            ps.setString(9, salary.tinhTrangThanToan);
+            ps.setString(10, salary.maLuong);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // Thêm mới bảng lương
+    public boolean insertSalary(SalaryDTO salary) {
+        String sql = "INSERT INTO bangluong (MALUONG, MANV, THANG, NAM, LUONGCOBAN_SNAPSHOT, SONGAYCONG, SONGAYCONG_CHUAN, " +
+                     "TONG_PHUCAP, TONG_KHAUTRU, THUCLINH, TRANGTHAI, NGAYCHOTLUONG, TINH_TRANG_TT) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, salary.maLuong != null && !salary.maLuong.isEmpty() 
+                ? salary.maLuong : generateMaLuong(conn));
+            ps.setString(2, salary.maNV);
+            ps.setInt(3, salary.thang);
+            ps.setInt(4, salary.nam);
+            ps.setBigDecimal(5, salary.luongCoBan != null ? salary.luongCoBan : BigDecimal.ZERO);
+            ps.setFloat(6, salary.soNgayCong);
+            ps.setFloat(7, salary.soNgayCongChuan > 0 ? salary.soNgayCongChuan : 26);
+            ps.setBigDecimal(8, salary.tongPhucap != null ? salary.tongPhucap : BigDecimal.ZERO);
+            ps.setBigDecimal(9, salary.tongKhauTru != null ? salary.tongKhauTru : BigDecimal.ZERO);
+            ps.setBigDecimal(10, salary.thucLinh != null ? salary.thucLinh : BigDecimal.ZERO);
+            
+            // Chuyển đổi TRANGTHAI từ String sang Integer
+            int trangThaiValue = 0;
+            try {
+                trangThaiValue = Integer.parseInt(salary.trangThai);
+            } catch (NumberFormatException e) {
+                trangThaiValue = 0;
+            }
+            ps.setInt(11, trangThaiValue);
+            
+            // Chuyển đổi LocalDate sang java.sql.Date
+            if (salary.ngayChot != null) {
+                ps.setDate(12, java.sql.Date.valueOf(salary.ngayChot));
+            } else {
+                ps.setNull(12, java.sql.Types.DATE);
+            }
+            
+            ps.setString(13, salary.tinhTrangThanToan);
+            
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Tạo mã lương mới
+    private String generateMaLuong(Connection conn) throws SQLException {
+        String sql = "SELECT MAX(CAST(SUBSTRING(MALUONG, 3) AS UNSIGNED)) as maxId FROM bangluong";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            int maxId = 0;
+            if (rs.next()) {
+                maxId = rs.getInt("maxId");
+            }
+            return "ML" + String.format("%02d", maxId + 1);
+        }
     }
 
     // Xóa bảng lương theo mã lương
@@ -264,6 +328,23 @@ public class SalaryDAO {
     // Mở khóa tất cả lương theo tháng/năm
     public boolean unlockSalariesByMonth(int thang, int nam) {
         String sql = "UPDATE bangluong SET TRANGTHAI = 0, NGAYCHOTLUONG = NULL WHERE THANG = ? AND NAM = ? AND TRANGTHAI = 1";
+        
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, thang);
+            ps.setInt(2, nam);
+            
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Cập nhật trạng thái thanh toán cho tất cả lương theo tháng/năm
+    public boolean updatePaymentStatusByMonth(int thang, int nam) {
+        String sql = "UPDATE bangluong SET TINH_TRANG_TT = 'Đã thanh toán' WHERE THANG = ? AND NAM = ? AND TINH_TRANG_TT != 'Đã thanh toán'";
         
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

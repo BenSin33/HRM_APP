@@ -2,7 +2,10 @@ package com.hrm.UI.HR.AccountManagerTab;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.Service.AccountManagerService;
+import com.hrm.Service.PermissionService;
 import com.hrm.utils.AccountExcelHelper;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import java.util.List;
@@ -11,9 +14,11 @@ public class AccountManagerPanel extends JPanel {
 
     private final AccountManagerService accountManagerService;
     private final AccountTable accountTableContent;
+    private final PermissionService permissionService;
 
     public AccountManagerPanel() {
         this.accountManagerService = new AccountManagerService();
+        this.permissionService = new PermissionService();
         setLayout(new java.awt.BorderLayout(0, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
@@ -24,6 +29,16 @@ public class AccountManagerPanel extends JPanel {
             e -> handleImportAccounts(),
             e -> handleExportAccounts()
         );
+        
+        // Kiểm tra quyền trước khi hiển thị các nút
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        boolean canAddAccount = currentUser != null && permissionService.canAdd(currentUser, "CN10_ACCOUNT");
+        boolean canViewAccount = currentUser != null && permissionService.canView(currentUser, "CN10_ACCOUNT");
+        
+        header.setAddButtonEnabled(canAddAccount);
+        header.setImportButtonEnabled(canAddAccount);
+        header.setExportButtonEnabled(canViewAccount);
+        
         this.add(header, java.awt.BorderLayout.NORTH);
 
         // 2. Nội dung chính
@@ -61,6 +76,12 @@ public class AccountManagerPanel extends JPanel {
     }
 
     private void handleAddAccount() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN10_ACCOUNT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền tạo tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         List<String> createdEmployees = accountManagerService.createAccountsForEmployeesWithoutAccount();
 
         if (createdEmployees.isEmpty()) {
@@ -97,6 +118,12 @@ public class AccountManagerPanel extends JPanel {
     }
 
     private void handleExportAccounts() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canView(currentUser, "CN10_ACCOUNT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xem danh sách tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         AccountExcelHelper.handleAccountExport(accountTableContent.getAccountTable(), this);
     }
 }

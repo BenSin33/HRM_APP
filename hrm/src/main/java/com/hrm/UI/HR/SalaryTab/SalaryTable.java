@@ -19,6 +19,9 @@ import com.hrm.DAO.AllowanceDAO;
 import com.hrm.DAO.DeductionDAO;
 import com.hrm.DTO.Employee.SalaryDTO;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 public class SalaryTable extends JPanel {
     private JTable salaryTable;
@@ -33,11 +36,13 @@ public class SalaryTable extends JPanel {
     private YearMonth fromMonth;
     private YearMonth toMonth;
     private boolean isRangeFilter;
+    private PermissionService permissionService;
 
     public SalaryTable() {
         setLayout(new BorderLayout(0, 10));
         setOpaque(false);
         salaryDAO = new SalaryDAO();
+        permissionService = new PermissionService();
         allSalaries = new ArrayList<>();
         currentMonth = null; // Mặc định hiển thị tất cả
         fromMonth = null;
@@ -54,7 +59,7 @@ public class SalaryTable extends JPanel {
         // Bảng dữ liệu với đầy đủ cột từ database
         String[] columnNames = {
             "Mã lương", "Mã NV", "Họ tên", "Tháng", "Năm", 
-            "Lương cơ bản", "Hệ số TĐ", "Số ngày công", "Tổng phụ cấp", "Tổng khấu trừ", 
+            "Lương cơ bản", "Hệ số TĐ", "Số ngày công", "Số ngày công chuẩn", "Tổng phụ cấp", "Tổng khấu trừ", 
             "Ngày chốt", "Thực lĩnh", "Trạng thái", "Tình trạng TT", "Thao tác"
         };
 
@@ -89,16 +94,17 @@ public class SalaryTable extends JPanel {
         salaryTable.getColumnModel().getColumn(5).setPreferredWidth(100); // Lương cơ bản
         salaryTable.getColumnModel().getColumn(6).setPreferredWidth(80);  // Hệ số TĐ
         salaryTable.getColumnModel().getColumn(7).setPreferredWidth(80);  // Số ngày công
-        salaryTable.getColumnModel().getColumn(8).setPreferredWidth(100); // Tổng phụ cấp
-        salaryTable.getColumnModel().getColumn(9).setPreferredWidth(100); // Tổng khấu trừ
-        salaryTable.getColumnModel().getColumn(10).setPreferredWidth(90); // Ngày chốt
-        salaryTable.getColumnModel().getColumn(11).setPreferredWidth(100);// Thực lĩnh
-        salaryTable.getColumnModel().getColumn(12).setPreferredWidth(80); // Trạng thái
-        salaryTable.getColumnModel().getColumn(13).setPreferredWidth(100);// Tình trạng TT
-        salaryTable.getColumnModel().getColumn(14).setPreferredWidth(100);// Thao tác
+        salaryTable.getColumnModel().getColumn(8).setPreferredWidth(110); // Số ngày công chuẩn (NEW)
+        salaryTable.getColumnModel().getColumn(9).setPreferredWidth(100); // Tổng phụ cấp
+        salaryTable.getColumnModel().getColumn(10).setPreferredWidth(100);// Tổng khấu trừ
+        salaryTable.getColumnModel().getColumn(11).setPreferredWidth(90); // Ngày chốt
+        salaryTable.getColumnModel().getColumn(12).setPreferredWidth(100);// Thực lĩnh
+        salaryTable.getColumnModel().getColumn(13).setPreferredWidth(80); // Trạng thái
+        salaryTable.getColumnModel().getColumn(14).setPreferredWidth(100);// Tình trạng TT
+        salaryTable.getColumnModel().getColumn(15).setPreferredWidth(100);// Thao tác
 
         actionRenderer = new SalaryTableRenderer();
-        salaryTable.getColumnModel().getColumn(14).setCellRenderer(actionRenderer);
+        salaryTable.getColumnModel().getColumn(15).setCellRenderer(actionRenderer);
         
         // Xử lý click vào cột Thao tác
         salaryTable.addMouseListener(new MouseAdapter() {
@@ -107,7 +113,7 @@ public class SalaryTable extends JPanel {
                 int row = salaryTable.rowAtPoint(e.getPoint());
                 int col = salaryTable.columnAtPoint(e.getPoint());
                 
-                if (row != -1 && col == 14) { // Cột Thao tác
+                if (row != -1 && col == 15) { // Cột Thao tác (updated index)
                     Rectangle cellRect = salaryTable.getCellRect(row, col, false);
                     int relativeX = e.getX() - (int)cellRect.getX();
                     
@@ -132,7 +138,7 @@ public class SalaryTable extends JPanel {
                 int row = salaryTable.rowAtPoint(e.getPoint());
                 int col = salaryTable.columnAtPoint(e.getPoint());
 
-                if (row != -1 && col == 14) {
+                if (row != -1 && col == 15) {
                     if (hoveredRow != row) {
                         hoveredRow = row;
                         salaryTable.repaint();
@@ -232,6 +238,7 @@ public class SalaryTable extends JPanel {
                 df.format(salary.luongCoBan != null ? salary.luongCoBan.doubleValue() : 0),
                 salary.hesotrinhdo != null ? String.format("%.2f", salary.hesotrinhdo.doubleValue()) : "1.00",
                 String.format("%.1f", salary.soNgayCong),
+                String.format("%.1f", salary.soNgayCongChuan > 0 ? salary.soNgayCongChuan : 26), // NEW: Số ngày công chuẩn
                 df.format(salary.tongPhucap != null ? salary.tongPhucap.doubleValue() : 0),
                 df.format(salary.tongKhauTru != null ? salary.tongKhauTru.doubleValue() : 0),
                 salary.ngayChot != null ? salary.ngayChot : "Chưa chốt",
@@ -244,6 +251,12 @@ public class SalaryTable extends JPanel {
     }
 
     private void handleEdit(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN02_SALARY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa dữ liệu lương", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         if (row < 0 || row >= allSalaries.size()) return;
         
         // Lấy mã lương từ row
@@ -291,6 +304,12 @@ public class SalaryTable extends JPanel {
     }
 
     private void handleDelete(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN02_SALARY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa dữ liệu lương", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         if (row < 0 || row >= allSalaries.size()) return;
         
         String maLuong = (String) tableModel.getValueAt(row, 0);

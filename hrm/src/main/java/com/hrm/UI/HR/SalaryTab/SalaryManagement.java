@@ -36,10 +36,11 @@ public class SalaryManagement extends JPanel {
             e -> handleCalculateSalary()
         );
         
-        // Thêm listeners cho nút export/import/refresh
+        // Thêm listeners cho nút export/import/refresh/payment
         header.getExportButton().addActionListener(e -> handleExportSalary());
         header.getImportButton().addActionListener(e -> handleImportSalary());
         header.getRefreshButton().addActionListener(e -> handleRefreshData());
+        header.getPaymentButton().addActionListener(e -> handlePaymentSalary());
         
         this.add(header, BorderLayout.NORTH);
 
@@ -176,18 +177,41 @@ public class SalaryManagement extends JPanel {
 
         int confirm = JOptionPane.showConfirmDialog(this,
             "Bạn có chắc chắn muốn tính lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
-            " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "?",
+            " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "?\n\n" +
+            "Công thức tính:\n" +
+            "Thực lĩnh = (Lương cơ bản × Hệ số trình độ × (Số ngày công / 26)) + Tổng phụ cấp - Tổng khấu trừ",
             "Xác nhận tính lương",
             JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            // TODO: Gọi hàm tính lương từ Service
-            JOptionPane.showMessageDialog(this, 
-                "Đang tính lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
-                " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "...",
-                "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE);
-            salaryTable.refreshData();
+            try {
+                boolean success = salaryService.calculateSalaryForMonthRange(
+                    fromMonth.getMonthValue(), 
+                    fromMonth.getYear(),
+                    toMonth.getMonthValue(), 
+                    toMonth.getYear()
+                );
+                
+                if (success) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Tính lương thành công từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
+                        " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "!",
+                        "Thành công",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    salaryTable.refreshData();
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "Lỗi khi tính lương. Vui lòng kiểm tra dữ liệu chấm công.",
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, 
+                    "Lỗi khi tính lương: " + e.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -197,5 +221,41 @@ public class SalaryManagement extends JPanel {
 
     private void handleImportSalary() {
         SalaryExcelHelper.handleSalaryImport(salaryTable.getSalaryTable(), this);
+    }
+
+    private void handlePaymentSalary() {
+        YearMonth fromMonth = getFromMonthForAction();
+        YearMonth toMonth = getToMonthForAction();
+        
+        if (fromMonth == null || toMonth == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn bộ lọc tháng hoặc khoảng ngày trước khi thanh toán lương!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Bạn có chắc chắn muốn cập nhật trạng thái thanh toán cho bảng lương từ " + fromMonth.getMonthValue() + "/" + fromMonth.getYear() + 
+            " đến " + toMonth.getMonthValue() + "/" + toMonth.getYear() + "?",
+            "Xác nhận thanh toán",
+            JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            // Cập nhật từng tháng trong khoảng
+            boolean success = true;
+            YearMonth current = fromMonth;
+            while (!current.isAfter(toMonth)) {
+                if (!salaryService.updatePaymentStatusByMonth(current.getMonthValue(), current.getYear())) {
+                    success = false;
+                    break;
+                }
+                current = current.plusMonths(1);
+            }
+            
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Đã cập nhật trạng thái thanh toán thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                salaryTable.refreshData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật trạng thái thanh toán!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

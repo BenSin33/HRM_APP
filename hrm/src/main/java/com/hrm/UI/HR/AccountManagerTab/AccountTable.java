@@ -4,6 +4,8 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.AccountManagerDAO;
 import com.hrm.DTO.AccountManagerDTO;
 import com.hrm.utils.SessionManager;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -18,6 +20,7 @@ public class AccountTable extends JPanel {
     private JTable accountTable;
     private DefaultTableModel tableModel;
     private AccountManagerDAO accountDAO;
+    private PermissionService permissionService;
     private AccountActionRenderer actionRenderer;
     private int hoveredRow = -1;
     private List<AccountManagerDTO> allAccounts;
@@ -26,6 +29,7 @@ public class AccountTable extends JPanel {
         setLayout(new BorderLayout());
         setOpaque(false);
         accountDAO = new AccountManagerDAO();
+        permissionService = new PermissionService();
         allAccounts = new ArrayList<>();
         initComponent();
     }
@@ -152,6 +156,12 @@ public class AccountTable extends JPanel {
     }
 
     private void handleEdit(String maNV) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10_ACCOUNT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền chỉnh sửa tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         AccountManagerDTO account = accountDAO.getAccountByMaNV(maNV);
         if (account == null) {
             JOptionPane.showMessageDialog(this, "Không tìm thấy tài khoản!", "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -215,6 +225,12 @@ public class AccountTable extends JPanel {
     }
 
     private void handleToggleStatus(String maNV) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10_ACCOUNT")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thay đổi trạng thái tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         AccountManagerDTO account = accountDAO.getAccountByMaNV(maNV);
         if (account == null) {
             JOptionPane.showMessageDialog(this, "Không tìm thấy tài khoản!", "Lỗi", JOptionPane.ERROR_MESSAGE);

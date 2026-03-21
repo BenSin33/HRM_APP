@@ -5,6 +5,9 @@ import com.hrm.DTO.AllowanceDTO;
 import com.hrm.UI.component.CRUDDialog;
 import com.hrm.utils.CategoryExcelHelper;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -19,6 +22,7 @@ public class AllowanceTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private AllowanceDAO allowanceDAO;
+    private PermissionService permissionService;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
     private JButton btnAdd, btnRefresh, btnExport, btnImport;
@@ -29,6 +33,7 @@ public class AllowanceTab extends JPanel {
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
 
         allowanceDAO = new AllowanceDAO();
+        permissionService = new PermissionService();
 
         // Panel nút bấm
         JPanel buttonPanel = createButtonPanel();
@@ -154,6 +159,12 @@ public class AllowanceTab extends JPanel {
     }
 
     private void handleAdd() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm phụ cấp", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         AllowanceEditForm form = new AllowanceEditForm();
         CRUDDialog<AllowanceDTO> dialog = new CRUDDialog<>(
             (JFrame) SwingUtilities.getWindowAncestor(this),
@@ -175,6 +186,12 @@ public class AllowanceTab extends JPanel {
     }
 
     private void handleEdit(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa phụ cấp", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int maPhucap = (int) tableModel.getValueAt(row, 0);
         AllowanceDTO dto = allowanceDAO.getAllowanceById(maPhucap);
 
@@ -201,6 +218,12 @@ public class AllowanceTab extends JPanel {
     }
 
     private void handleDelete(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN11_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa phụ cấp", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         int maPhucap = (int) tableModel.getValueAt(row, 0);
         int option = JOptionPane.showConfirmDialog(this,
             "Bạn có chắc chắn muốn xóa phụ cấp này?",

@@ -4,6 +4,9 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.PositionDAO;
 import com.hrm.DTO.PositionDTO;
 import com.hrm.UI.component.CRUDDialog;
+import com.hrm.Service.PermissionService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -21,6 +24,7 @@ public class PositionTab extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
     private PositionDAO positionDAO;
+    private PermissionService permissionService;
     private CategoryActionRenderer actionRenderer;
     private int hoveredRow = -1;
     private List<PositionDTO> allPositions;
@@ -32,6 +36,7 @@ public class PositionTab extends JPanel {
         putClientProperty(FlatClientProperties.STYLE, "background: #f8f9fa");
         
         positionDAO = new PositionDAO();
+        permissionService = new PermissionService();
         allPositions = new ArrayList<>();
 
         add(createButtonPanel(), BorderLayout.NORTH);
@@ -185,6 +190,12 @@ public class PositionTab extends JPanel {
     }
 
     private void handleAdd() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền thêm chức vụ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         PositionEditForm form = new PositionEditForm();
         form.setMaChucVu(positionDAO.generateNextMaChucVu());
 
@@ -214,6 +225,12 @@ public class PositionTab extends JPanel {
     }
 
     private void handleEdit(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền sửa chức vụ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         String maChucVu = String.valueOf(tableModel.getValueAt(row, 0));
         PositionDTO dto = positionDAO.getPositionById(maChucVu);
 
@@ -243,6 +260,12 @@ public class PositionTab extends JPanel {
     }
 
     private void handleDelete(int row) {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN09_CATEGORY")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa chức vụ", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         String maChucVu = String.valueOf(tableModel.getValueAt(row, 0));
         int option = JOptionPane.showConfirmDialog(this,
                 "Bạn có chắc chắn muốn xóa chức vụ này?",
