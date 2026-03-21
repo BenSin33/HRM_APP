@@ -34,6 +34,38 @@ public class NghiPhepService {
         }
         return data;
     }
+
+    /**
+     * Lấy dữ liệu đơn nghỉ phép theo mã phòng ban của manager
+     * Chỉ lấy những đơn của nhân viên cùng phòng ban
+     * @param maphongban mã phòng ban của manager
+     * @return Object[][] dữ liệu đơn nghỉ phép
+     */
+    public Object[][] getTableDataForLeaveByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            return new Object[0][11];
+        }
+        
+        List<NghiPhepDTO> list = dao.getAllByPhongBan(maphongban);
+        System.out.println("[NghiPhepService] Received " + list.size() + " records from DAO for phongban: " + maphongban);
+        Object[][] data = new Object[list.size()][11];
+        
+        for (int i = 0; i < list.size(); i++) {
+            NghiPhepDTO np = list.get(i);
+            data[i][0] = np.getManghiphep();
+            data[i][1] = np.getManv();
+            data[i][2] = np.getLoainghi();
+            data[i][3] = np.getLydonghi();
+            data[i][4] = np.getNgaynghi() != null ? np.getNgaynghi().toString() : "";
+            data[i][5] = np.getNgaylamlai() != null ? np.getNgaylamlai().toString() : "";
+            data[i][6] = np.getNguoiduyet() != null ? np.getNguoiduyet() : "";
+            data[i][7] = np.getNgayduyet() != null ? np.getNgayduyet().toString() : "";
+            data[i][8] = np.getTrangthai();
+            data[i][9] = np.getLydotuchoi() != null ? np.getLydotuchoi() : "";
+            data[i][10] = np.getTennv();
+        }
+        return data;
+    }
     
     // Duyệt đơn
     public boolean duyetDon(String manghiphep, String nguoiduyet) {
