@@ -5,6 +5,10 @@ import com.hrm.Service.NhanVienService;
 import com.hrm.DTO.Manager.TieuChiDanhGiaDTO;
 import com.hrm.DAO.TieuChiDanhGiaDAO;
 import com.hrm.DAO.PhieuDanhGiaDAO;
+import com.hrm.DAO.NhanVienDAO;
+import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,6 +19,7 @@ public class EvaluationPanel extends JPanel {
     private NhanVienService nhanVienService;
     private TieuChiDanhGiaDAO tieuChiDAO;
     private PhieuDanhGiaDAO phieuDAO;
+    private NhanVienDAO nhanVienDAO;
     
     private CardLayout cardLayout;
     private JPanel cardPanel;
@@ -36,6 +41,7 @@ public class EvaluationPanel extends JPanel {
         nhanVienService = new NhanVienService();
         tieuChiDAO = new TieuChiDanhGiaDAO();
         phieuDAO = new PhieuDanhGiaDAO();
+        nhanVienDAO = new NhanVienDAO();
         
         currentMaDot = TieuChiDanhGiaDialog.defaultMaDotNow();
 
@@ -75,7 +81,31 @@ public class EvaluationPanel extends JPanel {
     }
 
     private void loadData() {
-        Object[][] data = nhanVienService.getTableDataForEvaluation();
+        // Lấy thông tin manager hiện tại
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Không tìm thấy thông tin người dùng", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Lấy thông tin manager từ DB để có mã phòng ban
+        NhanVienDTO manager = nhanVienDAO.findById(currentUser.getManv());
+        if (manager == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Không tìm thấy thông tin manager", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        String maphongban = manager.getMaphongban();
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Manager chưa được gán phòng ban", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Load dữ liệu theo phòng ban
+        Object[][] data = nhanVienService.getTableDataForEvaluationByPhongBan(maphongban);
         
         listPanel.setQuarter(currentMaDot);
         listPanel.setData(data);

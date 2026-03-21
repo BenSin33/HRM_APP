@@ -109,6 +109,35 @@ public class NhanVienService {
         return data;
     }
 
+    /**
+     * Lấy dữ liệu team cho JTable theo mã phòng ban của manager
+     * Chỉ hiển thị nhân viên cùng phòng ban với manager
+     * @param maphongban - mã phòng ban của manager
+     * @return Object[][] với các cột: maNV, hoTen, chucVu, lienHe, ngayVaoLam, trangThai
+     */
+    public Object[][] getTableDataForTeamByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            return new Object[0][7];
+        }
+        
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        if (list == null || list.isEmpty()) return new Object[0][7];
+
+        Object[][] data = new Object[list.size()][7];
+        for (int i = 0; i < list.size(); i++) {
+            NhanVienDTO nv = list.get(i);
+            data[i][0] = nv.getManv();
+            data[i][1] = nv.getHoten();
+            data[i][2] = nv.getMachucvu();
+            data[i][3] = (nv.getEmail() != null ? nv.getEmail() : "")
+                       + (nv.getDienthoai() != null ? "\n" + nv.getDienthoai() : "");
+            data[i][4] = nv.getNgayvaolam() != null ? nv.getNgayvaolam().toString() : "";
+            data[i][5] = nv.getTrangthai();
+            data[i][6] = "";
+        }
+        return data;
+    }
+
     // ==================== SCHEDULE PANEL ====================
 
     // Data cho bảng lịch làm việc
@@ -199,6 +228,72 @@ public class NhanVienService {
     // {ten, maNV, chucVu, phongBan, trangThai}
     public Object[][] getTableDataForEvaluation() {
         List<NhanVienDTO> list = dao.getAll();
+        if (list == null || list.isEmpty()) return new Object[0][5];
+
+        String maDot = defaultMaDotNow();
+        Object[][] data = new Object[list.size()][5];
+        for (int i = 0; i < list.size(); i++) {
+            NhanVienDTO nv = list.get(i);
+            data[i][0] = nv.getHoten();
+            data[i][1] = nv.getManv();
+            data[i][2] = nv.getMachucvu();
+            data[i][3] = nv.getMaphongban();
+            boolean daDanhGia = phieuDanhGiaDAO.hasEvaluation(nv.getManv(), maDot);
+            data[i][4] = daDanhGia ? "Đã hoàn thành" : "Chưa đánh giá";
+        }
+        return data;
+    }
+
+    /**
+     * Lấy dữ liệu lịch làm việc cho manager hiện tại (chỉ nhân viên cùng phòng ban)
+     * @param monday ngày thứ 2 của tuần
+     * @param maphongban mã phòng ban của manager
+     * @return Object[][] dữ liệu lịch
+     */
+    public Object[][] getTableDataForScheduleByPhongBan(LocalDate monday, String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            return new Object[0][8];
+        }
+        
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        if (list == null || list.isEmpty()) return new Object[0][8];
+
+        Object[][] data = new Object[list.size()][8];
+        for (int i = 0; i < list.size(); i++) {
+            NhanVienDTO nv = list.get(i);
+            data[i][0] = nv.getHoten() + "|" + nv.getMachucvu() + "|" + nv.getManv();
+
+            for (int j = 0; j < 7; j++) {
+                LocalDate day = monday.plusDays(j);
+                ScheduleDTO schedule = scheduleDAO.getScheduleByEmployeeAndDate(nv.getManv(), day);
+                
+                if (schedule != null && schedule.getShift() != null) {
+                    if ("OFF".equals(schedule.getShift())) {
+                        data[i][j + 1] = "OFF";
+                    } else {
+                        String code = getShiftCode(schedule.getShift());
+                        String time = schedule.getStartTime() + "-" + schedule.getEndTime();
+                        data[i][j + 1] = code + "|" + time;
+                    }
+                } else {
+                    data[i][j + 1] = "";
+                }
+            }
+        }
+        return data;
+    }
+
+    /**
+     * Lấy dữ liệu đánh giá cho manager hiện tại (chỉ nhân viên cùng phòng ban)
+     * @param maphongban mã phòng ban của manager
+     * @return Object[][] dữ liệu với các cột: ten, maNV, chucVu, phongBan, trangThai
+     */
+    public Object[][] getTableDataForEvaluationByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            return new Object[0][5];
+        }
+        
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
         if (list == null || list.isEmpty()) return new Object[0][5];
 
         String maDot = defaultMaDotNow();

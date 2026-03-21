@@ -5,6 +5,8 @@ import com.hrm.Service.NhanVienService;
 import com.hrm.Service.PermissionService;
 import com.hrm.DTO.UserDTO;
 import com.hrm.utils.SessionManager;
+import com.hrm.DAO.NhanVienDAO;
+import com.hrm.DTO.Manager.NhanVienDTO;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
@@ -12,6 +14,7 @@ import java.time.LocalDate;
 public class SchedulePanel extends JPanel {
     private NhanVienService nhanVienService;
     private PermissionService permissionService;
+    private NhanVienDAO nhanVienDAO;
     
     private ScheduleHeader header;
     private ScheduleNavigator navigator;
@@ -27,7 +30,12 @@ public class SchedulePanel extends JPanel {
 
         nhanVienService = new NhanVienService();
         permissionService = new PermissionService();
+        nhanVienDAO = new NhanVienDAO();
         currentMonday = calculateCurrentMonday();
+
+        // Lấy user hiện tại để kiểm tra quyền
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        boolean canEdit = currentUser != null && permissionService.canEdit(currentUser, "CN10");
 
         // Header
         header = new ScheduleHeader();
@@ -56,6 +64,11 @@ public class SchedulePanel extends JPanel {
         btnSave.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
         btnSave.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnSave.setEnabled(false);
+        // Disable nút Lưu nếu không có quyền edit
+        if (!canEdit) {
+            btnSave.setEnabled(false);
+            btnSave.setToolTipText("Bạn không có quyền chỉnh sửa lịch làm việc");
+        }
         btnSave.addActionListener(e -> onSave());
 
         btnResetWeek = new JButton("Reset tuần");
@@ -65,6 +78,11 @@ public class SchedulePanel extends JPanel {
         btnResetWeek.setFocusPainted(false);
         btnResetWeek.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
         btnResetWeek.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // Disable nút Reset nếu không có quyền edit
+        if (!canEdit) {
+            btnResetWeek.setEnabled(false);
+            btnResetWeek.setToolTipText("Bạn không có quyền xóa lịch làm việc");
+        }
         btnResetWeek.addActionListener(e -> onResetWeek());
 
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -82,6 +100,8 @@ public class SchedulePanel extends JPanel {
         table = new ScheduleTable();
         table.setSchedulePanel(this); // ← BỎ QUYỀN THAM CHIẾU ĐẾN PARENT
         table.updateWeekHeaders(currentMonday);
+        // Disable table nếu không có quyền edit
+        table.setEnabled(canEdit);
         contentArea.add(table, BorderLayout.CENTER);
 
         // Legend
@@ -104,9 +124,34 @@ public class SchedulePanel extends JPanel {
 
     /**
      * Load dữ liệu lịch từ service
+     * Chỉ load nhân viên cùng phòng ban với manager
      */
     private void loadData() {
-        table.loadTableData(nhanVienService.getTableDataForSchedule(currentMonday));
+        // Lấy thông tin manager hiện tại
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Không tìm thấy thông tin người dùng", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Lấy thông tin manager từ DB để có mã phòng ban
+        NhanVienDTO manager = nhanVienDAO.findById(currentUser.getManv());
+        if (manager == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Không tìm thấy thông tin manager", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        String maphongban = manager.getMaphongban();
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Manager chưa được gán phòng ban", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Load dữ liệu theo phòng ban
+        table.loadTableData(nhanVienService.getTableDataForScheduleByPhongBan(currentMonday, maphongban));
     }
     
     /**
@@ -129,7 +174,7 @@ public class SchedulePanel extends JPanel {
 
     private void onSave() {
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canEdit(currentUser, "CN13_SCHEDULE")) {
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền chỉnh sửa lịch làm việc", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -149,7 +194,7 @@ public class SchedulePanel extends JPanel {
      */
     private void onResetWeek() {
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canEdit(currentUser, "CN13_SCHEDULE")) {
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền xóa lịch làm việc", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
             return;
         }

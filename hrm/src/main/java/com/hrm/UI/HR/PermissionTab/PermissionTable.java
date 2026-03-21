@@ -35,7 +35,18 @@ public class PermissionTable extends JTable {
             @Override
             public boolean isCellEditable(int row, int column) {
                 // Không cho sửa tên Module (cột 0)
-                return column != 0;
+                if (column == 0) {
+                    return false;
+                }
+                
+                // Khóa THÊM (column 2) và XÓA (column 4) chỉ cho CN10 (Lịch làm việc)
+                if ((column == 2 || column == 4) && row < currentPermissions.size()) {
+                    String machucNang = currentPermissions.get(row).getMachucNang();
+                    if ("CN10".equals(machucNang)) {
+                        return false; // Khóa THÊM và XÓA cho CN10
+                    }
+                }
+                return true;
             }
         };
 
@@ -119,12 +130,21 @@ public class PermissionTable extends JTable {
         // Thêm dữ liệu mới vào bảng
         for (PermissionDTO perm : permissions) {
             currentPermissions.add(perm);
+            
+            // Cho CN10 (Lịch làm việc), THÊM và XÓA luôn false
+            boolean quyenThem = perm.isQuyenThem();
+            boolean quyenXoa = perm.isQuyenXoa();
+            if ("CN10".equals(perm.getMachucNang())) {
+                quyenThem = false;
+                quyenXoa = false;
+            }
+            
             Object[] row = {
                 perm.getTenChucNang() != null ? perm.getTenChucNang() : perm.getMachucNang(),
                 perm.isQuyenXem(),
-                perm.isQuyenThem(),
+                quyenThem,
                 perm.isQuyenSua(),
-                perm.isQuyenXoa()
+                quyenXoa
             };
             model.addRow(row);
         }
@@ -147,6 +167,13 @@ public class PermissionTable extends JTable {
                 boolean quyenThem = (boolean) model.getValueAt(i, 2);
                 boolean quyenSua = (boolean) model.getValueAt(i, 3);
                 boolean quyenXoa = (boolean) model.getValueAt(i, 4);
+                
+                // Cho CN10 (Lịch làm việc), THÊM và XÓA luôn false
+                if ("CN10".equals(machucNang)) {
+                    quyenThem = false;
+                    quyenXoa = false;
+                }
+                
                 // NOTE: Only CRUD permissions are used; other rights are forced to false.
                 boolean quyenDuyet = false;
                 boolean quyenXuatBaoCao = false;

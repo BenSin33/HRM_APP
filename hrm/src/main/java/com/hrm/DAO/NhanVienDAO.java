@@ -175,4 +175,42 @@ public class NhanVienDAO {
         }
         return dsNhanVien;
     }
+
+    /**
+     * Lấy danh sách nhân viên theo mã phòng ban
+     * @param maphongban - mã phòng ban
+     * @return danh sách nhân viên cùng phòng ban
+     */
+    public List<NhanVienDTO> getEmployeesByPhongBan(String maphongban) {
+        List<NhanVienDTO> dsNhanVien = new ArrayList<>();
+        String sql = "SELECT * FROM nhanvien WHERE maphongban = ?";
+
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maphongban);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    java.sql.Date sqlDate = rs.getDate("ngayvaolam");
+                    NhanVienDTO nv = new NhanVienDTO(
+                        rs.getString("manv"),
+                        rs.getString("maphongban"),
+                        rs.getString("machucvu"),
+                        rs.getString("matrinhdo"),
+                        rs.getString("hoten"),
+                        rs.getString("gioitinh"),
+                        rs.getString("diachi"),
+                        rs.getString("dienthoai"),
+                        rs.getString("email"),
+                        sqlDate != null ? sqlDate.toLocalDate() : null,
+                        rs.getInt("songayphep"),
+                        rs.getString("trangthai")
+                    );
+                    dsNhanVien.add(nv);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return dsNhanVien;
+    }
 }

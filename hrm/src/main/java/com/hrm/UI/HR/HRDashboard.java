@@ -23,6 +23,7 @@ import com.hrm.UI.HR.Overview.DashboardOverview;
 import com.hrm.UI.HR.CategoryTab.*;
 import com.hrm.UI.HR.PermissionTab.MainPermissionPanel;
 import com.hrm.UI.HR.SalaryTab.SalaryManagement;
+import com.hrm.UI.Manager.ScheduleTab.SchedulePanel;
 import com.hrm.UI.component.Sidebar;
 import com.hrm.UI.component.SidebarTab;
 import com.hrm.utils.SessionManager;
@@ -75,6 +76,10 @@ public class HRDashboard extends JFrame {
         if (permissionService.canView(currentUser, "CN05")) {
             HRTabs.add(new SidebarTab("QUẢN LÝ ĐÁNH GIÁ", "EVALUATION_MANAGEMENT"));
         }
+        // NOTE: Schedule maps to CN10 in DB - for HR staff to manage HR department schedule
+        if (permissionService.canView(currentUser, "CN10")) {
+            HRTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
+        }
         // NOTE: Payroll maps to CN02 in DB.
         if (permissionService.canView(currentUser, "CN02")) {
             HRTabs.add(new SidebarTab("QUẢN LÝ LƯƠNG", "PAYROLL_MANAGEMENT"));
@@ -110,6 +115,7 @@ public class HRDashboard extends JFrame {
         contentPanel.add(createDashboardPanel(new AttenDanceManagement()), "ATTENDANCE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new LeaveManagement()), "LEAVE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new EvaluationManagement()), "EVALUATION_MANAGEMENT");
+        contentPanel.add(createDashboardPanel(new SchedulePanel()), "SCHEDULE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new MainPermissionPanel()), "PERMISSION_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new AccountManagerPanel()), "ACCOUNT_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new CategoryPanel()), "CATEGORY_MANAGEMENT");

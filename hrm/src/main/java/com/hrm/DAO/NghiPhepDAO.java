@@ -124,5 +124,62 @@ public class NghiPhepDAO {
         }
         return 0;
     }
+
+    /**
+     * Lấy tất cả đơn nghỉ phép theo mã phòng ban
+     * Chỉ lấy những đơn của nhân viên cùng phòng ban
+     */
+    public List<NghiPhepDTO> getAllByPhongBan(String maphongban) {
+        List<NghiPhepDTO> list = new ArrayList<>();
+        String sql = "SELECT np.*, nv.HOTEN as tennv, pb.TENPHONGBAN, cv.TENVITRI " +
+                     "FROM nghiphep np " +
+                     "JOIN nhanvien nv ON np.MANV = nv.MANV " +
+                     "LEFT JOIN phongban pb ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
+                     "LEFT JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "WHERE nv.MAPHONGBAN = ? " +
+                     "ORDER BY np.NGAYNGHI DESC";
+        
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maphongban);
+            ResultSet rs = ps.executeQuery();
+            
+            int count = 0;
+            while (rs.next()) {
+                count++;
+                NghiPhepDTO dto = new NghiPhepDTO();
+                dto.setManghiphep(rs.getString("MANGHIPHEP"));
+                dto.setManv(rs.getString("MANV"));
+                dto.setLoainghi(rs.getString("LOAINGHI"));
+                dto.setLydonghi(rs.getString("LYDONGHI"));
+                
+                Date ngaynghi = rs.getDate("NGAYNGHI");
+                dto.setNgaynghi(ngaynghi != null ? ngaynghi.toLocalDate() : null);
+                
+                Date ngaylamlai = rs.getDate("NGAYLAMLAI");
+                dto.setNgaylamlai(ngaylamlai != null ? ngaylamlai.toLocalDate() : null);
+                
+                dto.setNguoiduyet(rs.getString("NGUOIDUYET"));
+                
+                Date ngayduyet = rs.getDate("NGAYDUYET");
+                dto.setNgayduyet(ngayduyet != null ? ngayduyet.toLocalDate() : null);
+                
+                String trangthai = rs.getString("TRANGTHAI");
+                dto.setTrangthai(trangthai != null ? trangthai : "Chờ duyệt");
+                
+                dto.setLydotuchoi(rs.getString("LYDOTUCHOI"));
+                dto.setTennv(rs.getString("tennv"));
+                dto.setTenphongban(rs.getString("TENPHONGBAN"));
+                dto.setTenchucvu(rs.getString("TENVITRI"));
+                
+                list.add(dto);
+            }
+            System.out.println("[NghiPhepDAO] Loaded " + count + " leave requests for phongban: " + maphongban);
+        } catch (SQLException e) {
+            System.err.println("[NghiPhepDAO] Error loading data by phongban: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
 

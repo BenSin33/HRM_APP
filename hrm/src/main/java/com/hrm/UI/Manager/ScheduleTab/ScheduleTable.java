@@ -3,6 +3,9 @@ import com.hrm.DAO.NhanVienDAO;
 import com.hrm.DAO.ScheduleDAO;
 import com.hrm.DTO.Manager.NhanVienDTO;
 import com.hrm.DTO.Manager.ScheduleDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.table.*;
@@ -21,7 +24,9 @@ public class ScheduleTable extends JPanel {
     private LocalDate currentMonday; // Thứ 2 của tuần hiện tại
     private ScheduleDAO scheduleDAO;
     private NhanVienDAO nhanVienDAO;
+    private PermissionService permissionService;
     private SchedulePanel schedulePanel; // Reference to parent for refresh
+    @SuppressWarnings("unused")
     private Object[][] currentData;
     private final Map<ScheduleKey, String> pendingChanges = new HashMap<>(); // (manv, date) -> macalam ("C1..C7" hoặc "OFF")
 
@@ -32,6 +37,7 @@ public class ScheduleTable extends JPanel {
 
         scheduleDAO = new ScheduleDAO();
         nhanVienDAO = new NhanVienDAO();
+        permissionService = new PermissionService();
         currentMonday = getCurrentMonday();
         currentData = new Object[0][8];
 
@@ -99,6 +105,14 @@ public class ScheduleTable extends JPanel {
      * Handle cell click event
      */
     private void onTableCellClicked(MouseEvent e) {
+        // Kiểm tra quyền trước khi cho phép thay đổi
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10")) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền chỉnh sửa lịch làm việc", 
+                "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         int row = table.rowAtPoint(e.getPoint());
         int column = table.columnAtPoint(e.getPoint());
 

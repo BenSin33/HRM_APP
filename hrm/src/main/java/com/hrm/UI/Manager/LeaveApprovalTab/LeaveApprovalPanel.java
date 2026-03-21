@@ -2,6 +2,10 @@ package com.hrm.UI.Manager.LeaveApprovalTab;
 
 import com.hrm.UI.Manager.color.ColorScheme;
 import com.hrm.Service.NghiPhepService;
+import com.hrm.DAO.NhanVienDAO;
+import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.utils.SessionManager;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -10,6 +14,7 @@ import java.util.List;
 
 public class LeaveApprovalPanel extends JPanel {
     private NghiPhepService nghiPhepService;
+    private NhanVienDAO nhanVienDAO;
     
     private LeaveHeader header;
     private LeaveStats stats;
@@ -26,6 +31,7 @@ public class LeaveApprovalPanel extends JPanel {
 
         // Khởi tạo Service
         nghiPhepService = new NghiPhepService();
+        nhanVienDAO = new NhanVienDAO();
 
         // Header
         header = new LeaveHeader();
@@ -79,7 +85,31 @@ public class LeaveApprovalPanel extends JPanel {
     private void loadData() {
         System.out.println("=== LOADING DATA ===");
         
-        Object[][] data = nghiPhepService.getTableDataForLeave();
+        // Lấy thông tin manager hiện tại
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Không tìm thấy thông tin người dùng", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Lấy thông tin manager từ DB để có mã phòng ban
+        NhanVienDTO manager = nhanVienDAO.findById(currentUser.getManv());
+        if (manager == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Không tìm thấy thông tin manager", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        String maphongban = manager.getMaphongban();
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Lỗi: Manager chưa được gán phòng ban", 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Load dữ liệu theo phòng ban
+        Object[][] data = nghiPhepService.getTableDataForLeaveByPhongBan(maphongban);
         
         System.out.println("Data received: " + data.length + " rows");
         

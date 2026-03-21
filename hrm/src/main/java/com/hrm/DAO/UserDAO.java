@@ -23,13 +23,17 @@ public class UserDAO {
 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
+                        String storedManv = rs.getString("MANV");
+                        // So sánh case-sensitive: nếu database lưu "NV03" và user nhập "nv03" thì sẽ khác
+                        if (!storedManv.equals(username)) {
+                            return null;
+                        }
                         String storedPassword = rs.getString("PASSWORD");
                         if (!PasswordUtil.verifyPassword(password, storedPassword)) {
                             return null;
                         }
-                        String manv = rs.getString("MANV");
                         String roleId = rs.getString("ROLEID");
-                        return new String[] { manv, roleId };
+                        return new String[] { storedManv, roleId };
                     } else {
                         return null; // Authentication failed
                     }
@@ -64,13 +68,17 @@ public class UserDAO {
 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
+                        String storedManv = rs.getString("MANV");
+                        // So sánh case-sensitive: nếu database lưu "NV03" và user nhập "nv03" thì sẽ khác
+                        if (!storedManv.equals(manv)) {
+                            return null;
+                        }
                         String storedPassword = rs.getString("PASSWORD");
                         if (!PasswordUtil.verifyPassword(password, storedPassword)) {
                             return null;
                         }
-                        String maNV = rs.getString("MANV");
                         String roleId = rs.getString("ROLEID");
-                        return new String[] { maNV, roleId };
+                        return new String[] { storedManv, roleId };
                     } else {
                         return null; // Authentication failed
                     }
@@ -86,7 +94,7 @@ public class UserDAO {
     }
 
     public void upgradePasswordIfLegacy(String manv, String rawPassword) {
-        String selectSql = "SELECT PASSWORD FROM TAIKHOAN WHERE MANV = ?";
+        String selectSql = "SELECT MANV, PASSWORD FROM TAIKHOAN WHERE MANV = ?";
         String updateSql = "UPDATE TAIKHOAN SET PASSWORD = ? WHERE MANV = ?";
 
         try (Connection conn = JDBCConection.getConnection()) {
@@ -99,6 +107,12 @@ public class UserDAO {
 
                 try (ResultSet rs = selectPs.executeQuery()) {
                     if (!rs.next()) {
+                        return;
+                    }
+
+                    String storedManv = rs.getString("MANV");
+                    // So sánh case-sensitive để kiểm tra tài khoản hợp lệ
+                    if (!storedManv.equals(manv)) {
                         return;
                     }
 
