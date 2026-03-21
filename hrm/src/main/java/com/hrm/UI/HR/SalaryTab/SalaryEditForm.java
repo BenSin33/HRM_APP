@@ -22,7 +22,9 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
     private JTextField txtLuongCoBan;
     private JTextField txtHesoTrinhDo;
     private JTextField txtSoNgayCong;
+
     private JTextField txtSoNgayCongChuan; // NEW: Số ngày công chuẩn
+
     private JTextField txtTongPhucap;
     private JTextField txtTongKhauTru;
     private JTextField txtThucLinh;
@@ -41,6 +43,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         // Panel chính chứa các trường
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new GridLayout(8, 2, 20, 15));
+
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -58,6 +61,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         // Ngày công
         addFormField(mainPanel, "Số ngày công:", txtSoNgayCong = createEditableField(), false);
         addFormField(mainPanel, "Số ngày công chuẩn:", txtSoNgayCongChuan = createEditableField("26"), false);
+
 
         // Phụ cấp và khấu trừ
         addFormField(mainPanel, "Tổng phụ cấp (VND):", txtTongPhucap = createReadOnlyField(), true);
@@ -125,6 +129,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             txtHesoTrinhDo.setText(salary.hesotrinhdo != null ? salary.hesotrinhdo.toString() : "1.00");
             txtSoNgayCong.setText(salary.soNgayCong > 0 ? String.valueOf(salary.soNgayCong) : "");
             txtSoNgayCongChuan.setText(salary.soNgayCongChuan > 0 ? String.valueOf(salary.soNgayCongChuan) : "26");
+
             
             // Tự động lấy tổng phụ cấp và khấu trừ từ database
             try {
@@ -254,6 +259,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         BigDecimal heSoTrinhDo = salary.hesotrinhdo != null ? salary.hesotrinhdo : new BigDecimal("1.00");
         BigDecimal phucapChucVu = salary.phucapChucVu != null ? salary.phucapChucVu : BigDecimal.ZERO;
         BigDecimal ngayCongRatio = new BigDecimal(salary.soNgayCong).divide(new BigDecimal(salary.soNgayCongChuan), 4, java.math.RoundingMode.HALF_UP);
+
         
         salary.thucLinh = salary.luongCoBan
                             .multiply(heSoTrinhDo)
@@ -342,6 +348,7 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             }
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Số ngày công chuẩn phải là số hợp lệ!");
+
             return false;
         }
         

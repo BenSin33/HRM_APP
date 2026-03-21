@@ -17,6 +17,7 @@ public class SalaryDAO {
         List<SalaryDTO> list = new ArrayList<>();
         String sql = "SELECT bl.MALUONG, bl.MANV, nv.HOTEN, pb.TENPHONGBAN, bl.THANG, bl.NAM, " +
                      "bl.LUONGCOBAN_SNAPSHOT, bl.SONGAYCONG, bl.SONGAYCONG_CHUAN, bl.TONG_PHUCAP, bl.TONG_KHAUTRU, " +
+
                      "bl.THUCLINH, bl.TRANGTHAI, bl.NGAYCHOTLUONG, bl.TINH_TRANG_TT, td.HESOTRINHDO, cv.PHUCAPCHUCVU " +
                      "FROM bangluong bl " +
                      "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
