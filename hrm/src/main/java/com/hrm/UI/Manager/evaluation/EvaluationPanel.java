@@ -12,6 +12,8 @@ import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 
@@ -131,20 +133,22 @@ public class EvaluationPanel extends JPanel {
         boolean isLocked = phieuDAO.hasEvaluation(maNV, currentMaDot);
         Map<String, Integer> savedScores = null;
         String nhanXet = "";
-        String quyetDinh = "Giữ nguyên";
-        String loaiQD = "Không có";
+        String quyetDinh = "Không có";  // ComboBox: Không có/Thưởng/Kỷ luật
+        String loaiQD = "";             // TextField: chi tiết của loại quyết định
+        BigDecimal tiLeThayDoi = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         
         if (isLocked) {
             savedScores = phieuDAO.getScoresByCriteria(maNV, currentMaDot);
             nhanXet = phieuDAO.getNhanXet(maNV, currentMaDot);
             quyetDinh = phieuDAO.getQuyetDinh(maNV, currentMaDot);
             loaiQD = phieuDAO.getLoaiQuyetDinh(maNV, currentMaDot);
-            System.out.println("   Loaded from DB: quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD);
+            tiLeThayDoi = phieuDAO.getTiLeThayDoi(maNV, currentMaDot);
+            System.out.println("   Loaded from DB: quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD + ", tiLe=" + tiLeThayDoi);
         }
         
         // Cập nhật panel chi tiết
         System.out.println("   Calling detailPanel.setData()...");
-        detailPanel.setData(maNV, hoTen, currentMaDot, criteria, savedScores, nhanXet, quyetDinh, loaiQD, isLocked);
+        detailPanel.setData(maNV, hoTen, currentMaDot, criteria, savedScores, nhanXet, quyetDinh, loaiQD, tiLeThayDoi, isLocked);
         
         // Chuyển sang panel chi tiết
         cardLayout.show(cardPanel, "DETAIL");
@@ -156,8 +160,8 @@ public class EvaluationPanel extends JPanel {
         loadData(); // Refresh dữ liệu
     }
 
-    private void saveEvaluation(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD) {
-        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet, quyetDinh, loaiQD);
+    private void saveEvaluation(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD, BigDecimal tiLeThayDoi) {
+        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet, quyetDinh, loaiQD, tiLeThayDoi);
         if (success) {
             JOptionPane.showMessageDialog(this, "Lưu điểm thành công!");
             // Ở lại panel, reload lại để hiển thị trạng thái đã lưu (locked)

@@ -7,6 +7,8 @@ import com.hrm.UI.Manager.evaluation.component.ScoreRadioPanel;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,11 +23,13 @@ public class EvaluationDetailPanel extends JPanel {
     private JButton btnSave;
     private JButton btnReset;
     
-    private JTextField txtQuyetDinh;
-    private JComboBox<String> comboLoaiQD;
+    private JComboBox<String> comboQuyetDinh;
+    private JLabel lblLoaiQDValue;      // Tự động: Giữ nguyên / Tăng lương / Trừ lương
+    private JTextField txtAnhHuongLuong;
     private boolean isUpdatingCombos = false;
 
-    private static final String[] LOAI_QD_OPTIONS = new String[] { "Không có", "Thưởng", "Kỷ luật" };
+    /** Quyết định → Loại quyết định: Thưởng→Tăng lương, Kỷ luật→Trừ lương, Không có→Giữ nguyên */
+    private static final String[] QUYET_DINH_OPTIONS = new String[] { "Không có", "Thưởng", "Kỷ luật" };
     
     private List<ScoreRadioPanel> scorePanels;
     private Runnable onBackListener;
@@ -38,7 +42,8 @@ public class EvaluationDetailPanel extends JPanel {
     private List<TieuChiDanhGiaDTO> currentCriteria;
 
     public interface SaveListener {
-        void onSave(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD);
+        /** @param tiLeThayDoi % lương: dương=tăng, âm=trừ, 0=giữ nguyên */
+        void onSave(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD, BigDecimal tiLeThayDoi);
     }
 
     public EvaluationDetailPanel(Runnable backListener, SaveListener saveListener) {
@@ -141,29 +146,45 @@ public class EvaluationDetailPanel extends JPanel {
             new Font("Segoe UI", Font.BOLD, 14)
         ));
         
-        JPanel qdContentPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        JPanel qdContentPanel = new JPanel();
+        qdContentPanel.setLayout(new BoxLayout(qdContentPanel, BoxLayout.Y_AXIS));
         qdContentPanel.setOpaque(false);
         qdContentPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        
-        // Quyết định
+
+        JPanel grid = new JPanel(new GridLayout(3, 2, 10, 10));
+        grid.setOpaque(false);
+
+        // 1. Quyết định (ComboBox: Không có / Thưởng / Kỷ luật)
         JLabel lblQuyetDinh = new JLabel("Quyết định:");
         lblQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txtQuyetDinh = new JTextField();
-        txtQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txtQuyetDinh.setColumns(30);
-        
-        // Loại quyết định
+        comboQuyetDinh = new JComboBox<>(QUYET_DINH_OPTIONS);
+        comboQuyetDinh.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        comboQuyetDinh.addActionListener(e -> {
+            if (!isUpdatingCombos) updateLoaiQDAndAnhHuong();
+        });
+
+        // 2. Loại quyết định (tự động: Giữ nguyên / Tăng lương / Trừ lương)
         JLabel lblLoaiQD = new JLabel("Loại quyết định:");
         lblLoaiQD.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        comboLoaiQD = new JComboBox<>(new String[]{
-            "Không có", "Thưởng", "Kỷ luật"
-        });
-        comboLoaiQD.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        
-        qdContentPanel.add(lblQuyetDinh);
-        qdContentPanel.add(txtQuyetDinh);
-        qdContentPanel.add(lblLoaiQD);
-        qdContentPanel.add(comboLoaiQD);
+        lblLoaiQDValue = new JLabel("Giữ nguyên");
+        lblLoaiQDValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblLoaiQDValue.setForeground(new Color(60, 60, 60));
+
+        // 3. Ảnh hưởng lương (0-100%), hiển thị cho cả 3 loại
+        JLabel lblAnhHuong = new JLabel("Ảnh hưởng lương (%):");
+        lblAnhHuong.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtAnhHuongLuong = new JTextField(10);
+        txtAnhHuongLuong.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtAnhHuongLuong.setToolTipText("Thưởng: 0-100 (%). Kỷ luật: -100 đến 0 (%)");
+
+        grid.add(lblQuyetDinh);
+        grid.add(comboQuyetDinh);
+        grid.add(lblLoaiQD);
+        grid.add(lblLoaiQDValue);
+        grid.add(lblAnhHuong);
+        grid.add(txtAnhHuongLuong);
+
+        qdContentPanel.add(grid);
 
         quyetDinhPanel.add(qdContentPanel, BorderLayout.CENTER);
         
@@ -215,15 +236,28 @@ public class EvaluationDetailPanel extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private void applyDecisionOptionsByLoai(String loaiQD) {
-        // No-op: quyết định hiện là textbox để người dùng tự điền
-    }
-    
-    private void syncLoaiWithQuyetDinh() {
-        // No-op: quyết định hiện là textbox để người dùng tự điền
+    /** Quyết định → Loại quyết định */
+    private String getLoaiQDFromQuyetDinh(String qd) {
+        if ("Thưởng".equals(qd)) return "Tăng lương";
+        if ("Kỷ luật".equals(qd)) return "Trừ lương";
+        return "Giữ nguyên";
     }
 
-    
+    /** Cập nhật label Loại quyết định + enable/disable Ảnh hưởng lương + hint */
+    private void updateLoaiQDAndAnhHuong() {
+        String q = String.valueOf(comboQuyetDinh.getSelectedItem());
+        lblLoaiQDValue.setText(getLoaiQDFromQuyetDinh(q));
+        boolean enable = "Thưởng".equals(q) || "Kỷ luật".equals(q);
+        txtAnhHuongLuong.setEnabled(enable);
+        txtAnhHuongLuong.setEditable(enable);
+        if ("Thưởng".equals(q)) {
+            txtAnhHuongLuong.setToolTipText("Nhập số dương 0-100 (VD: 10 = +10%)");
+        } else if ("Kỷ luật".equals(q)) {
+            txtAnhHuongLuong.setToolTipText("Nhập số âm 0 đến -100 (VD: -5 = -5%). Không được nhập số dương.");
+        } else {
+            txtAnhHuongLuong.setText("0");
+        }
+    }
 
     public void setData(String maNV, String hoTen, String maDot, 
                        List<TieuChiDanhGiaDTO> criteria, 
@@ -231,10 +265,10 @@ public class EvaluationDetailPanel extends JPanel {
                        String nhanXet,
                        String quyetDinh,
                        String loaiQD,
+                       BigDecimal tiLeThayDoi,
                        boolean locked) {
         System.out.println("🔍 DEBUG: EvaluationDetailPanel.setData() được gọi!");
-        System.out.println("   maNV=" + maNV + ", quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD);
-        System.out.println("   comboLoaiQD=" + comboLoaiQD);
+        System.out.println("   maNV=" + maNV + ", quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD + ", tiLe=" + tiLeThayDoi);
         
         this.currentMaNV = maNV;
         this.currentMaDot = maDot;
@@ -276,31 +310,30 @@ public class EvaluationDetailPanel extends JPanel {
         
         // Nếu phiếu đã khóa thì giữ nguyên quyết định đã lưu
         if (locked) {
-            txtQuyetDinh.setText(quyetDinh != null ? quyetDinh : "");
-            
-            String normalizedLoaiQD = loaiQD;
-            if ("Trừ lương".equals(normalizedLoaiQD)) {
-                normalizedLoaiQD = "Kỷ luật";
-            }
-            if (normalizedLoaiQD == null) {
-                normalizedLoaiQD = "Không có";
-            }
+            String normalizedQD = quyetDinh;
+            if ("Trừ lương".equals(normalizedQD)) normalizedQD = "Kỷ luật";
+            if (normalizedQD == null || normalizedQD.isEmpty()) normalizedQD = "Không có";
             
             try {
-                comboLoaiQD.setSelectedItem(normalizedLoaiQD);
+                comboQuyetDinh.setSelectedItem(normalizedQD);
             } catch (Exception e) {
-                comboLoaiQD.setSelectedIndex(0);
+                comboQuyetDinh.setSelectedIndex(0);
             }
+            updateLoaiQDAndAnhHuong();
+
+            // Hiển thị giá trị: Thưởng=dương (10), Kỷ luật=âm (-5)
+            BigDecimal tl = tiLeThayDoi != null ? tiLeThayDoi.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+            txtAnhHuongLuong.setText(tl.stripTrailingZeros().toPlainString());
             
         } else {
-            // Chưa khóa: tự động gợi ý quyết định theo tổng điểm
-            txtQuyetDinh.setText("");
+            txtAnhHuongLuong.setText("0");
             updateDecisionByScore();
+            updateLoaiQDAndAnhHuong();
         }
         
-        txtQuyetDinh.setEnabled(!locked);
-        txtQuyetDinh.setEditable(!locked);
-        comboLoaiQD.setEnabled(!locked);
+        comboQuyetDinh.setEnabled(!locked);
+        txtAnhHuongLuong.setEnabled(!locked && !"Không có".equals(String.valueOf(comboQuyetDinh.getSelectedItem())));
+        txtAnhHuongLuong.setEditable(!locked && !"Không có".equals(String.valueOf(comboQuyetDinh.getSelectedItem())));
         
         // Set trạng thái nút
         if (locked) {
@@ -337,7 +370,8 @@ public class EvaluationDetailPanel extends JPanel {
                                         "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             // Gọi lại setData() fresh — giống hệt lúc mở nhân viên chưa có đánh giá
             setData(currentMaNV, currentHoTen, currentMaDot,
-                    currentCriteria, null, "", "", "Không có", false);
+                    currentCriteria, null, "", "Không có", "",
+                    BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), false);
         } else {
             JOptionPane.showMessageDialog(this, "Reset thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
@@ -348,12 +382,54 @@ public class EvaluationDetailPanel extends JPanel {
         for (ScoreRadioPanel panel : scorePanels) {
             scores.put(panel.getMaTieuChi(), panel.getSelectedScore());
         }
-        
-        String loaiQD = String.valueOf(comboLoaiQD.getSelectedItem());
-        String quyetDinh = txtQuyetDinh.getText();
+        String quyetDinh = String.valueOf(comboQuyetDinh.getSelectedItem());
+        String loaiQD = getLoaiQDFromQuyetDinh(quyetDinh);
+
+        BigDecimal tiLe = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        if ("Thưởng".equals(quyetDinh) || "Kỷ luật".equals(quyetDinh)) {
+            String raw = txtAnhHuongLuong.getText().trim().replace(',', '.');
+            if (raw.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Nhập Ảnh hưởng lương (%). Thưởng: 0-100. Kỷ luật: 0 đến -100.",
+                        "Thiếu dữ liệu", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                double val = Double.parseDouble(raw);
+                if ("Thưởng".equals(quyetDinh)) {
+                    if (val < 0 || val > 100) {
+                        JOptionPane.showMessageDialog(this,
+                                "Thưởng: Ảnh hưởng lương phải từ 0 đến 100 (số dương).",
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    tiLe = BigDecimal.valueOf(val).setScale(2, RoundingMode.HALF_UP);
+                } else {
+                    // Kỷ luật: phải là số âm, không được nhập số dương > 0
+                    if (val > 0) {
+                        JOptionPane.showMessageDialog(this,
+                                "Kỷ luật: Phải nhập số âm (VD: -5, -10). Không được nhập số dương.",
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (val < -100) {
+                        JOptionPane.showMessageDialog(this,
+                                "Kỷ luật: Ảnh hưởng lương từ 0 đến -100.",
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    tiLe = BigDecimal.valueOf(val).setScale(2, RoundingMode.HALF_UP);
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Ảnh hưởng lương không hợp lệ. Thưởng: 0-100. Kỷ luật: -100 đến 0.",
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
         
         if (onSaveListener != null) {
-            onSaveListener.onSave(scores, txtNhanXet.getText(), quyetDinh, loaiQD);
+            onSaveListener.onSave(scores, txtNhanXet.getText(), quyetDinh, loaiQD, tiLe);
         }
     }
     
@@ -378,34 +454,26 @@ public class EvaluationDetailPanel extends JPanel {
         try {
             // Khi chưa chấm gì (percent = 0) thì loại quyết định phải là "Không có"
             if (percent == 0) {
-                // Trạng thái đầu tiên: khôi phục lại list đầy đủ
-                comboLoaiQD.setModel(new DefaultComboBoxModel<>(LOAI_QD_OPTIONS));
-                comboLoaiQD.setSelectedItem("Không có");
-                txtQuyetDinh.setText("");
-                comboLoaiQD.revalidate();
-                comboLoaiQD.repaint();
+                comboQuyetDinh.setModel(new DefaultComboBoxModel<>(QUYET_DINH_OPTIONS));
+                comboQuyetDinh.setSelectedItem("Không có");
+                txtAnhHuongLuong.setText("0");
+                updateLoaiQDAndAnhHuong();
                 return;
             }
 
-            // Quyết định hiện là textbox tự điền -> chỉ tự động set "Loại quyết định"
             if (percent >= 75) {
-                // 75-100: Thưởng
-                comboLoaiQD.setModel(new DefaultComboBoxModel<>(new String[] { "Thưởng" }));
-                comboLoaiQD.setSelectedItem("Thưởng");
+                comboQuyetDinh.setModel(new DefaultComboBoxModel<>(new String[] { "Thưởng" }));
+                comboQuyetDinh.setSelectedItem("Thưởng");
             } else if (percent >= 65) {
-                // 65-74: Giữ nguyên
-                comboLoaiQD.setModel(new DefaultComboBoxModel<>(new String[] { "Không có" }));
-                comboLoaiQD.setSelectedItem("Không có");
+                comboQuyetDinh.setModel(new DefaultComboBoxModel<>(new String[] { "Không có" }));
+                comboQuyetDinh.setSelectedItem("Không có");
             } else {
-                // <65: Phạt (nhắc nhở / cảnh cáo / kỷ luật)
-                comboLoaiQD.setModel(new DefaultComboBoxModel<>(new String[] { "Kỷ luật" }));
-                comboLoaiQD.setSelectedItem("Kỷ luật");
+                comboQuyetDinh.setModel(new DefaultComboBoxModel<>(new String[] { "Kỷ luật" }));
+                comboQuyetDinh.setSelectedItem("Kỷ luật");
             }
             
-            // Không auto-fill nội dung quyết định
-            txtQuyetDinh.setText("");
-            comboLoaiQD.revalidate();
-            comboLoaiQD.repaint();
+            txtAnhHuongLuong.setText("0");
+            updateLoaiQDAndAnhHuong();
         } finally {
             isUpdatingCombos = false;
         }
