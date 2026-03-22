@@ -10,6 +10,5 @@ public class App {
         FlatLightLaf.setup();
 
         new LoginUI();
-
     }                
 }
