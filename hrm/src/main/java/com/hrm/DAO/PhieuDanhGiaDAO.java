@@ -2,6 +2,8 @@ package com.hrm.DAO;
 
 import com.hrm.UI.Manager.config.JDBCUtil;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,11 +29,21 @@ public class PhieuDanhGiaDAO {
     }
 
     public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet, String quyetDinh, String loaiQD) {
+        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, quyetDinh, loaiQD, null);
+    }
+
+    /**
+     * @param tiLeThayDoi Tỉ lệ thay đổi lương (đơn vị %): dương=tăng, âm=trừ, 0=giữ nguyên (lưu TI_LE_THAY_DOI)
+     */
+    public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet, String quyetDinh, String loaiQD, BigDecimal tiLeThayDoi) {
         if (diemTheoTieuChi == null || diemTheoTieuChi.isEmpty()) return false;
 
         int tongDiem = diemTheoTieuChi.values().stream().mapToInt(Integer::intValue).sum();
         String autoQD = quyetDinh != null ? quyetDinh : decideRewardPenalty100(tongDiem);
         String finalLoaiQD = loaiQD != null ? loaiQD : "Không có";
+        BigDecimal finalTiLe = tiLeThayDoi != null
+                ? tiLeThayDoi.setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
         Connection conn = null;
         try {
@@ -43,8 +55,8 @@ public class PhieuDanhGiaDAO {
             boolean isInsert = (maPhieu == null);
             if (isInsert) {
                 maPhieu = generateMaPhieu(conn);
-                String insertSql = "INSERT INTO phieudanhgia (MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, NHANXET, QUYETDINH, NGAYDANHGIA, LOAIQUYETDINH) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String insertSql = "INSERT INTO phieudanhgia (MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, NHANXET, QUYETDINH, NGAYDANHGIA, LOAIQUYETDINH, TI_LE_THAY_DOI) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
                     ps.setString(1, maPhieu);
                     ps.setString(2, maNV);
@@ -55,17 +67,19 @@ public class PhieuDanhGiaDAO {
                     ps.setString(7, autoQD);
                     ps.setDate(8, java.sql.Date.valueOf(LocalDate.now()));
                     ps.setString(9, finalLoaiQD);
+                    ps.setBigDecimal(10, finalTiLe);
                     ps.executeUpdate();
                 }
             } else {
-                String updateSql = "UPDATE phieudanhgia SET TONGDIEM = ?, NHANXET = ?, QUYETDINH = ?, NGAYDANHGIA = ?, LOAIQUYETDINH = ? WHERE MAPHIEU = ?";
+                String updateSql = "UPDATE phieudanhgia SET TONGDIEM = ?, NHANXET = ?, QUYETDINH = ?, NGAYDANHGIA = ?, LOAIQUYETDINH = ?, TI_LE_THAY_DOI = ? WHERE MAPHIEU = ?";
                 try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                     ps.setInt(1, tongDiem);
                     ps.setString(2, nhanXet);
                     ps.setString(3, autoQD);
                     ps.setDate(4, java.sql.Date.valueOf(LocalDate.now()));
                     ps.setString(5, finalLoaiQD);
-                    ps.setString(6, maPhieu);
+                    ps.setBigDecimal(6, finalTiLe);
+                    ps.setString(7, maPhieu);
                     ps.executeUpdate();
                 }
             }
@@ -105,7 +119,7 @@ public class PhieuDanhGiaDAO {
     }
 
     public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet) {
-        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, null, null);
+        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, null, null, null);
     }
 
     public boolean resetEvaluation(String maNV, String maDot) {
@@ -310,6 +324,31 @@ public class PhieuDanhGiaDAO {
             e.printStackTrace();
         }
         return "Không có";
+    }
+
+    /**
+     * Lấy tỉ lệ thay đổi lương (đơn vị %): dương=tăng, âm=trừ, 0=giữ nguyên
+     */
+    public BigDecimal getTiLeThayDoi(String maNV, String maDot) {
+        String sql = "SELECT TI_LE_THAY_DOI FROM phieudanhgia WHERE MANV = ? AND MADOT = ? ORDER BY NGAYDANHGIA DESC LIMIT 1";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, maNV);
+            ps.setString(2, maDot);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                BigDecimal v = rs.getBigDecimal("TI_LE_THAY_DOI");
+                if (v != null) {
+                    return v.setScale(2, RoundingMode.HALF_UP);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 }
 
