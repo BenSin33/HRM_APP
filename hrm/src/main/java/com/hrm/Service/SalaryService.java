@@ -85,7 +85,7 @@ public class SalaryService {
     }
 
     // Tính lương cho khoảng tháng/năm
-    // Công thức: thực lĩnh = (lương cơ bản x hệ số trình độ x (số ngày công / số ngày công chuẩn)) + Tổng phụ cấp - tổng khấu trừ
+    // Công thức: thực lĩnh = (lương cơ bản x hệ số trình độ x (số ngày công / số ngày công chuẩn)) + (Tổng phụ cấp + Phụ cấp chức vụ) - tổng khấu trừ
     public boolean calculateSalaryForMonthRange(int fromMonth, int fromYear, int toMonth, int toYear) {
         try {
             AttendanceDAO attendanceDAO = new AttendanceDAO();
@@ -119,6 +119,9 @@ public class SalaryService {
                 BigDecimal luongCoBanFromContract = currentContract.luongCoBan != null 
                     ? currentContract.luongCoBan : BigDecimal.ZERO;
                 
+                // Lấy phụ cấp chức vụ từ chucvu table dựa trên mã chức vụ của nhân viên
+                BigDecimal phucapChucVuFromDB = getPhucapChucVuForEmployee(employee.getManv());
+                
                 java.time.YearMonth current = java.time.YearMonth.of(fromYear, fromMonth);
                 java.time.YearMonth to = java.time.YearMonth.of(toYear, toMonth);
                 
@@ -128,12 +131,10 @@ public class SalaryService {
                     
                     // Chỉ tính nếu chưa có bản lương hoặc trạng thái là nháp (0)
                     if (existingSalary == null || "0".equals(existingSalary.trangThai)) {
-                        // Lấy dữ liệu nhân viên (lương cơ bản từ hợp đồng, hệ số trình độ, phụ cấp chức vụ)
+                        // Lấy dữ liệu nhân viên (lương cơ bản từ hợp đồng, hệ số trình độ)
                         BigDecimal luongCoBan = luongCoBanFromContract; // Lấy từ hợp đồng
                         BigDecimal hesoTrinhDo = existingSalary != null && existingSalary.hesotrinhdo != null 
                             ? existingSalary.hesotrinhdo : new BigDecimal("1.00");
-                        BigDecimal phucapChucVu = existingSalary != null && existingSalary.phucapChucVu != null 
-                            ? existingSalary.phucapChucVu : BigDecimal.ZERO;
                         
                         // Lấy số ngày công từ bảng chấm công (chỉ tính những ngày TRANGTHAI = '1')
                         float soNgayCong = attendanceDAO.getWorkingDaysForEmployeeInMonth(
@@ -143,15 +144,16 @@ public class SalaryService {
                         );
                         
                         // Tính toán thực lĩnh theo công thức:
-                        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công chuẩn)) + Tổng phụ cấp - tổng khấu trừ
+                        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công chuẩn)) + (Tổng phụ cấp + Phụ cấp chức vụ) - tổng khấu trừ
                         BigDecimal ngayCongRatio = new BigDecimal(soNgayCong)
                             .divide(new BigDecimal(soNgayCongChuan), 4, RoundingMode.HALF_UP);
+                        
+                        BigDecimal tongPhucap = defaultAllowances.add(phucapChucVuFromDB);
                         
                         BigDecimal thucLinh = luongCoBan
                             .multiply(hesoTrinhDo)
                             .multiply(ngayCongRatio)
-                            .add(defaultAllowances)
-                            .add(phucapChucVu)
+                            .add(tongPhucap)
                             .subtract(defaultDeductions)
                             .setScale(2, RoundingMode.HALF_UP);
                         
@@ -169,8 +171,8 @@ public class SalaryService {
                         salaryDTO.soNgayCong = soNgayCong;
                         salaryDTO.soNgayCongChuan = soNgayCongChuan; // Lưu số ngày công chuẩn
                         salaryDTO.hesotrinhdo = hesoTrinhDo;
-                        salaryDTO.phucapChucVu = phucapChucVu;
-                        salaryDTO.tongPhucap = defaultAllowances;
+                        salaryDTO.phucapChucVu = phucapChucVuFromDB;
+                        salaryDTO.tongPhucap = tongPhucap;  // ← FIX: Include phụ cấp chức vụ
                         salaryDTO.tongKhauTru = defaultDeductions;
                         salaryDTO.thucLinh = thucLinh;
                         salaryDTO.trangThai = "0"; // Nháp
@@ -200,6 +202,32 @@ public class SalaryService {
             e.printStackTrace();
             return false;
         }
+    }
+    
+    // Helper method: Get phụ cấp chức vụ for an employee
+    private BigDecimal getPhucapChucVuForEmployee(String maNV) {
+        try {
+            java.sql.Connection conn = com.hrm.utils.JDBCConection.getConnection();
+            String sql = "SELECT cv.PHUCAPCHUCVU FROM nhanvien nv " +
+                         "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                         "WHERE nv.MANV = ?";
+            java.sql.PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, maNV);
+            java.sql.ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                BigDecimal phucap = rs.getBigDecimal("PHUCAPCHUCVU");
+                rs.close();
+                ps.close();
+                conn.close();
+                return phucap != null ? phucap : BigDecimal.ZERO;
+            }
+            rs.close();
+            ps.close();
+            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return BigDecimal.ZERO;
     }
 
     public static class SalaryStatistics {

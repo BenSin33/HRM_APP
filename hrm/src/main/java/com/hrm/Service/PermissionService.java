@@ -94,8 +94,9 @@ public class PermissionService {
     }
 
     public boolean canApprove(UserDTO user, String machucNang) {
-        // NOTE: Project only uses CRUD (Xem/Thêm/Sửa/Xóa). Approve is disabled.
-        return false;
+        // Kiểm tra quyền DUYỆT (QUYEN_DUYET) cho chức năng cụ thể
+        // Sử dụng cho các bộ phận yêu cầu duyệt (như CN05 - Đánh giá hiệu suất)
+        return hasPermission(user, machucNang, "QUYEN_DUYET");
     }
 
     public boolean canExport(UserDTO user, String machucNang) {
@@ -138,7 +139,8 @@ public class PermissionService {
             System.err.println("Lỗi: RoleId và MachucNang không được để trống!");
             return false;
         }
-        return permissionDAO.updatePermission(roleId, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
+        // Cập nhật role và tất cả nhân viên có role này
+        return permissionDAO.updatePermissionAndEmployees(roleId, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
     }
 
     public boolean updateUserPermission(String manv, String machucNang,
@@ -150,6 +152,8 @@ public class PermissionService {
             System.err.println("Lỗi: MANV và MachucNang không được để trống!");
             return false;
         }
+        // Xóa override cũ trước, rồi thêm override mới
+        permissionDAO.deleteUserPermissionForFunction(manv, machucNang);
         return permissionDAO.updateUserPermission(manv, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao);
     }
 

@@ -19,8 +19,8 @@ public class PermissionTable extends JTable {
     private List<PermissionDTO> currentPermissions;
 
     public PermissionTable(){
-        // NOTE: Only use CRUD permissions (Xem/Thêm/Sửa/Xóa). Other rights are disabled.
-        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa"};
+        // NOTE: Use CRUD permissions (Xem/Thêm/Sửa/Xóa) and Approval permission (Duyệt).
+        String[] columnNames = {"Chức năng", "Xem", "Thêm", "Sửa", "Xóa", "Duyệt"};
         
         // Dữ liệu mẫu ban đầu
         Object[][] data = {};
@@ -39,11 +39,25 @@ public class PermissionTable extends JTable {
                     return false;
                 }
                 
-                // Khóa THÊM (column 2) và XÓA (column 4) chỉ cho CN10 (Lịch làm việc)
-                if ((column == 2 || column == 4) && row < currentPermissions.size()) {
+                // Khóa quyền cho các chức năng đặc biệt
+                if (row < currentPermissions.size()) {
                     String machucNang = currentPermissions.get(row).getMachucNang();
-                    if ("CN10".equals(machucNang)) {
-                        return false; // Khóa THÊM và XÓA cho CN10
+                    
+                    // CN10 (Lịch làm việc): Khóa THÊM (column 2) và XÓA (column 4)
+                    if ("CN10".equals(machucNang) && (column == 2 || column == 4)) {
+                        return false;
+                    }
+                    
+                    // CN11 (Quản lý tài khoản): Khóa THÊM (column 2) và DUYỆT (column 5)
+                    // Chỉ cho phép Xem (column 1), Sửa (column 3), Xóa (column 4)
+                    if ("CN11".equals(machucNang) && (column == 2 || column == 5)) {
+                        return false;
+                    }
+                    
+                    // CN05 (Đánh giá hiệu suất): Khóa SỬA (column 3) và XÓA (column 4)
+                    // Chỉ cho phép Xem (column 1), Thêm (column 2), Duyệt (column 5)
+                    if ("CN05".equals(machucNang) && (column == 3 || column == 4)) {
+                        return false;
                     }
                 }
                 return true;
@@ -70,10 +84,11 @@ public class PermissionTable extends JTable {
                             model.setValueAt(false, row, 2); // Tắt Thêm
                             model.setValueAt(false, row, 3); // Tắt Sửa
                             model.setValueAt(false, row, 4); // Tắt Xóa
+                            model.setValueAt(false, row, 5); // Tắt Duyệt
                         });
                     }
                 } else if (column > 1) { 
-                    // Nếu Thêm/Sửa/Xóa được bật, phải bật Xem
+                    // Nếu Thêm/Sửa/Xóa/Duyệt được bật, phải bật Xem
                     Boolean hasPermission = (Boolean) model.getValueAt(row, column);
                     if (hasPermission) {
                         Boolean quyenXem = (Boolean) model.getValueAt(row, 1);
@@ -139,12 +154,20 @@ public class PermissionTable extends JTable {
                 quyenXoa = false;
             }
             
+            // Cho CN11 (Quản lý tài khoản), THÊM và DUYỆT luôn false
+            boolean quyenDuyet = perm.isQuyenDuyet();
+            if ("CN11".equals(perm.getMachucNang())) {
+                quyenThem = false;
+                quyenDuyet = false;
+            }
+            
             Object[] row = {
                 perm.getTenChucNang() != null ? perm.getTenChucNang() : perm.getMachucNang(),
                 perm.isQuyenXem(),
                 quyenThem,
                 perm.isQuyenSua(),
-                quyenXoa
+                quyenXoa,
+                quyenDuyet
             };
             model.addRow(row);
         }
@@ -167,6 +190,7 @@ public class PermissionTable extends JTable {
                 boolean quyenThem = (boolean) model.getValueAt(i, 2);
                 boolean quyenSua = (boolean) model.getValueAt(i, 3);
                 boolean quyenXoa = (boolean) model.getValueAt(i, 4);
+                boolean quyenDuyet = (boolean) model.getValueAt(i, 5);
                 
                 // Cho CN10 (Lịch làm việc), THÊM và XÓA luôn false
                 if ("CN10".equals(machucNang)) {
@@ -174,8 +198,13 @@ public class PermissionTable extends JTable {
                     quyenXoa = false;
                 }
                 
-                // NOTE: Only CRUD permissions are used; other rights are forced to false.
-                boolean quyenDuyet = false;
+                // Cho CN11 (Quản lý tài khoản), THÊM và DUYỆT luôn false
+                if ("CN11".equals(machucNang)) {
+                    quyenThem = false;
+                    quyenDuyet = false;
+                }
+                
+                // NOTE: Only CRUD and Approval permissions are used; other rights are forced to false.
                 boolean quyenXuatBaoCao = false;
                 
                 boolean updated;

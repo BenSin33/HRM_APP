@@ -41,7 +41,10 @@ public class SalaryDAO {
                 dto.luongCoBan = rs.getBigDecimal("LUONGCOBAN_SNAPSHOT");
                 dto.soNgayCong = rs.getFloat("SONGAYCONG");
                 dto.soNgayCongChuan = rs.getFloat("SONGAYCONG_CHUAN");
+                
+                // TONG_PHUCAP từ database đã bao gồm danhmuc_phucap + phụ cấp chức vụ
                 dto.tongPhucap = rs.getBigDecimal("TONG_PHUCAP");
+                
                 dto.tongKhauTru = rs.getBigDecimal("TONG_KHAUTRU");
                 dto.thucLinh = rs.getBigDecimal("THUCLINH");
                 // TRANGTHAI: 0 = Chưa khóa, 1 = Đã khóa
@@ -162,42 +165,85 @@ public class SalaryDAO {
 
     // Cập nhật bảng lương
     public boolean updateSalary(SalaryDTO salary) {
-        String sql = "UPDATE bangluong SET LUONGCOBAN_SNAPSHOT = ?, SONGAYCONG = ?, SONGAYCONG_CHUAN = ?, " +
-                     "TONG_PHUCAP = ?, TONG_KHAUTRU = ?, THUCLINH = ?, TRANGTHAI = ?, NGAYCHOTLUONG = ?, TINH_TRANG_TT = ? " +
-                     "WHERE MALUONG = ?";
+        // UPDATE những trường có thể edit được + tính lại THUCLINH
         
-        try (Connection conn = JDBCConection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = JDBCConection.getConnection()) {
+            // Bước 1: Lấy dữ liệu cần thiết để tính THUCLINH
+            String getSql = "SELECT " +
+                           "hd.LUONGCOBAN, " +
+                           "td.HESOTRINHDO " +
+                           "FROM bangluong bl " +
+                           "JOIN nhanvien nv ON bl.MANV = nv.MANV " +
+                           "JOIN hopdong hd ON nv.MANV = hd.MANV " +
+                           "JOIN trinhdo td ON nv.MATRINHDO = td.MATRINHDO " +
+                           "WHERE bl.MALUONG = ?";
             
-            // Cập nhật lương cơ bản snapshot
-            ps.setBigDecimal(1, salary.luongCoBan != null ? salary.luongCoBan : BigDecimal.ZERO);
-            ps.setFloat(2, salary.soNgayCong);
-            ps.setFloat(3, salary.soNgayCongChuan > 0 ? salary.soNgayCongChuan : 26);
-            ps.setBigDecimal(4, salary.tongPhucap != null ? salary.tongPhucap : BigDecimal.ZERO);
-            ps.setBigDecimal(5, salary.tongKhauTru != null ? salary.tongKhauTru : BigDecimal.ZERO);
-            ps.setBigDecimal(6, salary.thucLinh != null ? salary.thucLinh : BigDecimal.ZERO);
-            
-            // Chuyển đổi TRANGTHAI từ String sang Integer
-            // 0: Chưa khóa (Nháp), 1: Đã khóa (Đã chốt)
-            int trangThaiValue = 0;
-            try {
-                trangThaiValue = Integer.parseInt(salary.trangThai);
-            } catch (NumberFormatException e) {
-                trangThaiValue = 0;
+            try (PreparedStatement getPs = conn.prepareStatement(getSql)) {
+                getPs.setString(1, salary.maLuong);
+                
+                try (ResultSet rs = getPs.executeQuery()) {
+                    if (rs.next()) {
+                        BigDecimal luongCoBan = rs.getBigDecimal("LUONGCOBAN");
+                        BigDecimal hesoTrinhDo = rs.getBigDecimal("HESOTRINHDO");
+                        
+                        if (hesoTrinhDo == null) hesoTrinhDo = new BigDecimal("1.00");
+                        
+                        // DEBUG
+                        System.out.println("=== DEBUG updateSalary ===");
+                        System.out.println("LUONGCOBAN (từ hopdong): " + luongCoBan);
+                        System.out.println("HESOTRINHDO: " + hesoTrinhDo);
+                        System.out.println("SONGAYCONG: " + salary.soNgayCong);
+                        System.out.println("SONGAYCONG_CHUAN: " + salary.soNgayCongChuan);
+                        System.out.println("TONG_PHUCAP (từ EditForm): " + salary.tongPhucap);
+                        System.out.println("TONG_KHAUTRU (từ EditForm): " + salary.tongKhauTru);
+                        
+                        // Bước 2: Tính THUCLINH
+                        // THUCLINH = (Lương × Hệ số) × (Ngày công / Ngày chuẩn) + TONG_PHUCAP - Khấu trừ
+                        BigDecimal soNgayCongChuan = new BigDecimal(salary.soNgayCongChuan > 0 ? salary.soNgayCongChuan : 26);
+                        BigDecimal ngayCongRatio = new BigDecimal(salary.soNgayCong)
+                            .divide(soNgayCongChuan, 4, java.math.RoundingMode.HALF_UP);
+                        
+                        System.out.println("ngayCongRatio: " + ngayCongRatio);
+                        BigDecimal luongXhesoXngay = luongCoBan.multiply(hesoTrinhDo).multiply(ngayCongRatio);
+                        System.out.println("(Lương × Hệ số × Ngày): " + luongXhesoXngay);
+                        
+                        BigDecimal tongPhucap = salary.tongPhucap != null ? salary.tongPhucap : BigDecimal.ZERO;
+                        BigDecimal tongKhauTru = salary.tongKhauTru != null ? salary.tongKhauTru : BigDecimal.ZERO;
+                        
+                        BigDecimal thucLinh = luongXhesoXngay
+                            .add(tongPhucap)
+                            .subtract(tongKhauTru)
+                            .setScale(2, java.math.RoundingMode.HALF_UP);
+                        
+                        System.out.println("THUCLINH FINAL: " + thucLinh);
+                        System.out.println("===========================");
+                        
+                        // Bước 3: Update vào database (cập nhật cả TONG_PHUCAP và TONG_KHAUTRU từ EditForm)
+                        String updateSql = "UPDATE bangluong SET SONGAYCONG = ?, SONGAYCONG_CHUAN = ?, " +
+                                         "TRANGTHAI = ?, TINH_TRANG_TT = ?, TONG_PHUCAP = ?, TONG_KHAUTRU = ?, THUCLINH = ? WHERE MALUONG = ?";
+                        
+                        try (PreparedStatement updatePs = conn.prepareStatement(updateSql)) {
+                            updatePs.setFloat(1, salary.soNgayCong);
+                            updatePs.setFloat(2, salary.soNgayCongChuan > 0 ? salary.soNgayCongChuan : 26);
+                            
+                            int trangThaiValue = 0;
+                            try {
+                                trangThaiValue = Integer.parseInt(salary.trangThai);
+                            } catch (NumberFormatException e) {
+                                trangThaiValue = 0;
+                            }
+                            updatePs.setInt(3, trangThaiValue);
+                            updatePs.setString(4, salary.tinhTrangThanToan);
+                            updatePs.setBigDecimal(5, tongPhucap);
+                            updatePs.setBigDecimal(6, tongKhauTru);
+                            updatePs.setBigDecimal(7, thucLinh);
+                            updatePs.setString(8, salary.maLuong);
+                            
+                            return updatePs.executeUpdate() > 0;
+                        }
+                    }
+                }
             }
-            ps.setInt(7, trangThaiValue);
-            
-            // Chuyển đổi LocalDate sang java.sql.Date
-            if (salary.ngayChot != null) {
-                ps.setDate(8, java.sql.Date.valueOf(salary.ngayChot));
-            } else {
-                ps.setNull(8, java.sql.Types.DATE);
-            }
-            
-            ps.setString(9, salary.tinhTrangThanToan);
-            ps.setString(10, salary.maLuong);
-            
-            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }

@@ -3,6 +3,9 @@ package com.hrm.UI.HR.Evaluationtab;
 import com.hrm.DAO.HR.EvaluationDAO;
 import com.hrm.DTO.HR.EvaluationDTO;
 import com.hrm.DTO.HR.EvaluationPeriodDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -38,6 +41,7 @@ public class EvaluationTable extends JPanel {
     private JComboBox<String> periodBox;
     private List<EvaluationPeriodDTO> periods;
     private final EvaluationDAO dao = new EvaluationDAO();
+    private final PermissionService permissionService = new PermissionService();
     private EvaluationSummary summary;
 
     public EvaluationTable() { this(null); }
@@ -754,6 +758,15 @@ public class EvaluationTable extends JPanel {
     // DIALOG DUYỆT QUYẾT ĐỊNH - CLICK HÀN MỞ DIALOG NÀY
     // ─────────────────────────────────────────────────────────────
     private void showApprovalDialog(String maPhieu, String maNV, String maDot) {
+        // Kiểm tra quyền DUYỆT cho chức năng CN05 (Đánh giá hiệu suất)
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !permissionService.canApprove(currentUser, "CN05")) {
+            JOptionPane.showMessageDialog(this,
+                    "Bạn không có quyền duyệt đánh giá!",
+                    "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         JDialog dialog = new JDialog(
                 SwingUtilities.getWindowAncestor(this),
                 "Duyệt Quyết Định Đánh Giá",
