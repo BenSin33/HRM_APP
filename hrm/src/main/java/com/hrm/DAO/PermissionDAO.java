@@ -364,6 +364,120 @@ public class PermissionDAO {
     }
 
     /**
+     * Thêm role mới vào bảng role
+     * @param roleId Mã role (ví dụ: R4)
+     * @param roleName Tên hiển thị (ví dụ: Supervisor)
+     * @return true nếu thêm thành công
+     */
+    public boolean insertRole(String roleId, String roleName) {
+        String sql = "INSERT INTO role (ROLEID, ROLENAME) VALUES (?, ?)";
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) {
+                System.err.println("Lỗi: Không thể kết nối tới database!");
+                return false;
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, roleId);
+                ps.setString(2, roleName);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi thêm role: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Thêm quyền mặc định cho role mới (chỉ QUYEN_XEM=1, các quyền khác=0)
+     * @param roleId Mã role
+     * @return true nếu thêm thành công
+     */
+    public boolean insertDefaultRolePermissions(String roleId) {
+        String sqlChucNang = "SELECT MACHUCNANG FROM chucnang ORDER BY MACHUCNANG";
+        String sqlInsert = "INSERT INTO phanquyen_chitiet (ROLEID, MACHUCNANG, QUYEN_XEM, QUYEN_THEM, QUYEN_SUA, QUYEN_XOA, QUYEN_DUYET) " +
+                          "VALUES (?, ?, 1, 0, 0, 0, 0)";
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) {
+                System.err.println("Lỗi: Không thể kết nối tới database!");
+                return false;
+            }
+
+            List<String> machucNangList = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(sqlChucNang);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    machucNangList.add(rs.getString("MACHUCNANG"));
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
+                for (String machucNang : machucNangList) {
+                    ps.setString(1, roleId);
+                    ps.setString(2, machucNang);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+                return true;
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi thêm quyền mặc định cho role: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Lấy ROLEID tiếp theo (R1, R2, R3 -> R4, R5...)
+     * @return ROLEID mới hoặc null nếu lỗi
+     */
+    public String getNextRoleId() {
+        String sql = "SELECT ROLEID FROM role WHERE ROLEID LIKE 'R%'";
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) return "R4";
+
+            int maxNum = 0;
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String id = rs.getString("ROLEID");
+                    if (id != null && id.matches("R[0-9]+")) {
+                        int num = Integer.parseInt(id.substring(1));
+                        if (num > maxNum) maxNum = num;
+                    }
+                }
+            }
+            return "R" + (maxNum + 1);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy ROLEID tiếp theo: " + e.getMessage());
+        }
+        return "R4";
+    }
+
+    /**
+     * Kiểm tra ROLEID đã tồn tại chưa
+     */
+    public boolean roleExists(String roleId) {
+        String sql = "SELECT 1 FROM role WHERE ROLEID = ? LIMIT 1";
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) return false;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, roleId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi kiểm tra role: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
      * Lấy tất cả quyền được sắp xếp theo role
      * @return Map<roleId, List<PermissionDTO>>
      */

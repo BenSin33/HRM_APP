@@ -438,4 +438,89 @@ public class AttenDanceDao {
     private Connection getConnection() throws SQLException {
         return com.hrm.utils.JDBCConection.getConnection();
     }
+
+    // =============================================================
+    // 4. UPDATE CHECK IN / CHECK OUT
+    // =============================================================
+    /**
+     * Cập nhật giờ check-in, check-out cho một ngày chấm công.
+     * Chỉ cập nhật khi đã có bản ghi chamcong. Tự tính lại TRANGTHAI và SOGIOLAM.
+     *
+     * @param checkIn  format "HH:mm", ví dụ "08:30"
+     * @param checkOut format "HH:mm", ví dụ "17:15"
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateCheckInOut(String manv, LocalDate ngayLamViec, String checkIn, String checkOut) {
+        if (checkIn == null || checkIn.isBlank()) checkIn = null;
+        if (checkOut == null || checkOut.isBlank()) checkOut = null;
+        if (checkIn == null && checkOut == null) return false;
+
+        try {
+            LocalTime ci = checkIn != null ? LocalTime.parse(checkIn.trim(), TIME_FMT) : null;
+            LocalTime co = checkOut != null ? LocalTime.parse(checkOut.trim(), TIME_FMT) : null;
+
+            Time checkInTime = ci != null ? Time.valueOf(ci) : null;
+            Time checkOutTime = co != null ? Time.valueOf(co) : null;
+
+            try (Connection conn = getConnection()) {
+                // Bước 1: Cập nhật CHECKIN, CHECKOUT và TRANGTHAI
+                String sqlUpdate = """
+                    UPDATE chamcong cc
+                    INNER JOIN lichlamviec llv ON cc.MANV = llv.MANV AND cc.NGAYLAMVIEC = llv.NGAYLAMVIEC
+                    INNER JOIN calam cl ON llv.MACALAM = cl.MACALAM
+                    SET cc.CHECKIN = ?,
+                        cc.CHECKOUT = ?,
+                        cc.TRANGTHAI = CASE
+                            WHEN ? IS NULL OR ? IS NULL THEN cc.TRANGTHAI
+                            WHEN ? <= ADDTIME(cl.GIOVAOCA, '00:05:00') AND ? >= cl.GIOTANCA THEN '1'
+                            ELSE '0'
+                        END
+                    WHERE cc.MANV = ? AND cc.NGAYLAMVIEC = ?
+                    """;
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdate)) {
+                    ps.setObject(1, checkInTime);
+                    ps.setObject(2, checkOutTime);
+                    ps.setObject(3, checkInTime);
+                    ps.setObject(4, checkOutTime);
+                    ps.setObject(5, checkInTime);
+                    ps.setObject(6, checkOutTime);
+                    ps.setString(7, manv);
+                    ps.setDate(8, java.sql.Date.valueOf(ngayLamViec));
+                    if (ps.executeUpdate() == 0) return false;
+                }
+
+                // Bước 2: Tính lại SOGIOLAM
+                String sqlSoGio = """
+                    UPDATE chamcong cc
+                    INNER JOIN lichlamviec l ON l.MANV = cc.MANV AND l.NGAYLAMVIEC = cc.NGAYLAMVIEC
+                    INNER JOIN calam c ON c.MACALAM = l.MACALAM
+                    SET cc.SOGIOLAM = CASE
+                        WHEN cc.TRANGTHAI = '1' AND l.MACALAM IN ('C1','C2','C3') THEN 8
+                        WHEN cc.TRANGTHAI = '1' AND l.MACALAM IN ('C4','C5','C6') THEN 4
+                        WHEN cc.TRANGTHAI = '1' THEN 8
+                        WHEN cc.TRANGTHAI = '0' AND cc.CHECKIN IS NOT NULL AND cc.CHECKOUT IS NOT NULL
+                             AND l.MACALAM IN ('C1','C2') THEN ROUND(
+                            TIME_TO_SEC(TIMEDIFF(
+                                CASE WHEN cc.CHECKOUT >= '12:00:00' AND cc.CHECKOUT < '13:00:00' THEN '12:00:00' ELSE cc.CHECKOUT END,
+                                CASE WHEN cc.CHECKIN >= '12:00:00' AND cc.CHECKIN < '13:00:00' THEN '13:00:00' ELSE cc.CHECKIN END
+                            )) / 3600.0 - CASE WHEN cc.CHECKIN < '12:00:00' AND cc.CHECKOUT > '13:00:00' THEN 1 ELSE 0 END
+                        , 1)
+                        WHEN cc.TRANGTHAI = '0' AND cc.CHECKIN IS NOT NULL AND cc.CHECKOUT IS NOT NULL
+                        THEN ROUND(TIME_TO_SEC(TIMEDIFF(cc.CHECKOUT, cc.CHECKIN)) / 3600.0, 1)
+                        ELSE cc.SOGIOLAM
+                    END
+                    WHERE cc.MANV = ? AND cc.NGAYLAMVIEC = ?
+                    """;
+                try (PreparedStatement ps = conn.prepareStatement(sqlSoGio)) {
+                    ps.setString(1, manv);
+                    ps.setDate(2, java.sql.Date.valueOf(ngayLamViec));
+                    ps.executeUpdate();
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            System.err.println("[AttenDanceDao] updateCheckInOut: " + e.getMessage());
+            return false;
+        }
+    }
 }

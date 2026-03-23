@@ -182,7 +182,8 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         } else if ("Employee".equals(roleName)) {
             return "CV02 (Nhân viên) hoặc CV03 (Nhân viên nhân sự)";
         }
-        return roleName;
+        // Role tùy chỉnh: phù hợp với mọi chức vụ
+        return "Phù hợp với mọi chức vụ";
     }
 
     private boolean isRolePositionCompatible(String roleName, String positionCode) {
@@ -194,7 +195,8 @@ public class AccountEditForm extends JPanel implements IFormInput<AccountManager
         } else if ("Employee".equals(roleName)) {
             return "CV02".equals(positionCode) || "CV03".equals(positionCode);
         }
-        return false;
+        // Role tùy chỉnh (Supervisor, Guest, R4...) -> phù hợp với mọi chức vụ
+        return true;
     }
 
     private String getPositionCode(String maNV) {

@@ -129,17 +129,21 @@ public class LoginUI extends JFrame{
             // Nếu mật khẩu hiện còn dạng plain-text thì mã hoá ngay sau đăng nhập thành công
             authService.upgradePasswordIfLegacy(manv, pass);
 
+            String roleName = authService.getRoleName(userInfo);
+
             if(authService.isAdmin(userInfo)){
                 new HRDashboard();
-                JOptionPane.showMessageDialog(null, "Xin chào quản trị viên: " + userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào quản trị viên: " + userInfo.getManv() + " (" + roleName + ")");
             } else if(authService.isManager(userInfo)){
                 new ManagerDashboard();      // Tạo giao diện   
-                JOptionPane.showMessageDialog(null, "Xin chào quản lý: " + userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào quản lý: " + userInfo.getManv() + " (" + roleName + ")");
             } else if(authService.isEmployee(userInfo)){
                 new EDashboard(userInfo.getManv());
-                JOptionPane.showMessageDialog(null, "Xin chào nhân viên: " + userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào nhân viên: " + userInfo.getManv() + " (" + roleName + ")");
             } else {
-                JOptionPane.showMessageDialog(null, "Vai trò không được xác định!");
+                // Custom role (R4, R5...) -> mở giao diện nhân viên, hiển thị role name từ DB
+                new EDashboard(userInfo.getManv());
+                JOptionPane.showMessageDialog(null, "Xin chào: " + userInfo.getManv() + " (" + roleName + ")");
             }
         } else {
             JOptionPane.showMessageDialog(this, "Mã nhân viên hoặc mật khẩu không đúng!");
