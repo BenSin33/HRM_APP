@@ -3,6 +3,7 @@ package com.hrm.UI.HR.PermissionTab;
 import javax.swing.*;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.hrm.DAO.NhanVienDAO;
+import com.hrm.DAO.PositionDAO;
 import com.hrm.DTO.AccountManagerDTO;
 import com.hrm.DTO.Manager.NhanVienDTO;
 import com.hrm.DTO.PermissionDTO;
@@ -23,6 +24,7 @@ public class MainPermissionPanel extends JPanel {
     private PermissionDetailPanel detailPanel;
     private PermissionService permissionService;
     private AccountManagerService accountManagerService;
+    private PositionDAO positionDAO;
     private final List<String> roleIds;
     private final List<AccountManagerDTO> currentAccounts;
 
@@ -33,6 +35,7 @@ public class MainPermissionPanel extends JPanel {
 
         permissionService = new PermissionService();
         accountManagerService = new AccountManagerService();
+        positionDAO = new PositionDAO();
         roleIds = new ArrayList<>();
         currentAccounts = new ArrayList<>();
 
@@ -162,22 +165,88 @@ public class MainPermissionPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 10));
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createTitledBorder("Chọn Chức Vụ / Role"));
-        
-        DefaultListModel<String> roleModel = new DefaultListModel<>();
+
+        roleList = new JList<>(new DefaultListModel<>());
+        refreshRoleList();
+        roleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        roleList.setCellRenderer(new com.hrm.UI.HR.PermissionTab.RoleCellRenderer());
+
+        JScrollPane scrollPane = new JScrollPane(roleList);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        JButton btnAddRole = new JButton("+ Thêm Role");
+        btnAddRole.putClientProperty(FlatClientProperties.STYLE, "arc: 8; background: #7e22ce; foreground: #ffffff");
+        btnAddRole.addActionListener(e -> openAddRoleDialog());
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
+        btnPanel.setOpaque(false);
+        btnPanel.add(btnAddRole);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    /**
+     * Làm mới danh sách role từ DB
+     */
+    private void refreshRoleList() {
+        if (roleList == null) return;
+        DefaultListModel<String> model = (DefaultListModel<String>) roleList.getModel();
+        model.clear();
         roleIds.clear();
         for (String roleId : permissionService.getAllRoles()) {
             roleIds.add(roleId);
-            roleModel.addElement(permissionService.getRoleName(roleId) + " (" + roleId + ")");
+            model.addElement(permissionService.getRoleName(roleId) + " (" + roleId + ")");
         }
-        
-        roleList = new JList<>(roleModel);
-        roleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        roleList.setCellRenderer(new com.hrm.UI.HR.PermissionTab.RoleCellRenderer());
-        
-        JScrollPane scrollPane = new JScrollPane(roleList);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        return panel;
+    }
+
+    /**
+     * Mở dialog thêm role mới
+     */
+    private void openAddRoleDialog() {
+        Frame parent = (Frame) SwingUtilities.getWindowAncestor(this);
+        String suggestedId = permissionService.getNextRoleId();
+        AddRoleDialog dialog = new AddRoleDialog(parent, suggestedId);
+        dialog.setVisible(true);
+
+        if (dialog.isConfirmed()) {
+            String newPositionId = null;
+
+            // Thêm chức vụ mới nếu checkbox được chọn
+            if (dialog.isAddingNewPosition()) {
+                var newPos = dialog.getNewPosition();
+                if (newPos != null) {
+                    boolean ok = positionDAO.addPosition(newPos);
+                    if (!ok) {
+                        JOptionPane.showMessageDialog(this,
+                            "Không thể thêm chức vụ mới. Có thể mã chức vụ đã tồn tại.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    newPositionId = newPos.getMaChucVu();
+                }
+            }
+
+            String roleId = permissionService.addRole(dialog.getRoleId(), dialog.getRoleName());
+            if (roleId != null) {
+                refreshRoleList();
+                int idx = roleIds.indexOf(roleId);
+                if (idx >= 0) {
+                    roleList.setSelectedIndex(idx);
+                    onRoleSelected();
+                }
+                String msg = "Đã thêm role mới: " + dialog.getRoleName() + " (" + roleId + ")";
+                if (newPositionId != null) {
+                    msg += "\nChức vụ mới: " + newPositionId + " - " + dialog.getNewPosition().getTenViTri();
+                }
+                msg += "\n\nBạn có thể cấu hình quyền chi tiết bên phải.";
+                JOptionPane.showMessageDialog(this, msg, "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Không thể thêm role. Có thể mã role đã tồn tại.",
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     /**
@@ -270,10 +339,11 @@ public class MainPermissionPanel extends JPanel {
      * Làm mới dữ liệu
      */
     private void refreshData() {
+        refreshRoleList();
         if (roleList.getSelectedIndex() >= 0) {
             onRoleSelected();
-            JOptionPane.showMessageDialog(this, "Dữ liệu đã được làm mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
         }
+        JOptionPane.showMessageDialog(this, "Dữ liệu đã được làm mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private String getSelectedRoleId() {

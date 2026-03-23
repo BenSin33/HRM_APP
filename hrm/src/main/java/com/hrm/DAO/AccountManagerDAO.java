@@ -22,9 +22,28 @@ public class AccountManagerDAO {
                 return "Admin";
             case ROLE_MANAGER:
                 return "Manager";
-            default:
+            case ROLE_EMPLOYEE:
                 return "Employee";
+            default:
+                // Lấy từ bảng role cho custom role (R4, R5...)
+                return getRoleNameFromDb(roleId);
         }
+    }
+
+    private String getRoleNameFromDb(String roleId) {
+        String sql = "SELECT ROLENAME FROM role WHERE ROLEID = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, roleId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("ROLENAME");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi lấy role name: " + e.getMessage());
+        }
+        return roleId;
     }
 
     private String roleFromPosition(String maChucVu) {
@@ -197,17 +216,25 @@ public class AccountManagerDAO {
 
     // Thêm tài khoản
     public boolean addAccount(AccountManagerDTO account) {
+        // Ưu tiên dùng role từ DTO, nếu không có thì tự động resolve
+        String finalRoleId = account.roleId;
+        if (finalRoleId == null || finalRoleId.trim().isEmpty()) {
+            try (Connection conn = JDBCConection.getConnection()) {
+                finalRoleId = resolveRoleForEmployee(conn, account.maNV);
+            } catch (SQLException e) {
+                finalRoleId = ROLE_EMPLOYEE;
+            }
+        }
+
         String sql = "INSERT INTO taikhoan (MANV, ROLEID, PASSWORD, STATUS) VALUES (?, ?, ?, ?)";
-        
+
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            String assignedRole = resolveRoleForEmployee(conn, account.maNV);
-            
             ps.setString(1, account.maNV);
-            ps.setString(2, assignedRole);
+            ps.setString(2, finalRoleId);
             ps.setString(3, PasswordUtil.hashPassword("123")); // Mật khẩu mặc định
             ps.setInt(4, account.status);
-            
+
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -217,16 +244,25 @@ public class AccountManagerDAO {
 
     // Cập nhật tài khoản
     public boolean updateAccount(AccountManagerDTO account) {
+        // Ưu tiên dùng role từ DTO (do người dùng chọn trong form)
+        // Nếu DTO không có role hợp lệ → fallback tự động resolve
+        String finalRoleId = account.roleId;
+        if (finalRoleId == null || finalRoleId.trim().isEmpty()) {
+            try (Connection conn = JDBCConection.getConnection()) {
+                finalRoleId = resolveRoleForEmployee(conn, account.maNV);
+            } catch (SQLException e) {
+                finalRoleId = ROLE_EMPLOYEE;
+            }
+        }
+
         String sql = "UPDATE taikhoan SET ROLEID = ?, STATUS = ? WHERE MANV = ?";
-        
+
         try (Connection conn = JDBCConection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            String assignedRole = resolveRoleForEmployee(conn, account.maNV);
-            
-            ps.setString(1, assignedRole);
+            ps.setString(1, finalRoleId);
             ps.setInt(2, account.status);
             ps.setString(3, account.maNV);
-            
+
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

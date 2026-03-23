@@ -119,6 +119,18 @@ public class AuthenticationService {
     }
 
     /**
+     * Lấy tên vai trò hiển thị cho người dùng (hỗ trợ custom role)
+     * @param user UserDTO
+     * @return Tên vai trò từ DB
+     */
+    public String getRoleName(UserDTO user) {
+        if (user == null || user.getRoleId() == null) {
+            return "Không xác định";
+        }
+        return permissionService.getRoleName(user.getRoleId());
+    }
+
+    /**
      * Lấy danh sách quyền của người dùng
      * @param user UserDTO của người dùng
      * @return List<PermissionDTO> danh sách quyền

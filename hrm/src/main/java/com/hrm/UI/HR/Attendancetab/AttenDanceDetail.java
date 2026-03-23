@@ -8,6 +8,10 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * AttenDanceDetail – panel chi tiết chấm công của 1 nhân viên.
@@ -33,6 +37,15 @@ public class AttenDanceDetail extends JPanel {
 
     // Tham chiếu để update sau khi load DB
     private DefaultTableModel detailModel;
+    private JTable detailTable;
+
+    // Dùng cho update check-in/out
+    private String currentManv;
+    private int currentMonth;
+    private int currentYear;
+
+    private static final DateTimeFormatter DATE_PARSER = DateTimeFormatter.ofPattern("d/M/yyyy");
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private JLabel statWorkDays;
     private JLabel statLate;
     private JLabel statAbsent;
@@ -59,8 +72,10 @@ public class AttenDanceDetail extends JPanel {
         add(card, BorderLayout.CENTER);
 
         // Load dữ liệu DB
-        String manv = (String) emp[1];
-        loadFromDb(manv, month, year);
+        currentManv = (String) emp[1];
+        currentMonth = month;
+        currentYear = year;
+        loadFromDb(currentManv, month, year);
     }
 
     /**
@@ -218,15 +233,24 @@ public class AttenDanceDetail extends JPanel {
         String[] cols = {"NGÀY", "THỨ", "CHECK IN", "CHECK OUT", "CÔNG (GIỜ)", "TRẠNG THÁI"};
 
         detailModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                if (c != 2 && c != 3) return false;
+                Object checkIn = getValueAt(r, 2);
+                Object checkOut = getValueAt(r, 3);
+                String in = checkIn == null ? "" : checkIn.toString().trim();
+                String out = checkOut == null ? "" : checkOut.toString().trim();
+                return !"--:--".equals(in) || !"--:--".equals(out);
+            }
         };
 
-        JTable table = new JTable(detailModel);
+        detailTable = new JTable(detailModel);
+        JTable table = detailTable;
         table.setRowHeight(52);
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setBackground(Color.WHITE);
-        table.setFocusable(false);
+        table.setFocusable(true);
         table.setSelectionBackground(new Color(245, 243, 255));
 
         JTableHeader header = table.getTableHeader();
@@ -308,10 +332,97 @@ public class AttenDanceDetail extends JPanel {
         table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(5).setCellRenderer(statusRenderer);
 
+        // Cell editor cho CHECK IN và CHECK OUT
+        TableCellEditor timeEditor = createTimeCellEditor();
+        table.getColumnModel().getColumn(2).setCellEditor(timeEditor);
+        table.getColumnModel().getColumn(3).setCellEditor(timeEditor);
+
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(Color.WHITE);
         return scroll;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TIME CELL EDITOR
+    // ─────────────────────────────────────────────────────────────
+    private TableCellEditor createTimeCellEditor() {
+        JTextField field = new JTextField();
+        field.setHorizontalAlignment(JTextField.CENTER);
+        field.setFont(field.getFont().deriveFont(Font.BOLD, 14f));
+
+        return new DefaultCellEditor(field) {
+            private int editRow = -1;
+            private int editCol = -1;
+
+            @Override
+            public Component getTableCellEditorComponent(JTable t, Object value,
+                    boolean isSelected, int row, int col) {
+                editRow = row;
+                editCol = col;
+                Component c = super.getTableCellEditorComponent(t, value, isSelected, row, col);
+                if (c instanceof JTextField tf) {
+                    String v = value == null ? "" : value.toString();
+                    tf.setText("--:--".equals(v) ? "" : v);
+                }
+                return c;
+            }
+
+            @Override
+            public boolean stopCellEditing() {
+                if (editRow < 0 || currentManv == null) return super.stopCellEditing();
+
+                String newVal = ((JTextField) getComponent()).getText().trim();
+                if (newVal.isEmpty()) newVal = "--:--";
+
+                if (!newVal.equals("--:--")) {
+                    try {
+                        LocalTime.parse(newVal, TIME_FMT);
+                    } catch (DateTimeParseException e) {
+                        JOptionPane.showMessageDialog(AttenDanceDetail.this,
+                            "Định dạng giờ không hợp lệ. Vui lòng nhập theo dạng HH:mm (ví dụ: 08:30)",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        return false;
+                    }
+                }
+
+                String ngayStr = (String) detailModel.getValueAt(editRow, 0);
+                LocalDate ngay;
+                try {
+                    ngay = LocalDate.parse(ngayStr, DATE_PARSER);
+                } catch (DateTimeParseException e) {
+                    JOptionPane.showMessageDialog(AttenDanceDetail.this,
+                        "Không thể xác định ngày.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return super.stopCellEditing();
+                }
+
+                String checkIn = editCol == 2 ? newVal : getTimeStr(editRow, 2);
+                String checkOut = editCol == 3 ? newVal : getTimeStr(editRow, 3);
+                if ("--:--".equals(checkIn) && "--:--".equals(checkOut)) {
+                    JOptionPane.showMessageDialog(AttenDanceDetail.this,
+                        "Cần ít nhất một trong hai giờ check-in hoặc check-out.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+
+                String ciForDao = "--:--".equals(checkIn) ? null : checkIn;
+                String coForDao = "--:--".equals(checkOut) ? null : checkOut;
+
+                boolean ok = dao.updateCheckInOut(currentManv, ngay, ciForDao, coForDao);
+                if (!ok) {
+                    JOptionPane.showMessageDialog(AttenDanceDetail.this,
+                        "Không tìm thấy bản ghi chấm công hoặc cập nhật thất bại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return super.stopCellEditing();
+                }
+
+                loadFromDb(currentManv, currentMonth, currentYear);
+                return super.stopCellEditing();
+            }
+
+            private String getTimeStr(int row, int col) {
+                Object v = detailModel.getValueAt(row, col);
+                return v == null ? "--:--" : v.toString();
+            }
+        };
     }
 
     // ─────────────────────────────────────────────────────────────

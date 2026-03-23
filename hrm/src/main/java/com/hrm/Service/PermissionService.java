@@ -183,6 +183,47 @@ public class PermissionService {
     }
 
     /**
+     * Thêm role mới với quyền mặc định (chỉ xem)
+     * @param roleId Mã role (ví dụ: R4), null để tự sinh
+     * @param roleName Tên hiển thị (bắt buộc)
+     * @return ROLEID đã thêm, hoặc null nếu thất bại
+     */
+    public String addRole(String roleId, String roleName) {
+        if (roleName == null || roleName.trim().isEmpty()) {
+            System.err.println("Lỗi: Tên role không được để trống!");
+            return null;
+        }
+        String finalRoleId = (roleId == null || roleId.trim().isEmpty())
+                ? permissionDAO.getNextRoleId()
+                : roleId.trim().toUpperCase();
+        if (permissionDAO.roleExists(finalRoleId)) {
+            System.err.println("Lỗi: Role " + finalRoleId + " đã tồn tại!");
+            return null;
+        }
+        if (!permissionDAO.insertRole(finalRoleId, roleName.trim())) {
+            return null;
+        }
+        if (!permissionDAO.insertDefaultRolePermissions(finalRoleId)) {
+            System.err.println("Cảnh báo: Đã thêm role nhưng chưa thêm quyền mặc định.");
+        }
+        return finalRoleId;
+    }
+
+    /**
+     * Kiểm tra role đã tồn tại
+     */
+    public boolean roleExists(String roleId) {
+        return roleId != null && permissionDAO.roleExists(roleId);
+    }
+
+    /**
+     * Lấy ROLEID tiếp theo
+     */
+    public String getNextRoleId() {
+        return permissionDAO.getNextRoleId();
+    }
+
+    /**
      * Lấy tất cả quyền sắp xếp theo vai trò
      * @return Map<roleId, List<PermissionDTO>>
      */
