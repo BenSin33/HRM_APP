@@ -76,7 +76,7 @@ public class PermissionDAO {
      */
     public List<PermissionDTO> getPermissionsByRole(String roleId) {
         List<PermissionDTO> permissions = new ArrayList<>();
-        String sql = "SELECT ? AS ROLEID, c.MACHUCNANG, c.TENCHUCNANG, " +
+        String sql = "SELECT DISTINCT c.MACHUCNANG, c.TENCHUCNANG, " +
                      "COALESCE(pq.QUYEN_XEM, 0) AS QUYEN_XEM, " +
                      "COALESCE(pq.QUYEN_THEM, 0) AS QUYEN_THEM, " +
                      "COALESCE(pq.QUYEN_SUA, 0) AS QUYEN_SUA, " +
@@ -96,12 +96,27 @@ public class PermissionDAO {
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, roleId);
-                ps.setString(2, roleId);
+                System.out.println("DEBUG: Lấy quyền role: " + roleId);
 
                 try (ResultSet rs = ps.executeQuery()) {
+                    int count = 0;
                     while (rs.next()) {
-                        permissions.add(mapPermission(rs));
+                        count++;
+                        PermissionDTO perm = new PermissionDTO();
+                        perm.setRoleId(roleId);
+                        perm.setMachucNang(rs.getString("MACHUCNANG"));
+                        perm.setTenChucNang(rs.getString("TENCHUCNANG"));
+                        perm.setQuyenXem(rs.getInt("QUYEN_XEM") == 1);
+                        perm.setQuyenThem(rs.getInt("QUYEN_THEM") == 1);
+                        perm.setQuyenSua(rs.getInt("QUYEN_SUA") == 1);
+                        perm.setQuyenXoa(rs.getInt("QUYEN_XOA") == 1);
+                        perm.setQuyenDuyet(rs.getInt("QUYEN_DUYET") == 1);
+                        perm.setQuyenXuatBaoCao(rs.getInt("QUYEN_XUAT_BC") == 1);
+                        perm.setUserOverride(false);
+                        permissions.add(perm);
+                        System.out.println("DEBUG: Thêm quyền " + count + ": " + perm.getMachucNang());
                     }
+                    System.out.println("DEBUG: Tổng cộng " + count + " chức năng cho role " + roleId);
                 }
             }
         } catch (Exception e) {
@@ -121,7 +136,7 @@ public class PermissionDAO {
      */
     public List<PermissionDTO> getPermissionsByUser(String manv, String roleId) {
         List<PermissionDTO> permissions = new ArrayList<>();
-        String sql = "SELECT ? AS ROLEID, ? AS MANV, c.MACHUCNANG, c.TENCHUCNANG, " +
+        String sql = "SELECT DISTINCT c.MACHUCNANG, c.TENCHUCNANG, " +
                      "COALESCE(MAX(u.QUYEN_XEM), r.QUYEN_XEM, 0) AS QUYEN_XEM, " +
                      "COALESCE(MAX(u.QUYEN_THEM), r.QUYEN_THEM, 0) AS QUYEN_THEM, " +
                      "COALESCE(MAX(u.QUYEN_SUA), r.QUYEN_SUA, 0) AS QUYEN_SUA, " +
@@ -144,12 +159,22 @@ public class PermissionDAO {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, roleId);
                 ps.setString(2, manv);
-                ps.setString(3, roleId);
-                ps.setString(4, manv);
 
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        permissions.add(mapPermission(rs));
+                        PermissionDTO perm = new PermissionDTO();
+                        perm.setRoleId(roleId);
+                        perm.setManv(manv);
+                        perm.setMachucNang(rs.getString("MACHUCNANG"));
+                        perm.setTenChucNang(rs.getString("TENCHUCNANG"));
+                        perm.setQuyenXem(rs.getInt("QUYEN_XEM") == 1);
+                        perm.setQuyenThem(rs.getInt("QUYEN_THEM") == 1);
+                        perm.setQuyenSua(rs.getInt("QUYEN_SUA") == 1);
+                        perm.setQuyenXoa(rs.getInt("QUYEN_XOA") == 1);
+                        perm.setQuyenDuyet(rs.getInt("QUYEN_DUYET") == 1);
+                        perm.setQuyenXuatBaoCao(rs.getInt("QUYEN_XUAT_BC") == 1);
+                        perm.setUserOverride(rs.getInt("USER_OVERRIDE") == 1);
+                        permissions.add(perm);
                     }
                 }
             }
@@ -284,6 +309,36 @@ public class PermissionDAO {
         return false;
     }
 
+    /**
+     * Xóa override quyền của nhân viên cho một chức năng cụ thể
+     * (Để nhân viên quay về quyền mặc định từ role)
+     * @param manv Mã nhân viên
+     * @param machucNang Mã chức năng
+     * @return true nếu xóa thành công
+     */
+    public boolean deleteUserPermissionForFunction(String manv, String machucNang) {
+        String sql = "DELETE FROM phanquyen_theo_user WHERE MANV = ? AND MACHUCNANG = ?";
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) {
+                System.err.println("Lỗi: Không thể kết nối tới database!");
+                return false;
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, manv);
+                ps.setString(2, machucNang);
+                ps.executeUpdate();
+                return true;
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi xóa quyền riêng theo user cho chức năng: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
     public boolean deleteUserPermissions(String manv) {
         String sql = "DELETE FROM phanquyen_theo_user WHERE MANV = ?";
 
@@ -367,6 +422,76 @@ public class PermissionDAO {
      * Lấy tất cả quyền được sắp xếp theo role
      * @return Map<roleId, List<PermissionDTO>>
      */
+    /**
+     * Lấy danh sách tất cả nhân viên có role cụ thể
+     * @param roleId ID của role (R1, R2, R3...)
+     * @return Danh sách mã nhân viên
+     */
+    public List<String> getEmployeesByRole(String roleId) {
+        List<String> employees = new ArrayList<>();
+        String sql = "SELECT MANV FROM taikhoan WHERE ROLEID = ? AND STATUS = 1";
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) {
+                System.err.println("Lỗi: Không thể kết nối tới database!");
+                return employees;
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, roleId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        employees.add(rs.getString("MANV"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy danh sách nhân viên theo role: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return employees;
+    }
+
+    /**
+     * Cập nhật quyền role và đồng thời cập nhật cho tất cả nhân viên có role đó
+     * @param roleId ID của role
+     * @param machucNang Mã chức năng
+     * @param quyenXem Quyền xem
+     * @param quyenThem Quyền thêm
+     * @param quyenSua Quyền sửa
+     * @param quyenXoa Quyền xóa
+     * @param quyenDuyet Quyền duyệt
+     * @param quyenXuatBaoCao Quyền xuất báo cáo
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updatePermissionAndEmployees(String roleId, String machucNang,
+                                               boolean quyenXem, boolean quyenThem,
+                                               boolean quyenSua, boolean quyenXoa,
+                                               boolean quyenDuyet, boolean quyenXuatBaoCao) {
+        // Trước tiên cập nhật quyền role
+        if (!updatePermission(roleId, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao)) {
+            return false;
+        }
+
+        // Sau đó cập nhật cho tất cả nhân viên có role này
+        List<String> employees = getEmployeesByRole(roleId);
+        for (String manv : employees) {
+            // Xóa override quyền của nhân viên cho chức năng này (để họ quay về quyền role)
+            deleteUserPermissionForFunction(manv, machucNang);
+            
+            // Rồi thêm lại với quyền role mới
+            if (!updateUserPermission(manv, machucNang, quyenXem, quyenThem, quyenSua, quyenXoa, quyenDuyet, quyenXuatBaoCao)) {
+                System.err.println("⚠️  Cảnh báo: Không thể cập nhật quyền cho nhân viên " + manv);
+                // Không return false ở đây, vì role đã cập nhật rồi
+            }
+        }
+
+        System.out.println("✅ Cập nhật quyền role " + roleId + " cho chức năng " + machucNang + " thành công - áp dụng cho " + employees.size() + " nhân viên");
+        return true;
+    }
+
     public Map<String, List<PermissionDTO>> getAllPermissions() {
         Map<String, List<PermissionDTO>> allPermissions = new HashMap<>();
         String sql = "SELECT pq.ROLEID, pq.MACHUCNANG, c.TENCHUCNANG, pq.QUYEN_XEM, pq.QUYEN_THEM, " +

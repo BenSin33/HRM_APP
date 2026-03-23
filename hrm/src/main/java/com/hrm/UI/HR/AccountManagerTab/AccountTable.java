@@ -157,7 +157,7 @@ public class AccountTable extends JPanel {
 
     private void handleEdit(String maNV) {
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10_ACCOUNT")) {
+        if (currentUser == null || !permissionService.canEdit(currentUser, "CN11")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền chỉnh sửa tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -226,7 +226,7 @@ public class AccountTable extends JPanel {
 
     private void handleToggleStatus(String maNV) {
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canEdit(currentUser, "CN10_ACCOUNT")) {
+        if (currentUser == null || !permissionService.canDelete(currentUser, "CN11")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền thay đổi trạng thái tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -251,20 +251,6 @@ public class AccountTable extends JPanel {
                 JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
-    }
-
-    private JPanel createSearchPanel() {
-        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
-        searchPanel.setOpaque(false);
-        
-        JLabel lblSearch = new JLabel("Tìm kiếm:");
-        JTextField searchField = new JTextField(20);
-        searchField.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
-        
-        searchPanel.add(lblSearch, BorderLayout.WEST);
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        
-        return searchPanel;
     }
 
     public void applyFilter(String searchText, String phongBan, String role) {

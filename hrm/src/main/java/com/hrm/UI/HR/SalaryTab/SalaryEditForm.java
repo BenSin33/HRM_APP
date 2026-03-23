@@ -131,12 +131,20 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             txtSoNgayCongChuan.setText(salary.soNgayCongChuan > 0 ? String.valueOf(salary.soNgayCongChuan) : "26");
 
             
-            // Tự động lấy tổng phụ cấp và khấu trừ từ database
+            // Tự động lấy tổng phụ cấp từ danhmuc_phucap + phụ cấp chức vụ
             try {
+                // Lấy phụ cấp từ danhmuc_phucap
                 AllowanceDAO allowanceDAO = new AllowanceDAO();
                 BigDecimal totalAllowance = allowanceDAO.getTotalAllowances();
-                txtTongPhucap.setText(String.format("%,.0f", totalAllowance.doubleValue()));
                 
+                // Lấy phụ cấp chức vụ của nhân viên
+                BigDecimal phucapChucVu = getPhucapChucVu(salary.maNV);
+                
+                // Cộng hai lại
+                BigDecimal totalPhucap = totalAllowance.add(phucapChucVu);
+                txtTongPhucap.setText(String.format("%,.0f", totalPhucap.doubleValue()));
+                
+                // Lấy khấu trừ
                 DeductionDAO deductionDAO = new DeductionDAO();
                 BigDecimal totalDeduction = deductionDAO.getTotalDeductions();
                 txtTongKhauTru.setText(String.format("%,.0f", totalDeduction.doubleValue()));
@@ -170,6 +178,32 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         }
         return "";
     }
+    
+    private BigDecimal getPhucapChucVu(String maNV) {
+        System.out.println("DEBUG getPhucapChucVu - START: maNV = " + maNV);
+        String sql = "SELECT cv.PHUCAPCHUCVU FROM nhanvien nv " +
+                     "JOIN chucvu cv ON nv.MACHUCVU = cv.MACHUCVU " +
+                     "WHERE nv.MANV = ?";
+        try (Connection conn = JDBCConection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            System.out.println("DEBUG getPhucapChucVu - SQL: " + sql);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal phucap = rs.getBigDecimal("PHUCAPCHUCVU");
+                    System.out.println("DEBUG getPhucapChucVu - Found PHUCAPCHUCVU: " + phucap);
+                    return phucap != null ? phucap : BigDecimal.ZERO;
+                } else {
+                    System.out.println("DEBUG getPhucapChucVu - No result found for MANV=" + maNV);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("DEBUG getPhucapChucVu - SQLException: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("DEBUG getPhucapChucVu - Returning ZERO");
+        return BigDecimal.ZERO;
+    }
 
     @Override
     public SalaryDTO getFormData() {
@@ -177,36 +211,11 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
         
         // Lấy maLuong từ hidden field
         salary.maLuong = txtMaLuong.getText();
-        
         salary.maNV = txtMaNV.getText();
-        salary.hoTen = txtHoTen.getText();
-        salary.phongBan = txtPhongBan.getText();
         
-        // Lương cơ bản - giữ nguyên decimal
-        try {
-            String luongCoBasnStr = txtLuongCoBan.getText().trim();
-            if (!luongCoBasnStr.isEmpty()) {
-                salary.luongCoBan = new BigDecimal(luongCoBasnStr.replaceAll("[^0-9.]", "").replaceAll(",", ""));
-            } else {
-                salary.luongCoBan = BigDecimal.ZERO;
-            }
-        } catch (Exception e) {
-            salary.luongCoBan = BigDecimal.ZERO;
-        }
-
-        // Hệ số trình độ - lấy từ trường hiển thị
-        try {
-            String hesoStr = txtHesoTrinhDo.getText().trim();
-            if (!hesoStr.isEmpty()) {
-                salary.hesotrinhdo = new BigDecimal(hesoStr);
-            } else {
-                salary.hesotrinhdo = new BigDecimal("1.00");
-            }
-        } catch (Exception e) {
-            salary.hesotrinhdo = new BigDecimal("1.00");
-        }
+        // Chỉ lấy những trường CÓ THỂ EDIT:
         
-        // Số ngày công
+        // 1. Số ngày công
         try {
             String soNgayCongStr = txtSoNgayCong.getText().trim();
             if (!soNgayCongStr.isEmpty()) {
@@ -218,58 +227,19 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             salary.soNgayCong = 0;
         }
 
-        // Số ngày công chuẩn (NEW)
+        // 2. Số ngày công chuẩn
         try {
             String soNgayCongChuanStr = txtSoNgayCongChuan.getText().trim();
             if (!soNgayCongChuanStr.isEmpty()) {
                 salary.soNgayCongChuan = Float.parseFloat(soNgayCongChuanStr);
             } else {
-                salary.soNgayCongChuan = 26; // Mặc định 26 ngày
+                salary.soNgayCongChuan = 26;
             }
         } catch (Exception e) {
             salary.soNgayCongChuan = 26;
         }
         
-        // Tổng phụ cấp - giữ nguyên decimal
-        try {
-            String tongPhucapStr = txtTongPhucap.getText().trim();
-            if (!tongPhucapStr.isEmpty()) {
-                salary.tongPhucap = new BigDecimal(tongPhucapStr.replaceAll("[^0-9.]", "").replaceAll(",", ""));
-            } else {
-                salary.tongPhucap = BigDecimal.ZERO;
-            }
-        } catch (Exception e) {
-            salary.tongPhucap = BigDecimal.ZERO;
-        }
-        
-        // Tổng khấu trừ - giữ nguyên decimal
-        try {
-            String tongKhauTruStr = txtTongKhauTru.getText().trim();
-            if (!tongKhauTruStr.isEmpty()) {
-                salary.tongKhauTru = new BigDecimal(tongKhauTruStr.replaceAll("[^0-9.]", "").replaceAll(",", ""));
-            } else {
-                salary.tongKhauTru = BigDecimal.ZERO;
-            }
-        } catch (Exception e) {
-            salary.tongKhauTru = BigDecimal.ZERO;
-        }
-        
-        // Công thức tính thực lĩnh (Updated):
-        // (lương cơ bản * hệ số trình độ * (số ngày công / số ngày công chuẩn)) + tổng phụ cấp + phụ cấp chức vụ - tổng khấu trừ
-        BigDecimal heSoTrinhDo = salary.hesotrinhdo != null ? salary.hesotrinhdo : new BigDecimal("1.00");
-        BigDecimal phucapChucVu = salary.phucapChucVu != null ? salary.phucapChucVu : BigDecimal.ZERO;
-        BigDecimal ngayCongRatio = new BigDecimal(salary.soNgayCong).divide(new BigDecimal(salary.soNgayCongChuan), 4, java.math.RoundingMode.HALF_UP);
-
-        
-        salary.thucLinh = salary.luongCoBan
-                            .multiply(heSoTrinhDo)
-                            .multiply(ngayCongRatio)
-                            .add(salary.tongPhucap)
-                            .add(phucapChucVu)
-                            .subtract(salary.tongKhauTru)
-                            .setScale(2, java.math.RoundingMode.HALF_UP);
-        
-        // Chuyển đổi trạng thái từ text sang numeric code
+        // 3. Trạng thái (Chưa khóa/Đã khóa)
         String selectedStatus = (String) cbTrangThai.getSelectedItem();
         if (selectedStatus != null) {
             switch (selectedStatus) {
@@ -281,7 +251,33 @@ public class SalaryEditForm extends JPanel implements IFormInput<SalaryDTO> {
             salary.trangThai = "0";
         }
         
+        // 4. Tình trạng thanh toán
         salary.tinhTrangThanToan = (String) cbTinhTrangThanToan.getSelectedItem();
+        
+        // 5. Tổng phụ cấp = danhmuc_phucap + phụ cấp chức vụ
+        AllowanceDAO allowanceDAO = new AllowanceDAO();
+        BigDecimal totalAllowance = allowanceDAO.getTotalAllowances();
+        System.out.println("DEBUG getFormData - totalAllowance từ danhmuc_phucap: " + totalAllowance);
+        
+        System.out.println("DEBUG getFormData - salary.maNV = " + salary.maNV);
+        BigDecimal phucapChucVu = getPhucapChucVu(salary.maNV);
+        System.out.println("DEBUG getFormData - phucapChucVu từ chucvu: " + phucapChucVu);
+        
+        if (phucapChucVu == null) {
+            phucapChucVu = BigDecimal.ZERO;
+            System.out.println("DEBUG getFormData - phucapChucVu was null, set to ZERO");
+        }
+        
+        salary.tongPhucap = totalAllowance.add(phucapChucVu);
+        System.out.println("DEBUG getFormData - tongPhucap cuối cùng: " + salary.tongPhucap);
+        
+        // 6. Tổng khấu trừ
+        DeductionDAO deductionDAO = new DeductionDAO();
+        BigDecimal totalDeduction = deductionDAO.getTotalDeductions();
+        System.out.println("DEBUG getFormData - totalDeduction từ danhmuc_khautru: " + totalDeduction);
+        
+        salary.tongKhauTru = totalDeduction;
+        
         return salary;
     }
 

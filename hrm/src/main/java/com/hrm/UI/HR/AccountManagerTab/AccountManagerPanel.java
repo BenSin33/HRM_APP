@@ -32,8 +32,8 @@ public class AccountManagerPanel extends JPanel {
         
         // Kiểm tra quyền trước khi hiển thị các nút
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        boolean canAddAccount = currentUser != null && permissionService.canAdd(currentUser, "CN10_ACCOUNT");
-        boolean canViewAccount = currentUser != null && permissionService.canView(currentUser, "CN10_ACCOUNT");
+        boolean canAddAccount = currentUser != null && permissionService.canAdd(currentUser, "CN11");
+        boolean canViewAccount = currentUser != null && permissionService.canView(currentUser, "CN11");
         
         header.setAddButtonEnabled(canAddAccount);
         header.setImportButtonEnabled(canAddAccount);
@@ -77,7 +77,7 @@ public class AccountManagerPanel extends JPanel {
 
     private void handleAddAccount() {
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canAdd(currentUser, "CN10_ACCOUNT")) {
+        if (currentUser == null || !permissionService.canAdd(currentUser, "CN11")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền tạo tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -119,7 +119,7 @@ public class AccountManagerPanel extends JPanel {
 
     private void handleExportAccounts() {
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canView(currentUser, "CN10_ACCOUNT")) {
+        if (currentUser == null || !permissionService.canView(currentUser, "CN11")) {
             JOptionPane.showMessageDialog(this, "Bạn không có quyền xem danh sách tài khoản", "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
             return;
         }
