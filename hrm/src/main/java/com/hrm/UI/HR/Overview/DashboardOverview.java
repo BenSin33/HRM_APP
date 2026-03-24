@@ -5,19 +5,19 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.geom.RoundRectangle2D;
 import java.math.BigDecimal;
 import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
@@ -36,6 +36,15 @@ public class DashboardOverview extends JPanel {
     private DepartmentDAO departmentDAO = new DepartmentDAO();
     private ActivityDAO activityDAO = new ActivityDAO();
     private TaskDAO taskDAO = new TaskDAO();
+
+    private static final Color[] ACTIVITY_COLORS = {
+        new Color(16, 185, 129),   // xanh lá
+        new Color(59, 130, 246),   // xanh dương
+        new Color(245, 158, 11),   // cam
+        new Color(168, 85, 247),   // tím
+        new Color(239, 68, 68),    // đỏ
+        new Color(34, 211, 238),   // cyan
+    };
 
     public DashboardOverview() {
         setLayout(new BorderLayout());
@@ -75,8 +84,7 @@ public class DashboardOverview extends JPanel {
         cards.add(createStatCard("Tổng nhân viên", String.valueOf(overview.getTotalEmployees()), new Color(59, 130, 246)));
         cards.add(createStatCard("Đang làm việc", String.valueOf(overview.getWorkingEmployees()), new Color(34, 197, 94)));
         cards.add(createStatCard("Nghỉ phép hôm nay", String.valueOf(overview.getOnLeaveToday()), new Color(234, 179, 8)));
-        
-        // Format salary
+
         BigDecimal salary = overview.getTotalSalaryThisMonth();
         String formattedSalary = formatSalary(salary);
         cards.add(createStatCard("Tổng lương tháng", formattedSalary, new Color(168, 85, 247)));
@@ -114,23 +122,13 @@ public class DashboardOverview extends JPanel {
         return salary.toPlainString();
     }
 
-    private ImageIcon loadDeleteIcon() {
-        java.net.URL url = getClass().getResource("/icons/delete_button.png");
-        if (url == null) {
-            return null;
-        }
-        ImageIcon icon = new ImageIcon(url);
-        Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
-        return new ImageIcon(img);
-    }
-
     // ================= STAT CARD =================
     private JPanel createStatCard(String title, String value, Color color) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220,220,220)),
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
                 new EmptyBorder(20, 20, 20, 20)
         ));
 
@@ -158,206 +156,229 @@ public class DashboardOverview extends JPanel {
 
     // ================= ACTIVITY =================
     private JPanel createActivityPanel() {
-        WhitePanel wp = createWhitePanel("Hoạt động gần đây");
-        JPanel content = wp.content;
+        JPanel panel = createRoundedPanel();
+        panel.setLayout(new BorderLayout(0, 10));
+
+        JLabel title = new JLabel("Hoạt động gần đây");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        panel.add(title, BorderLayout.NORTH);
+
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+
+        List<ActivityDTO> activities = activityDAO.getAll();
+        int colorIdx = 0;
+        for (ActivityDTO activity : activities) {
+            Color dot = ACTIVITY_COLORS[colorIdx % ACTIVITY_COLORS.length];
+            content.add(makeActivityItem(activity.getContent(), dot));
+            content.add(Box.createVerticalStrut(12));
+            colorIdx++;
+        }
+
+        // Hiển thị thông báo nếu không có dữ liệu
+        if (activities.isEmpty()) {
+            JLabel empty = new JLabel("Không có hoạt động nào gần đây");
+            empty.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+            empty.setForeground(Color.GRAY);
+            content.add(empty);
+        }
+
         JScrollPane scrollPane = new JScrollPane(content);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
 
-        // Load activities from DAO
-        List<ActivityDTO> activities = activityDAO.getAll();
-        for (ActivityDTO activity : activities) {
-            content.add(makeActivityBullet(activity));
-        }
-
-        content.add(Box.createVerticalStrut(10));
-
-        // Add button
-        JButton addBtn = new JButton("+ Thêm hoạt động");
-        addBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        addBtn.setForeground(Color.WHITE);
-        addBtn.setBackground(new Color(59, 130, 246));
-        addBtn.setFocusPainted(false);
-        addBtn.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        addBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        addBtn.addActionListener(e -> {
-            String input = JOptionPane.showInputDialog(this, "Nhập nội dung hoạt động:");
-            if (input != null && !input.trim().isEmpty()) {
-                ActivityDTO newActivity = new ActivityDTO(input.trim());
-                activityDAO.add(newActivity);
-                content.add(makeActivityBullet(newActivity), content.getComponentCount() - 2);
-                content.revalidate();
-                content.repaint();
-            }
-        });
-
-        content.add(addBtn);
-
-        wp.wrapper.remove(wp.content);
-        wp.wrapper.add(scrollPane, BorderLayout.CENTER);
-
-        return wp.wrapper;
-    }
-
-    private JPanel makeActivityBullet(ActivityDTO activity) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
-        panel.setOpaque(false);
-
-        JLabel label = new JLabel("• " + activity.getContent());
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        label.setForeground(Color.BLACK);
-
-        JButton deleteBtn = new JButton(loadDeleteIcon());
-        deleteBtn.setContentAreaFilled(false);
-        deleteBtn.setBorder(null);
-        deleteBtn.setFocusPainted(false);
-        deleteBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        deleteBtn.setPreferredSize(new Dimension(20, 20));
-        deleteBtn.addActionListener(e -> {
-            activityDAO.delete(activity.getId());
-            ((JPanel) panel.getParent()).remove(panel);
-            ((JPanel) panel.getParent()).revalidate();
-            ((JPanel) panel.getParent()).repaint();
-        });
-
-        panel.add(label);
-        panel.add(Box.createHorizontalGlue());
-        panel.add(deleteBtn);
-        panel.setBorder(new EmptyBorder(3, 0, 3, 0));
+        panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private JPanel makeActivityItem(String text, Color dotColor) {
+        JPanel p = new JPanel(new BorderLayout(10, 0));
+        p.setOpaque(false);
+
+        JPanel dot = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(dotColor);
+                g2.fillOval(0, 9, 8, 8);
+                g2.dispose();
+            }
+        };
+        dot.setPreferredSize(new Dimension(15, 28));
+        dot.setOpaque(false);
+
+        JLabel lblText = new JLabel(text);
+        lblText.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblText.setForeground(new Color(30, 41, 59));
+
+        p.add(dot, BorderLayout.WEST);
+        p.add(lblText, BorderLayout.CENTER);
+
+        return p;
     }
 
     // ================= TASK =================
     private JPanel createTaskPanel() {
-        WhitePanel wp = createWhitePanel("Công việc cần xử lý");
-        JPanel content = wp.content;
+        JPanel panel = createRoundedPanel();
+        panel.setLayout(new BorderLayout(0, 10));
+
+        JLabel title = new JLabel("Công việc cần xử lý");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        panel.add(title, BorderLayout.NORTH);
+
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+
+        List<TaskDTO> tasks = taskDAO.getAll();
+        for (TaskDTO task : tasks) {
+            content.add(makeTaskCard(task));
+            content.add(Box.createVerticalStrut(10));
+        }
+
+        // Hiển thị thông báo nếu không có dữ liệu
+        if (tasks.isEmpty()) {
+            JLabel empty = new JLabel("Không có công việc cần xử lý");
+            empty.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+            empty.setForeground(Color.GRAY);
+            content.add(empty);
+        }
+
         JScrollPane scrollPane = new JScrollPane(content);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
 
-        // Load tasks from DAO
-        List<TaskDTO> tasks = taskDAO.getAll();
-        for (TaskDTO task : tasks) {
-            content.add(makeTaskCheckBox(task));
-        }
-
-        content.add(Box.createVerticalStrut(10));
-
-        // Add button
-        JButton addBtn = new JButton("+ Thêm công việc");
-        addBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        addBtn.setForeground(Color.WHITE);
-        addBtn.setBackground(new Color(59, 130, 246));
-        addBtn.setFocusPainted(false);
-        addBtn.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        addBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        addBtn.addActionListener(e -> {
-            String input = JOptionPane.showInputDialog(this, "Nhập nội dung công việc:");
-            if (input != null && !input.trim().isEmpty()) {
-                TaskDTO newTask = new TaskDTO(input.trim());
-                taskDAO.add(newTask);
-                content.add(makeTaskCheckBox(newTask), content.getComponentCount() - 2);
-                content.revalidate();
-                content.repaint();
-            }
-        });
-
-        content.add(addBtn);
-
-        wp.wrapper.remove(wp.content);
-        wp.wrapper.add(scrollPane, BorderLayout.CENTER);
-
-        return wp.wrapper;
-    }
-
-    private JPanel makeTaskCheckBox(TaskDTO task) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
-        panel.setOpaque(false);
-
-        JCheckBox cb = new JCheckBox(task.getContent(), task.isCompleted());
-        cb.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cb.setForeground(Color.BLACK);
-        cb.setOpaque(false);
-        cb.setBorder(new EmptyBorder(3, 0, 3, 0));
-        cb.addActionListener(e -> {
-            taskDAO.updateCompleted(task.getId(), cb.isSelected());
-        });
-
-        JButton deleteBtn = new JButton(loadDeleteIcon());
-        deleteBtn.setContentAreaFilled(false);
-        deleteBtn.setBorder(null);
-        deleteBtn.setFocusPainted(false);
-        deleteBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        deleteBtn.setPreferredSize(new Dimension(20, 20));
-        deleteBtn.addActionListener(e -> {
-            taskDAO.delete(task.getId());
-            ((JPanel) panel.getParent()).remove(panel);
-            ((JPanel) panel.getParent()).revalidate();
-            ((JPanel) panel.getParent()).repaint();
-        });
-
-        panel.add(cb);
-        panel.add(Box.createHorizontalGlue());
-        panel.add(deleteBtn);
+        panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
 
+    private JPanel makeTaskCard(TaskDTO task) {
+        JPanel card = new JPanel(new BorderLayout(10, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(240, 247, 255));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(8, 12, 8, 12));
+
+        JCheckBox cb = new JCheckBox(task.getContent(), task.isCompleted());
+        cb.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        cb.setForeground(task.isCompleted() ? Color.GRAY : new Color(30, 41, 59));
+        cb.setOpaque(false);
+        cb.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+
+        card.add(cb, BorderLayout.CENTER);
+
+        return card;
+    }
+
     // ================= DEPARTMENT =================
     private JPanel createDepartmentPanel() {
-        WhitePanel wp = createWhitePanel("Tổng quan phòng ban");
-        JPanel content = wp.content;
+        JPanel panel = createRoundedPanel();
+        panel.setLayout(new BorderLayout(0, 10));
 
-        // Load departments from database and count employees
+        JLabel title = new JLabel("Tổng quan phòng ban");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        panel.add(title, BorderLayout.NORTH);
+
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+
         List<DepartmentDTO> departments = departmentDAO.getAll();
+        int colorIdx = 0;
         for (DepartmentDTO dept : departments) {
             int empCount = departmentDAO.countEmployees(dept.getMaPhongBan());
-            content.add(makeBullet(dept.getTenPhongBan() + ": " + empCount));
+            Color dot = ACTIVITY_COLORS[colorIdx % ACTIVITY_COLORS.length];
+            content.add(makeDeptItem(dept.getTenPhongBan(), String.valueOf(empCount), dot));
+            content.add(Box.createVerticalStrut(10));
+            colorIdx++;
         }
 
-        return wp.wrapper;
+        JScrollPane scrollPane = new JScrollPane(content);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
     }
 
-    // ===== helper class =====
-    private static class WhitePanel {
-        JPanel wrapper;
-        JPanel content;
+    private JPanel makeDeptItem(String deptName, String empCount, Color dotColor) {
+        JPanel p = new JPanel(new BorderLayout(10, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(240, 247, 255));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+            }
+        };
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(8, 12, 8, 12));
+
+        JPanel dot = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(dotColor);
+                g2.fillOval(0, 7, 8, 8);
+                g2.dispose();
+            }
+        };
+        dot.setPreferredSize(new Dimension(15, 24));
+        dot.setOpaque(false);
+
+        JLabel lblDept = new JLabel(deptName);
+        lblDept.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblDept.setForeground(new Color(30, 41, 59));
+
+        JLabel lblCount = new JLabel(empCount + " nhân viên");
+        lblCount.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblCount.setForeground(Color.GRAY);
+
+        JPanel textArea = new JPanel(new GridLayout(2, 1, 0, 0));
+        textArea.setOpaque(false);
+        textArea.add(lblDept);
+        textArea.add(lblCount);
+
+        p.add(dot, BorderLayout.WEST);
+        p.add(textArea, BorderLayout.CENTER);
+
+        return p;
     }
 
-    private WhitePanel createWhitePanel(String title) {
-        WhitePanel wp = new WhitePanel();
-
-        wp.wrapper = new JPanel(new BorderLayout());
-        wp.wrapper.setBackground(Color.WHITE);
-        wp.wrapper.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220,220,220)),
-                new EmptyBorder(15, 15, 15, 15)
-        ));
-
-        JLabel lbTitle = new JLabel(title);
-        lbTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-
-        wp.content = new JPanel();
-        wp.content.setOpaque(false);
-        wp.content.setLayout(new BoxLayout(wp.content, BoxLayout.Y_AXIS));
-        wp.content.setBorder(new EmptyBorder(10, 0, 0, 0));
-
-        wp.wrapper.add(lbTitle, BorderLayout.NORTH);
-        wp.wrapper.add(wp.content, BorderLayout.CENTER);
-
-        return wp;
-    }
-
-    private JLabel makeBullet(String text) {
-        JLabel label = new JLabel("• " + text);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        label.setForeground(Color.BLACK);
-        label.setBorder(new EmptyBorder(3, 0, 3, 0));
-        return label;
+    // ================= ROUNDED PANEL (giống HomeReport) =================
+    private JPanel createRoundedPanel() {
+        JPanel p = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.WHITE);
+                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 20, 20));
+                g2.dispose();
+            }
+        };
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(18, 18, 18, 18));
+        return p;
     }
 }

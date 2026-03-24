@@ -224,6 +224,15 @@ public class PermissionService {
     }
 
     /**
+     * Xóa role (không áp dụng cho R1/R2/R3; không xóa nếu còn tài khoản dùng role).
+     *
+     * @return null nếu thành công, chuỗi lỗi nếu thất bại
+     */
+    public String deleteRole(String roleId) {
+        return permissionDAO.deleteRole(roleId);
+    }
+
+    /**
      * Lấy tất cả quyền sắp xếp theo vai trò
      * @return Map<roleId, List<PermissionDTO>>
      */

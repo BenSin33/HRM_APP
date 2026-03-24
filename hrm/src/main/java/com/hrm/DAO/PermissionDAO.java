@@ -533,6 +533,75 @@ public class PermissionDAO {
     }
 
     /**
+     * Xóa role khỏi DB (xóa phanquyen_chitiet trước, sau đó role).
+     * Không xóa R1/R2/R3; không xóa nếu còn tài khoản gán role đó.
+     *
+     * @return null nếu thành công, chuỗi lỗi tiếng Việt nếu thất bại
+     */
+    public String deleteRole(String roleId) {
+        if (roleId == null || roleId.isBlank()) {
+            return "Mã role không hợp lệ.";
+        }
+        String id = roleId.trim().toUpperCase();
+        if ("R1".equals(id) || "R2".equals(id) || "R3".equals(id)) {
+            return "Không thể xóa role hệ thống R1 (Admin), R2 (Manager), R3 (Employee).";
+        }
+
+        try (Connection conn = JDBCConection.getConnection()) {
+            if (conn == null) {
+                return "Không kết nối được cơ sở dữ liệu.";
+            }
+            conn.setAutoCommit(false);
+            try {
+                String sqlCount = "SELECT COUNT(*) FROM taikhoan WHERE ROLEID = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlCount)) {
+                    ps.setString(1, id);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            conn.rollback();
+                            return "Còn tài khoản đang gán role này. Hãy đổi role trong Quản lý tài khoản trước khi xóa.";
+                        }
+                    }
+                }
+
+                String sqlDelPerm = "DELETE FROM phanquyen_chitiet WHERE ROLEID = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlDelPerm)) {
+                    ps.setString(1, id);
+                    ps.executeUpdate();
+                }
+
+                String sqlDelRole = "DELETE FROM role WHERE ROLEID = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlDelRole)) {
+                    ps.setString(1, id);
+                    if (ps.executeUpdate() == 0) {
+                        conn.rollback();
+                        return "Không tìm thấy role trong hệ thống.";
+                    }
+                }
+
+                conn.commit();
+                return null;
+            } catch (Exception e) {
+                try {
+                    conn.rollback();
+                } catch (Exception ignored) {
+                }
+                System.err.println("Lỗi khi xóa role: " + e.getMessage());
+                e.printStackTrace();
+                return "Lỗi khi xóa role: " + e.getMessage();
+            } finally {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi kết nối khi xóa role: " + e.getMessage());
+            return "Lỗi kết nối cơ sở dữ liệu.";
+        }
+    }
+
+    /**
      * Lấy tất cả quyền được sắp xếp theo role
      * @return Map<roleId, List<PermissionDTO>>
      */
