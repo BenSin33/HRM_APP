@@ -35,61 +35,60 @@ public class AddRoleDialog extends JDialog {
 
         positions = positionDAO.getAllPositions();
 
-        JPanel formPanel = new JPanel(new GridBagLayout());
+        // Main vertical box layout for form
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(Color.WHITE);
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(24, 32, 10, 32));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Section: Role
+        JLabel lblRoleSection = new JLabel("CẤU HÌNH ROLE");
+        lblRoleSection.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblRoleSection.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblRoleSection.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        formPanel.add(lblRoleSection);
 
-        // === Role section ===
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        JLabel lblRoleSection = new JLabel("═══ Cấu hình Role ═══");
-        lblRoleSection.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        formPanel.add(lblRoleSection, gbc);
-
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(new JLabel("Mã role:"), gbc);
-        gbc.gridx = 1;
+        JPanel roleRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        roleRow.setOpaque(false);
+        JLabel lblRoleId = new JLabel("Mã role:");
         tfRoleId = new JTextField(suggestedRoleId, 15);
         tfRoleId.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
         tfRoleId.setToolTipText("Để trống để tự động sinh (ví dụ: R4)");
-        formPanel.add(tfRoleId, gbc);
+        roleRow.add(lblRoleId);
+        roleRow.add(tfRoleId);
+        roleRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(roleRow);
 
-        gbc.gridx = 0; gbc.gridy = 2;
-        formPanel.add(new JLabel("Tên role:"), gbc);
-        gbc.gridx = 1;
+        formPanel.add(Box.createVerticalStrut(8));
+
+        JPanel nameRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        nameRow.setOpaque(false);
+        JLabel lblRoleName = new JLabel("Tên role:");
         tfRoleName = new JTextField(20);
         tfRoleName.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
         tfRoleName.setToolTipText("Ví dụ: Supervisor, Guest");
-        formPanel.add(tfRoleName, gbc);
+        nameRow.add(lblRoleName);
+        nameRow.add(tfRoleName);
+        nameRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(nameRow);
 
-        // === Position section ===
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
-        JLabel lblPosSection = new JLabel("═══ Chức vụ liên kết ═══");
-        lblPosSection.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblPosSection.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
-        formPanel.add(lblPosSection, gbc);
+        formPanel.add(Box.createVerticalStrut(18));
 
-        // Checkbox thêm chức vụ mới
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        // Section: Position
+        JLabel lblPosSection = new JLabel("CHỨC VỤ LIÊN KẾT");
+        lblPosSection.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblPosSection.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblPosSection.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        formPanel.add(lblPosSection);
+
         cbAddNewPosition = new JCheckBox("Thêm chức vụ mới");
         cbAddNewPosition.setBackground(Color.WHITE);
-        cbAddNewPosition.addActionListener(e -> {
-            newPositionPanel.setVisible(cbAddNewPosition.isSelected());
-            cbPosition.setEnabled(!cbAddNewPosition.isSelected());
-            pack();
-            setLocationRelativeTo(parent);
-        });
-        formPanel.add(cbAddNewPosition, gbc);
+        cbAddNewPosition.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(cbAddNewPosition);
 
-        // Combo box chọn chức vụ có sẵn
-        gbc.gridx = 0; gbc.gridy = 5;
-        formPanel.add(new JLabel("Chọn chức vụ:"), gbc);
-        gbc.gridx = 1;
+        JPanel posRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        posRow.setOpaque(false);
+        JLabel lblChoosePos = new JLabel("Chọn chức vụ:");
         cbPosition = new JComboBox<>();
         cbPosition.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
         for (PositionDTO p : positions) {
@@ -98,37 +97,51 @@ public class AddRoleDialog extends JDialog {
         if (cbPosition.getItemCount() == 0) {
             cbPosition.addItem("Không có chức vụ");
         }
-        formPanel.add(cbPosition, gbc);
+        posRow.add(lblChoosePos);
+        posRow.add(cbPosition);
+        posRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(posRow);
 
         // Panel thêm chức vụ mới (ẩn ban đầu)
-        newPositionPanel = new JPanel(new GridBagLayout());
+        newPositionPanel = new JPanel();
+        newPositionPanel.setLayout(new BoxLayout(newPositionPanel, BoxLayout.Y_AXIS));
         newPositionPanel.setBackground(new Color(250, 250, 255));
         newPositionPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(200, 200, 220), 1),
                 BorderFactory.createEmptyBorder(8, 8, 8, 8)));
         newPositionPanel.setVisible(false);
 
-        GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.insets = new Insets(3, 3, 3, 3);
-        gbc2.anchor = GridBagConstraints.WEST;
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc2.gridx = 0; gbc2.gridy = 0;
-        newPositionPanel.add(new JLabel("Mã chức vụ:"), gbc2);
-        gbc2.gridx = 1;
+        JPanel newPosIdRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        newPosIdRow.setOpaque(false);
+        JLabel lblNewPosId = new JLabel("Mã chức vụ:");
         tfNewPositionId = new JTextField(positionDAO.generateNextMaChucVu(), 10);
         tfNewPositionId.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
-        newPositionPanel.add(tfNewPositionId, gbc2);
+        newPosIdRow.add(lblNewPosId);
+        newPosIdRow.add(tfNewPositionId);
+        newPosIdRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        newPositionPanel.add(newPosIdRow);
 
-        gbc2.gridx = 0; gbc2.gridy = 1;
-        newPositionPanel.add(new JLabel("Tên chức vụ:"), gbc2);
-        gbc2.gridx = 1;
+        newPositionPanel.add(Box.createVerticalStrut(6));
+
+        JPanel newPosNameRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        newPosNameRow.setOpaque(false);
+        JLabel lblNewPosName = new JLabel("Tên chức vụ:");
         tfNewPositionName = new JTextField(15);
         tfNewPositionName.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
-        newPositionPanel.add(tfNewPositionName, gbc2);
+        newPosNameRow.add(lblNewPosName);
+        newPosNameRow.add(tfNewPositionName);
+        newPosNameRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        newPositionPanel.add(newPosNameRow);
 
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
-        formPanel.add(newPositionPanel, gbc);
+        newPositionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(newPositionPanel);
+
+        cbAddNewPosition.addActionListener(e -> {
+            newPositionPanel.setVisible(cbAddNewPosition.isSelected());
+            cbPosition.setEnabled(!cbAddNewPosition.isSelected());
+            pack();
+            setLocationRelativeTo(parent);
+        });
 
         add(formPanel, BorderLayout.CENTER);
 
