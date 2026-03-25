@@ -43,10 +43,12 @@ public class ContractManagement extends JPanel {
         header.setAddButtonEnabled(permissionService.canAdd(currentUser, "CN09_CONTRACT"));
         header.setExportButtonEnabled(permissionService.canExport(currentUser, "CN09_CONTRACT"));
         header.setImportButtonEnabled(permissionService.canAdd(currentUser, "CN09_CONTRACT")); // Import is a form of Add
+        header.setRefreshButtonEnabled(true); // Always allow refresh
 
         header.setOnAddCallback(() -> handleAddContract());
         header.setOnExportCallback(() -> handleExportContract());
         header.setOnImportCallback(() -> handleImportContract());
+        header.setOnRefreshCallback(() -> handleRefreshData());
         this.add(header, BorderLayout.NORTH);
 
         // 2. Center Panel: Filter + Table
@@ -113,6 +115,11 @@ public class ContractManagement extends JPanel {
     private void handleImportContract() {
         ContractExcelHelper.handleContractImport(contractTable.getContractTable(), this);
         refreshData();
+    }
+
+    private void handleRefreshData() {
+        refreshData();
+        JOptionPane.showMessageDialog(this, "Dữ liệu đã được làm mới!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void refreshData() {

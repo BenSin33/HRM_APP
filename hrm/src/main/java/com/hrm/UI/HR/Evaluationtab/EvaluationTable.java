@@ -1,6 +1,8 @@
 package com.hrm.UI.HR.Evaluationtab;
 
 import com.hrm.DAO.HR.EvaluationDAO;
+import com.hrm.DAO.ContractDAO;
+import com.hrm.DAO.PhieuDanhGiaDAO;
 import com.hrm.DTO.HR.EvaluationDTO;
 import com.hrm.DTO.HR.EvaluationPeriodDTO;
 import com.hrm.DTO.UserDTO;
@@ -11,6 +13,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -437,7 +440,7 @@ public class EvaluationTable extends JPanel {
     // TABLE
     // ─────────────────────────────────────────────────────────────
     private JScrollPane buildTablePanel() {
-        String[] cols = {"MÃ NV", "NHÂN VIÊN", "NGƯỜI ĐÁNH GIÁ", "ĐIỂM SỐ", "XẾP LOẠI", "THƯỞNG/PHẠT", "TRẠNG THÁI"};
+        String[] cols = {"MÃ NV", "NHÂN VIÊN", "NGƯỜI ĐÁNH GIÁ", "ĐIỂM SỐ", "XẾP LOẠI", "THƯỞNG/PHẠT", "TRẠNG THÁI", "THAO TÁC"};
         model = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -457,7 +460,7 @@ public class EvaluationTable extends JPanel {
         header.setBorder(new MatteBorder(1, 0, 1, 0, GRAY200));
         header.setReorderingAllowed(false);
 
-        int[] widths = {80, 180, 130, 110, 110, 160, 120};
+        int[] widths = {80, 180, 130, 110, 110, 160, 120, 100};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
@@ -467,6 +470,7 @@ public class EvaluationTable extends JPanel {
         table.getColumnModel().getColumn(4).setCellRenderer(new RankBadgeRenderer());
         table.getColumnModel().getColumn(5).setCellRenderer(new RewardRenderer());
         table.getColumnModel().getColumn(6).setCellRenderer(new StatusBadgeRenderer());
+        table.getColumnModel().getColumn(7).setCellRenderer(new ActionRenderer());
 
         DefaultTableCellRenderer defRend = new DefaultTableCellRenderer() {
             @Override public Component getTableCellRendererComponent(JTable t, Object v,
@@ -490,31 +494,93 @@ public class EvaluationTable extends JPanel {
         scroll.getViewport().setBackground(Color.WHITE);
         scroll.getVerticalScrollBar().setUnitIncrement(30);  // Tăng scroll speed
         
-        // === THÊM CLICK LISTENER - CLICK HÀN ĐỂ DUYỆT QUYẾT ĐỊNH ===
+        // === CLICK LISTENER - CLICK ICON APPROVE/REJECT ===
+        List<EvaluationDTO> currentData = new java.util.ArrayList<>();
+        ContractDAO contractDAO = new ContractDAO();
+        PhieuDanhGiaDAO phieuDAO = new PhieuDanhGiaDAO();
+        
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
-                if (row >= 0 && row < table.getRowCount()) {
-                    // Lấy dữ liệu hàng được click
-                    String maNV = table.getValueAt(row, 0).toString();  // Cột MÃ NV
-                    String maPhieu = null;
-                    
-                    // Lấy maPhieu từ database dựa vào maNV và maDot
-                    String maDot = getCurrentMaDot();
-                    List<EvaluationDTO> list = dao.getEvaluationsByPeriod(maDot);
-                    for (EvaluationDTO dto : list) {
-                        if (dto.getMaNV().equals(maNV)) {
-                            maPhieu = dto.getMaPhieu();
-                            break;
+                int col = table.columnAtPoint(e.getPoint());
+                if (col != 7 || row < 0 || row >= table.getRowCount()) return;
+
+                String maDot = getCurrentMaDot();
+                List<EvaluationDTO> list = dao.getEvaluationsByPeriod(maDot);
+                if (list == null || list.isEmpty()) return;
+
+                String maNV = (String) model.getValueAt(row, 0);
+                EvaluationDTO dto = list.stream()
+                        .filter(d -> d.getMaNV().equals(maNV))
+                        .findFirst()
+                        .orElse(null);
+                if (dto == null) return;
+
+                String status = dto.getTrangThaiDuyet();
+                if (!"Chờ duyệt".equals(status)) return;
+
+                // Xác định click ✓ hay ✕ theo vị trí X trong cell
+                Rectangle cellRect = table.getCellRect(row, col, false);
+                boolean isApprove = (e.getX() - cellRect.x) < cellRect.width / 2;
+
+                String action = isApprove ? "Đồng ý" : "Không";
+                int confirm = JOptionPane.showConfirmDialog(
+                        EvaluationTable.this,
+                        action + " duyệt phiếu đánh giá của " + maNV + "?",
+                        "Xác nhận", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) return;
+
+                String newStatus = isApprove ? "Đã duyệt" : "Từ chối";
+                boolean ok = dao.updateEvaluationStatus(dto.getMaPhieu(), newStatus);
+                if (ok) {
+                    // Nếu approve, thử cập nhật lương nếu có thay đổi
+                    if (isApprove) {
+                        try {
+                            String loaiQD = phieuDAO.getLoaiQuyetDinh(maNV, maDot);
+                            BigDecimal tiLeThayDoi = phieuDAO.getTiLeThayDoi(maNV, maDot);
+                            
+                            // Nếu có loại quyết định là "Tăng lương" hoặc "Trừ lương", update lương
+                            if (("Tăng lương".equals(loaiQD) || "Trừ lương".equals(loaiQD)) && tiLeThayDoi != null) {
+                                boolean salaryOk = contractDAO.updateBaseSalaryByEvaluation(maNV, tiLeThayDoi, loaiQD);
+                                if (salaryOk) {
+                                    JOptionPane.showMessageDialog(EvaluationTable.this,
+                                            "✓ Duyệt phiếu và cập nhật lương thành công!",
+                                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                                } else {
+                                    JOptionPane.showMessageDialog(EvaluationTable.this,
+                                            "⚠ Duyệt phiếu thành công, nhưng cập nhật lương thất bại.",
+                                            "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                                }
+                            } else {
+                                JOptionPane.showMessageDialog(EvaluationTable.this,
+                                        "✓ Duyệt phiếu thành công!",
+                                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            JOptionPane.showMessageDialog(EvaluationTable.this,
+                                    "✓ Duyệt phiếu thành công, nhưng có lỗi khi cập nhật lương.",
+                                    "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                         }
                     }
-                    
-                    if (maPhieu != null) {
-                        System.out.println("🔍 DEBUG: Click hàng - maNV=" + maNV + ", maPhieu=" + maPhieu);
-                        showApprovalDialog(maPhieu, maNV, maDot);  // Mở dialog duyệt
-                    }
+                    loadTableData();
+                    if (summary != null) summary.refreshStats(maDot);
+                } else {
+                    JOptionPane.showMessageDialog(EvaluationTable.this,
+                            "Cập nhật thất bại, vui lòng thử lại.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
+            }
+        });
+
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int col = table.columnAtPoint(e.getPoint());
+                table.setCursor(col == 7
+                        ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                        : Cursor.getDefaultCursor());
             }
         });
         
@@ -753,123 +819,62 @@ public class EvaluationTable extends JPanel {
             return cell;
         }
     }
-    
-    // ─────────────────────────────────────────────────────────────
-    // DIALOG DUYỆT QUYẾT ĐỊNH - CLICK HÀN MỞ DIALOG NÀY
-    // ─────────────────────────────────────────────────────────────
-    private void showApprovalDialog(String maPhieu, String maNV, String maDot) {
-        // Kiểm tra quyền DUYỆT cho chức năng CN05 (Đánh giá hiệu suất)
-        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser == null || !permissionService.canApprove(currentUser, "CN05")) {
-            JOptionPane.showMessageDialog(this,
-                    "Bạn không có quyền duyệt đánh giá!",
-                    "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        JDialog dialog = new JDialog(
-                SwingUtilities.getWindowAncestor(this),
-                "Duyệt Quyết Định Đánh Giá",
-                Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setSize(500, 350);
-        dialog.setLocationRelativeTo(this);
-        dialog.setResizable(false);
-        dialog.setLayout(new BorderLayout());
 
-        // === FORM DUYỆT ===
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
-        form.setBorder(BorderFactory.createEmptyBorder(20, 24, 8, 24));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        gbc.gridx = 0;
-        gbc.insets = new Insets(4, 0, 4, 0);
+    /**
+     * ActionRenderer – icon ✓ và ✕ căn giữa hoàn toàn.
+     * Hiển thị buttons khi status là "Chờ duyệt"
+     */
+    class ActionRenderer implements TableCellRenderer {
+        private final Color GREEN_IC = new Color( 22, 163,  74);
+        private final Color RED_IC   = new Color(220,  38,  38);
 
-        // Lấy dữ liệu phiếu từ database
-        EvaluationDTO eval = dao.getEvaluationByMaPhieu(maPhieu);
-        
-        // 1. Thông tin nhân viên (read-only)
-        gbc.gridy = 0;
-        form.add(makeLabel("Nhân viên: "), gbc);
-        gbc.gridy = 1;
-        JLabel nvLabel = new JLabel(maNV);
-        nvLabel.setFont(nvLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        form.add(nvLabel, gbc);
+        @Override public Component getTableCellRendererComponent(JTable t, Object v,
+                boolean sel, boolean focus, int row, int col) {
+            String status = v == null ? "" : v.toString();
 
-        // 2. Tổng điểm
-        gbc.gridy = 2;
-        form.add(makeLabel("Tổng điểm: "), gbc);
-        gbc.gridy = 3;
-        JLabel diemLabel = new JLabel(eval != null ? String.valueOf(eval.getTongDiem()) : "0");
-        diemLabel.setFont(diemLabel.getFont().deriveFont(Font.BOLD, 14f));
-        form.add(diemLabel, gbc);
+            // Outer cell: GridBagLayout = căn giữa DỌC tự động
+            JPanel cell = new JPanel(new GridBagLayout());
+            cell.setBackground(sel ? new Color(245, 243, 255) : Color.WHITE);
+            cell.setBorder(new MatteBorder(0, 0, 1, 0, ROW_SEP));
 
-        // 3. Xếp loại
-        gbc.gridy = 4;
-        form.add(makeLabel("Xếp loại: "), gbc);
-        gbc.gridy = 5;
-        JLabel xepLoaiLabel = new JLabel(eval != null ? eval.getXepLoai() : "-");
-        xepLoaiLabel.setFont(xepLoaiLabel.getFont().deriveFont(Font.PLAIN, 13f));
-        form.add(xepLoaiLabel, gbc);
-
-        // 4. Trạng thái duyệt (lựa chọn)
-        gbc.gridy = 6;
-        form.add(makeLabel("Trạng thái duyệt: *"), gbc);
-        gbc.gridy = 7;
-        JComboBox<String> statusBox = makeCombo(new String[]{"Chờ duyệt", "Đã duyệt"});
-        if (eval != null && "Đã duyệt".equals(eval.getTrangThaiDuyet())) {
-            statusBox.setSelectedItem("Đã duyệt");
-        }
-        form.add(statusBox, gbc);
-
-        JScrollPane formScroll = new JScrollPane(form);
-        formScroll.setBorder(BorderFactory.createEmptyBorder());
-        formScroll.getViewport().setBackground(Color.WHITE);
-        formScroll.getVerticalScrollBar().setUnitIncrement(30);  // Tăng scroll speed
-
-        // === BUTTONS ===
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 14));
-        btnPanel.setBackground(Color.WHITE);
-        btnPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GRAY200));
-
-        JButton cancelBtn = new JButton("Hủy");
-        cancelBtn.setPreferredSize(new Dimension(90, 36));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cancelBtn.putClientProperty("FlatLaf.style", "arc:8; background:#F3F4F6; borderColor:#E5E7EB");
-        cancelBtn.addActionListener(e -> dialog.dispose());
-
-        JButton saveBtn = new JButton("Lưu Duyệt");
-        saveBtn.setPreferredSize(new Dimension(110, 36));
-        saveBtn.setForeground(Color.WHITE);
-        saveBtn.setBackground(PURPLE);
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        saveBtn.putClientProperty("FlatLaf.style", "arc:8; background:#7C3AED; borderWidth:0");
-
-        saveBtn.addActionListener(e -> {
-            String status = (String) statusBox.getSelectedItem();
-            boolean success = dao.updateEvaluationStatus(maPhieu, status);
-            if (success) {
-                JOptionPane.showMessageDialog(dialog,
-                        "Cập nhật trạng thái duyệt thành công!",
-                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                loadTableData();  // Refresh bảng
-                dialog.dispose();
-            } else {
-                JOptionPane.showMessageDialog(dialog,
-                        "Cập nhật thất bại!",
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+            if ("Chờ duyệt".equals(status)) {
+                // Inner row: FlowLayout CENTER = căn giữa NGANG
+                JPanel iconRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+                iconRow.setOpaque(false);
+                iconRow.add(makeIconBtn(GREEN_IC, true));   // ✓
+                iconRow.add(makeIconBtn(RED_IC,   false));  // ✕
+                cell.add(iconRow);
             }
-        });
 
-        btnPanel.add(cancelBtn);
-        btnPanel.add(saveBtn);
+            return cell;
+        }
 
-        dialog.add(formScroll, BorderLayout.CENTER);
-        dialog.add(btnPanel, BorderLayout.SOUTH);
-        dialog.setVisible(true);
+        private JLabel makeIconBtn(Color color, boolean isCheck) {
+            JLabel lbl = new JLabel() {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(color);
+                    g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    int w = getWidth(), h = getHeight();
+                    // Vòng tròn bao ngoài
+                    g2.drawOval(1, 1, w-2, h-2);
+                    if (isCheck) {
+                        // Dấu ✓
+                        g2.drawPolyline(
+                            new int[]{w/2-5, w/2,   w/2+6},
+                            new int[]{h/2,   h/2+5, h/2-4}, 3);
+                    } else {
+                        // Dấu ✕
+                        g2.drawLine(w/2-4, h/2-4, w/2+4, h/2+4);
+                        g2.drawLine(w/2+4, h/2-4, w/2-4, h/2+4);
+                    }
+                    g2.dispose();
+                }
+            };
+            lbl.setPreferredSize(new Dimension(26, 26));
+            lbl.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            return lbl;
+        }
     }
-
 }

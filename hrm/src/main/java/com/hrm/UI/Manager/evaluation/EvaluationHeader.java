@@ -1,9 +1,16 @@
 package com.hrm.UI.Manager.evaluation;
 
+import com.hrm.DAO.HR.EvaluationDAO;
+import com.hrm.DTO.HR.EvaluationPeriodDTO;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class EvaluationHeader extends JPanel {
+    private JComboBox<String> quarterCombo;
+    private List<EvaluationPeriodDTO> periods;
+    private Runnable onQuarterChanged;
     
     public EvaluationHeader() {
         setLayout(new BorderLayout());
@@ -24,6 +31,53 @@ public class EvaluationHeader extends JPanel {
         titlePanel.add(Box.createRigidArea(new Dimension(0, 5)));
         titlePanel.add(subtitle);
 
+        // Panel phải: ComboBox chọn kỳ đánh giá
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setBackground(Color.WHITE);
+        
+        JLabel quarterLabel = new JLabel("Kỳ đánh giá:");
+        quarterLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        
+        quarterCombo = new JComboBox<>();
+        quarterCombo.setPreferredSize(new Dimension(180, 32));
+        quarterCombo.addActionListener(e -> {
+            if (onQuarterChanged != null) {
+                onQuarterChanged.run();
+            }
+        });
+        
+        // Load các kỳ từ database
+        loadQuarters();
+        
+        rightPanel.add(quarterLabel);
+        rightPanel.add(quarterCombo);
+
         add(titlePanel, BorderLayout.WEST);
+        add(rightPanel, BorderLayout.EAST);
+    }
+    
+    private void loadQuarters() {
+        try {
+            EvaluationDAO periodDAO = new EvaluationDAO();
+            periods = periodDAO.getAllPeriods();
+            
+            for (EvaluationPeriodDTO period : periods) {
+                quarterCombo.addItem(period.getLabel());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public String getSelectedMaDot() {
+        int idx = quarterCombo.getSelectedIndex();
+        if (idx >= 0 && idx < periods.size()) {
+            return periods.get(idx).getMaDot();
+        }
+        return "";
+    }
+    
+    public void setOnQuarterChanged(Runnable callback) {
+        this.onQuarterChanged = callback;
     }
 }

@@ -29,13 +29,14 @@ public class PhieuDanhGiaDAO {
     }
 
     public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet, String quyetDinh, String loaiQD) {
-        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, quyetDinh, loaiQD, null);
+        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, quyetDinh, loaiQD, null, null);
     }
 
     /**
      * @param tiLeThayDoi Tỉ lệ thay đổi lương (đơn vị %): dương=tăng, âm=trừ, 0=giữ nguyên (lưu TI_LE_THAY_DOI)
+     * @param maNVDanhGia Mã nhân viên đánh giá (người quản lý)
      */
-    public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet, String quyetDinh, String loaiQD, BigDecimal tiLeThayDoi) {
+    public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet, String quyetDinh, String loaiQD, BigDecimal tiLeThayDoi, String maNVDanhGia) {
         if (diemTheoTieuChi == null || diemTheoTieuChi.isEmpty()) return false;
 
         int tongDiem = diemTheoTieuChi.values().stream().mapToInt(Integer::intValue).sum();
@@ -55,13 +56,13 @@ public class PhieuDanhGiaDAO {
             boolean isInsert = (maPhieu == null);
             if (isInsert) {
                 maPhieu = generateMaPhieu(conn);
-                String insertSql = "INSERT INTO phieudanhgia (MAPHIEU, MANV, MADOT, MATIEUCHI, TONGDIEM, NHANXET, QUYETDINH, NGAYDANHGIA, LOAIQUYETDINH, TI_LE_THAY_DOI) " +
+                String insertSql = "INSERT INTO phieudanhgia (MAPHIEU, MANV, MADOT, MANVDANHGIA, TONGDIEM, NHANXET, QUYETDINH, NGAYDANHGIA, LOAIQUYETDINH, TI_LE_THAY_DOI) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
                     ps.setString(1, maPhieu);
                     ps.setString(2, maNV);
                     ps.setString(3, maDot);
-                    ps.setString(4, null);
+                    ps.setString(4, maNVDanhGia);
                     ps.setInt(5, tongDiem);
                     ps.setString(6, nhanXet);
                     ps.setString(7, autoQD);
@@ -71,15 +72,16 @@ public class PhieuDanhGiaDAO {
                     ps.executeUpdate();
                 }
             } else {
-                String updateSql = "UPDATE phieudanhgia SET TONGDIEM = ?, NHANXET = ?, QUYETDINH = ?, NGAYDANHGIA = ?, LOAIQUYETDINH = ?, TI_LE_THAY_DOI = ? WHERE MAPHIEU = ?";
+                String updateSql = "UPDATE phieudanhgia SET MANVDANHGIA = ?, TONGDIEM = ?, NHANXET = ?, QUYETDINH = ?, NGAYDANHGIA = ?, LOAIQUYETDINH = ?, TI_LE_THAY_DOI = ? WHERE MAPHIEU = ?";
                 try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
-                    ps.setInt(1, tongDiem);
-                    ps.setString(2, nhanXet);
-                    ps.setString(3, autoQD);
-                    ps.setDate(4, java.sql.Date.valueOf(LocalDate.now()));
-                    ps.setString(5, finalLoaiQD);
-                    ps.setBigDecimal(6, finalTiLe);
-                    ps.setString(7, maPhieu);
+                    ps.setString(1, maNVDanhGia);
+                    ps.setInt(2, tongDiem);
+                    ps.setString(3, nhanXet);
+                    ps.setString(4, autoQD);
+                    ps.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
+                    ps.setString(6, finalLoaiQD);
+                    ps.setBigDecimal(7, finalTiLe);
+                    ps.setString(8, maPhieu);
                     ps.executeUpdate();
                 }
             }
@@ -119,7 +121,7 @@ public class PhieuDanhGiaDAO {
     }
 
     public boolean upsertEvaluation(String maNV, String maDot, Map<String, Integer> diemTheoTieuChi, String nhanXet) {
-        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, null, null, null);
+        return upsertEvaluation(maNV, maDot, diemTheoTieuChi, nhanXet, null, null, null, null);
     }
 
     public boolean resetEvaluation(String maNV, String maDot) {

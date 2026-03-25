@@ -72,7 +72,7 @@ public class EvaluationDTO {
 
     /**
      * Chuyển thành Object[] để đổ vào DefaultTableModel của EvaluationTable.
-     * Thứ tự: MÃ NV | NHÂN VIÊN | NGƯỜI ĐÁNH GIÁ | ĐIỂM SỐ | XẾP LOẠI | THƯỞNG/PHẠT | TRẠNG THÁI
+     * Thứ tự: MÃ NV | NHÂN VIÊN | NGƯỜI ĐÁNH GIÁ | ĐIỂM SỐ | XẾP LOẠI | THƯỞNG/PHẠT | TRẠNG THÁI | THAO TÁC
      */
     public Object[] toTableRow() {
         return new Object[]{
@@ -82,7 +82,8 @@ public class EvaluationDTO {
             new Object[]{ tongDiem, xepLoai },
             xepLoai,
             new String[]{ loaiQuyetDinh != null ? loaiQuyetDinh : "Không có", xepLoai },
-            trangThaiDuyet != null ? trangThaiDuyet : "-"
+            trangThaiDuyet != null ? trangThaiDuyet : "-",
+            trangThaiDuyet != null ? trangThaiDuyet : "-"  // Cột THAO TÁC: dùng status để xác định có show buttons hay không
         };
     }
 }

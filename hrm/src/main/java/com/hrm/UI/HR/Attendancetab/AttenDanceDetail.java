@@ -3,6 +3,9 @@ package com.hrm.UI.HR.Attendancetab;
 import com.hrm.DAO.HR.AttenDanceDao;
 import com.hrm.DTO.HR.AttenDanceDTO.DetailHeaderDTO;
 import com.hrm.DTO.HR.AttenDanceDTO.DailyRecordDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -34,6 +37,7 @@ public class AttenDanceDetail extends JPanel {
     private static final Color LEAVE_BG   = new Color(219, 234, 254); private static final Color LEAVE_FG   = new Color( 29, 78,216);
 
     private final AttenDanceDao dao = new AttenDanceDao();
+    private final PermissionService permissionService = new PermissionService();
 
     // Tham chiếu để update sau khi load DB
     private DefaultTableModel detailModel;
@@ -43,6 +47,9 @@ public class AttenDanceDetail extends JPanel {
     private String currentManv;
     private int currentMonth;
     private int currentYear;
+    
+    // Permission tracking
+    private boolean canEditAttendance = false;
 
     private static final DateTimeFormatter DATE_PARSER = DateTimeFormatter.ofPattern("d/M/yyyy");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
@@ -61,6 +68,9 @@ public class AttenDanceDetail extends JPanel {
         setLayout(new BorderLayout(0, 0));
         setOpaque(false);
 
+        // Kiểm tra quyền chỉnh sửa chấm công
+        checkPermission();
+
         JPanel card = new JPanel(new BorderLayout(0, 0));
         card.setBackground(Color.WHITE);
         card.putClientProperty("FlatLaf.style",
@@ -76,6 +86,20 @@ public class AttenDanceDetail extends JPanel {
         currentMonth = month;
         currentYear = year;
         loadFromDb(currentManv, month, year);
+    }
+
+    /**
+     * Kiểm tra xem user có quyền sửa chấm công không
+     */
+    private void checkPermission() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            // CN03_ATTENANCE là mã chức năng quản lý chấm công trong DB
+            canEditAttendance = permissionService.canEdit(currentUser, "CN03_ATTENANCE");
+        }
+        if (!canEditAttendance) {
+            System.out.println("⚠ User không có quyền chỉnh sửa check-in/check-out");
+        }
     }
 
     /**
@@ -235,6 +259,9 @@ public class AttenDanceDetail extends JPanel {
         detailModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
+                // Chỉ cho phép chỉnh sửa nếu user có quyền QUYEN_SUA
+                if (!canEditAttendance) return false;
+                
                 if (c != 2 && c != 3) return false;
                 Object checkIn = getValueAt(r, 2);
                 Object checkOut = getValueAt(r, 3);
@@ -370,6 +397,14 @@ public class AttenDanceDetail extends JPanel {
 
             @Override
             public boolean stopCellEditing() {
+                // Kiểm tra lại quyền trước khi cập nhật
+                if (!canEditAttendance) {
+                    JOptionPane.showMessageDialog(AttenDanceDetail.this,
+                        "Bạn không có quyền chỉnh sửa check-in/check-out.\nVui lòng liên hệ quản trị viên để cấp quyền.",
+                        "Quyền hạn không đủ", JOptionPane.WARNING_MESSAGE);
+                    return false;
+                }
+
                 if (editRow < 0 || currentManv == null) return super.stopCellEditing();
 
                 String newVal = ((JTextField) getComponent()).getText().trim();

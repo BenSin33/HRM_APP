@@ -49,6 +49,10 @@ public class EvaluationPanel extends JPanel {
 
         // Header (luôn hiển thị)
         header = new EvaluationHeader();
+        header.setOnQuarterChanged(() -> {
+            currentMaDot = header.getSelectedMaDot();
+            loadData();
+        });
         add(header, BorderLayout.NORTH);
 
         // Content Area với CardLayout
@@ -106,8 +110,8 @@ public class EvaluationPanel extends JPanel {
             return;
         }
         
-        // Load dữ liệu theo phòng ban
-        Object[][] data = nhanVienService.getTableDataForEvaluationByPhongBan(maphongban);
+        // Load dữ liệu theo phòng ban và đợt đánh giá
+        Object[][] data = nhanVienService.getTableDataForEvaluationByPhongBan(maphongban, currentMaDot);
         
         listPanel.setQuarter(currentMaDot);
         listPanel.setData(data);
@@ -159,7 +163,11 @@ public class EvaluationPanel extends JPanel {
     }
 
     private void saveEvaluation(Map<String, Integer> scores, String nhanXet, String quyetDinh, String loaiQD, BigDecimal tiLeThayDoi) {
-        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet, quyetDinh, loaiQD, tiLeThayDoi);
+        // Get manager's ID (current user evaluating)
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        String maNVDanhGia = currentUser != null ? currentUser.getManv() : null;
+        
+        boolean success = phieuDAO.upsertEvaluation(currentMaNV, currentMaDot, scores, nhanXet, quyetDinh, loaiQD, tiLeThayDoi, maNVDanhGia);
         if (success) {
             JOptionPane.showMessageDialog(this, "Lưu điểm thành công!");
             // Ở lại panel, reload lại để hiển thị trạng thái đã lưu (locked)
