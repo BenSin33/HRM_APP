@@ -141,8 +141,8 @@ public class LoginUI extends JFrame{
                 new EDashboard(userInfo.getManv());
                 JOptionPane.showMessageDialog(null, "Xin chào nhân viên: " + userInfo.getManv() + " (" + roleName + ")");
             } else {
-                // Custom role (R4, R5...) -> mở giao diện nhân viên, hiển thị role name từ DB
-                new EDashboard(userInfo.getManv());
+                // Custom role (R4, R5...) -> mở giao diện HR
+                new HRDashboard();
                 JOptionPane.showMessageDialog(null, "Xin chào: " + userInfo.getManv() + " (" + roleName + ")");
             }
         } else {
