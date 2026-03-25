@@ -55,9 +55,9 @@ public class NghiPhepDAO {
                 
                 list.add(dto);
             }
-            System.out.println("[NghiPhepDAO] Loaded " + count + " leave requests from DB");
+            
         } catch (SQLException e) {
-            System.err.println("[NghiPhepDAO] Error loading data: " + e.getMessage());
+           
             e.printStackTrace();
         }
         return list;
@@ -72,7 +72,7 @@ public class NghiPhepDAO {
             ps.setString(2, manghiphep);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[NghiPhepDAO] Error approving: " + e.getMessage());
+            
             e.printStackTrace();
         }
         return false;
@@ -88,7 +88,7 @@ public class NghiPhepDAO {
             ps.setString(3, manghiphep);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[NghiPhepDAO] Error rejecting: " + e.getMessage());
+           
             e.printStackTrace();
         }
         return false;
@@ -103,7 +103,7 @@ public class NghiPhepDAO {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
-            System.err.println("[NghiPhepDAO] Error counting: " + e.getMessage());
+           
             e.printStackTrace();
         }
         return 0;
@@ -119,7 +119,7 @@ public class NghiPhepDAO {
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
-            System.err.println("[NghiPhepDAO] Error countOnLeaveToday: " + e.getMessage());
+           
             e.printStackTrace();
         }
         return 0;
@@ -174,9 +174,9 @@ public class NghiPhepDAO {
                 
                 list.add(dto);
             }
-            System.out.println("[NghiPhepDAO] Loaded " + count + " leave requests for phongban: " + maphongban);
+            
         } catch (SQLException e) {
-            System.err.println("[NghiPhepDAO] Error loading data by phongban: " + e.getMessage());
+            
             e.printStackTrace();
         }
         return list;
