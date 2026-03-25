@@ -5,6 +5,7 @@ import com.hrm.DAO.PositionDAO;
 import com.hrm.DTO.PositionDTO;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,10 +31,12 @@ public class AddRoleDialog extends JDialog {
     public AddRoleDialog(Frame parent, String suggestedRoleId) {
         super(parent, "Thêm cấu hình quyền role & chức vụ", true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(0, 0));
         getContentPane().setBackground(Color.WHITE);
 
         positions = positionDAO.getAllPositions();
+
+        Font labelFont = new Font("Segoe UI", Font.PLAIN, 13);
 
         // Main vertical box layout for form
         JPanel formPanel = new JPanel();
@@ -82,6 +85,7 @@ public class AddRoleDialog extends JDialog {
         formPanel.add(lblPosSection);
 
         cbAddNewPosition = new JCheckBox("Thêm chức vụ mới");
+        cbAddNewPosition.setFont(labelFont);
         cbAddNewPosition.setBackground(Color.WHITE);
         cbAddNewPosition.setAlignmentX(Component.LEFT_ALIGNMENT);
         formPanel.add(cbAddNewPosition);
@@ -90,6 +94,7 @@ public class AddRoleDialog extends JDialog {
         posRow.setOpaque(false);
         JLabel lblChoosePos = new JLabel("Chọn chức vụ:");
         cbPosition = new JComboBox<>();
+        cbPosition.setFont(labelFont);
         cbPosition.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
         for (PositionDTO p : positions) {
             cbPosition.addItem(p.getMaChucVu() + " - " + p.getTenViTri());
@@ -107,8 +112,8 @@ public class AddRoleDialog extends JDialog {
         newPositionPanel.setLayout(new BoxLayout(newPositionPanel, BoxLayout.Y_AXIS));
         newPositionPanel.setBackground(new Color(250, 250, 255));
         newPositionPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 220), 1),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+                BorderFactory.createLineBorder(new Color(210, 214, 222), 1),
+                new EmptyBorder(10, 10, 10, 10)));
         newPositionPanel.setVisible(false);
 
         JPanel newPosIdRow = new JPanel(new GridLayout(1, 2, 12, 0));
@@ -143,12 +148,16 @@ public class AddRoleDialog extends JDialog {
             setLocationRelativeTo(parent);
         });
 
+        formPanel.add(Box.createVerticalStrut(14));
+
         add(formPanel, BorderLayout.CENTER);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
         btnPanel.setBackground(Color.WHITE);
+        btnPanel.setBorder(new EmptyBorder(0, 16, 12, 16));
 
         JButton btnCancel = new JButton("Hủy");
+        btnCancel.setFont(labelFont);
         btnCancel.putClientProperty(FlatClientProperties.STYLE, "arc: 8; background: #e5e7eb; foreground: #374151");
         btnCancel.addActionListener(e -> {
             confirmed = false;
@@ -156,6 +165,7 @@ public class AddRoleDialog extends JDialog {
         });
 
         JButton btnOK = new JButton("Thêm");
+        btnOK.setFont(labelFont);
         btnOK.putClientProperty(FlatClientProperties.STYLE, "arc: 8; background: #7e22ce; foreground: #ffffff");
         btnOK.addActionListener(e -> validateAndClose());
 
@@ -163,9 +173,10 @@ public class AddRoleDialog extends JDialog {
         btnPanel.add(btnOK);
         add(btnPanel, BorderLayout.SOUTH);
 
+        setMinimumSize(new Dimension(420, 280));
         pack();
         setLocationRelativeTo(parent);
-        setResizable(false);
+        setResizable(true);
     }
 
     private void validateAndClose() {

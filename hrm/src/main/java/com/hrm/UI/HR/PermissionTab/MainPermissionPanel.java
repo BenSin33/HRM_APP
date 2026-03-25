@@ -178,9 +178,15 @@ public class MainPermissionPanel extends JPanel {
         btnAddRole.putClientProperty(FlatClientProperties.STYLE, "arc: 8; background: #7e22ce; foreground: #ffffff");
         btnAddRole.addActionListener(e -> openAddRoleDialog());
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
+        JButton btnDeleteRole = new JButton("Xóa role");
+        btnDeleteRole.putClientProperty(FlatClientProperties.STYLE,
+                "arc: 8; background: #fef2f2; foreground: #b91c1c; borderColor: #fecaca");
+        btnDeleteRole.addActionListener(e -> deleteSelectedRole());
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
         btnPanel.setOpaque(false);
         btnPanel.add(btnAddRole);
+        btnPanel.add(btnDeleteRole);
         panel.add(btnPanel, BorderLayout.SOUTH);
 
         return panel;
@@ -246,6 +252,50 @@ public class MainPermissionPanel extends JPanel {
                     "Không thể thêm role. Có thể mã role đã tồn tại.",
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    /**
+     * Xóa role đang chọn (sau khi xác nhận).
+     */
+    private void deleteSelectedRole() {
+        String roleId = getSelectedRoleId();
+        if (roleId == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Hãy chọn một role trong danh sách.",
+                    "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        String roleName = permissionService.getRoleName(roleId);
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa role \"" + roleName + "\" (" + roleId + ")?\n"
+                        + "Toàn bộ cấu hình quyền theo role này sẽ bị xóa. Thao tác không thể hoàn tác.",
+                "Xác nhận xóa role",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        int prevIndex = roleList.getSelectedIndex();
+        String err = permissionService.deleteRole(roleId);
+        if (err == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Đã xóa role " + roleId + ".",
+                    "Thành công",
+                    JOptionPane.INFORMATION_MESSAGE);
+            refreshRoleList();
+            if (!roleIds.isEmpty()) {
+                int newIdx = Math.min(Math.max(0, prevIndex), roleIds.size() - 1);
+                roleList.setSelectedIndex(newIdx);
+                onRoleSelected();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, err, "Không thể xóa", JOptionPane.WARNING_MESSAGE);
         }
     }
 
