@@ -120,8 +120,7 @@ public class EvaluationPanel extends JPanel {
     }
 
     private void showDetailPanel(String maNV, String hoTen) {
-        System.out.println("🔍 DEBUG: EvaluationPanel.showDetailPanel() called!");
-        System.out.println("   maNV=" + maNV + ", hoTen=" + hoTen);
+       
         
         this.currentMaNV = maNV;
         this.currentHoTen = hoTen;
@@ -143,16 +142,15 @@ public class EvaluationPanel extends JPanel {
             quyetDinh = phieuDAO.getQuyetDinh(maNV, currentMaDot);
             loaiQD = phieuDAO.getLoaiQuyetDinh(maNV, currentMaDot);
             tiLeThayDoi = phieuDAO.getTiLeThayDoi(maNV, currentMaDot);
-            System.out.println("   Loaded from DB: quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD + ", tiLe=" + tiLeThayDoi);
+          
         }
         
         // Cập nhật panel chi tiết
-        System.out.println("   Calling detailPanel.setData()...");
+        
         detailPanel.setData(maNV, hoTen, currentMaDot, criteria, savedScores, nhanXet, quyetDinh, loaiQD, tiLeThayDoi, isLocked);
         
         // Chuyển sang panel chi tiết
         cardLayout.show(cardPanel, "DETAIL");
-        System.out.println("   ✓ Switched to DETAIL panel");
     }
 
     private void backToList() {

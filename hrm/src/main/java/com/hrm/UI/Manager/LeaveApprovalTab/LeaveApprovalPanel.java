@@ -83,7 +83,7 @@ public class LeaveApprovalPanel extends JPanel {
     }
 
     private void loadData() {
-        System.out.println("=== LOADING DATA ===");
+        
         
         // Lấy thông tin manager hiện tại
         UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
@@ -111,7 +111,7 @@ public class LeaveApprovalPanel extends JPanel {
         // Load dữ liệu theo phòng ban
         Object[][] data = nghiPhepService.getTableDataForLeaveByPhongBan(maphongban);
         
-        System.out.println("Data received: " + data.length + " rows");
+       
         
         allData.clear();
         int choDuyet = 0, daDuyet = 0, tuChoi = 0;
@@ -120,7 +120,7 @@ public class LeaveApprovalPanel extends JPanel {
             allData.add(row);
             String tt = row[8].toString();  // TRANGTHAI at index 8
             
-            System.out.println("Row: " + row[10] + " | Status: " + tt);
+           
             
             if (tt.equals("Chờ duyệt")) {
                 choDuyet++;
@@ -131,7 +131,7 @@ public class LeaveApprovalPanel extends JPanel {
             }
         }
 
-        System.out.println("Stats - Chờ: " + choDuyet + ", Đã: " + daDuyet + ", Từ chối: " + tuChoi);
+       
         
         stats.updateStats(choDuyet, daDuyet, tuChoi);
         filterPanel.updatePendingCount(choDuyet);
@@ -145,7 +145,7 @@ public class LeaveApprovalPanel extends JPanel {
     private void applyFilter() {
         listPanel.removeAll();
         
-        System.out.println("=== APPLY FILTER: " + currentFilter + " ===");
+       
 
         int count = 0;
         for (Object[] row : allData) {
@@ -164,7 +164,7 @@ public class LeaveApprovalPanel extends JPanel {
             }
         }
         
-        System.out.println("Cards displayed: " + count);
+      
         
         // Empty state
         if (count == 0) {

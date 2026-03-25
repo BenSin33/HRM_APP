@@ -96,7 +96,7 @@ public class PermissionDAO {
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, roleId);
-                System.out.println("DEBUG: Lấy quyền role: " + roleId);
+                // ...existing code...
 
                 try (ResultSet rs = ps.executeQuery()) {
                     int count = 0;
@@ -116,7 +116,7 @@ public class PermissionDAO {
                         permissions.add(perm);
                         System.out.println("DEBUG: Thêm quyền " + count + ": " + perm.getMachucNang());
                     }
-                    System.out.println("DEBUG: Tổng cộng " + count + " chức năng cho role " + roleId);
+                    // ...existing code...
                 }
             }
         } catch (Exception e) {
