@@ -13,6 +13,7 @@ import com.hrm.UI.Manager.ScheduleTab.SchedulePanel;
 import com.hrm.UI.Manager.dashboard.DashboardPanel;
 import com.hrm.UI.Manager.evaluation.EvaluationPanel;
 import com.hrm.UI.Manager.team.TeamPanel;
+import com.hrm.UI.Manager.thongke.ThongKePanel;
 import com.hrm.UI.component.Sidebar;
 import com.hrm.UI.component.SidebarTab;
 import com.hrm.DTO.UserDTO;
@@ -30,6 +31,7 @@ public class ManagerDashboard extends JFrame {
     private SchedulePanel schedulePanel;
     private LeaveApprovalPanel leavePanel;
     private EvaluationPanel evaluationPanel;
+    private ThongKePanel thongKePanel;
     private PermissionService permissionService;
     
     public ManagerDashboard() {
@@ -51,6 +53,7 @@ public class ManagerDashboard extends JFrame {
         schedulePanel = new SchedulePanel();
         leavePanel = new LeaveApprovalPanel();
         evaluationPanel = new EvaluationPanel();
+        thongKePanel = new ThongKePanel();
 
         // Thêm các panel vào contentPanel
         contentPanel.add(dashboardPanel, "MANAGER_DASHBOARD");
@@ -58,6 +61,7 @@ public class ManagerDashboard extends JFrame {
         contentPanel.add(schedulePanel, "SCHEDULE_MANAGEMENT");
         contentPanel.add(leavePanel, "LEAVE_APPROVAL");
         contentPanel.add(evaluationPanel, "PERFORMANCE_EVALUATION");
+        contentPanel.add(thongKePanel, "STATISTICS");
 
         // Cấu hình sidebar
         List<SidebarTab> ManagerTabs = new ArrayList<>();
@@ -81,6 +85,12 @@ public class ManagerDashboard extends JFrame {
         if (permissionService.canView(currentUser, "CN05")) { // Assuming PERFORMANCE_EVALUATION uses the same permission
             ManagerTabs.add(new SidebarTab("ĐÁNH GIÁ HIỆU SUẤT", "PERFORMANCE_EVALUATION"));
         }
+        
+        // Add Statistics tab (using the same permission as Dashboard/Overview)
+        if (permissionService.canView(currentUser, "CN01")) {
+            ManagerTabs.add(new SidebarTab("THỐNG KÊ", "STATISTICS"));
+        }
+
         ManagerTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, ManagerTabs);
