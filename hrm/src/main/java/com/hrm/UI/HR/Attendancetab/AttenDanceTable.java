@@ -2,8 +2,11 @@ package com.hrm.UI.HR.Attendancetab;
 
 import com.hrm.DAO.HR.AttenDanceDao;
 import com.hrm.DTO.HR.AttenDanceDTO.EmployeeRowDTO;
+import com.hrm.DTO.UserDTO;
+import com.hrm.Service.PermissionService;
 import com.hrm.UI.HR.Attendancetab.AttenDanceFilterDialog.FilterCriteria;
 import com.hrm.utils.AttendanceExcelExporter;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -42,7 +45,12 @@ public class AttenDanceTable extends JPanel {
     private int currentYear;
 
     private final AttenDanceDao      dao = new AttenDanceDao();
+    private final PermissionService  permissionService = new PermissionService();
     private final Consumer<Object[]> onDetailClick;
+    
+    // Permission tracking
+    private boolean canViewAttendance = false;
+    private boolean canEditAttendance = false;
 
     // ─── Màu ─────────────────────────────────────────────────────
     private static final Color PURPLE   = new Color(124, 58, 237);
@@ -60,6 +68,9 @@ public class AttenDanceTable extends JPanel {
         this.onDetailClick = onDetailClick;
         setLayout(new BorderLayout());
         setOpaque(false);
+
+        // Kiểm tra quyền xem và sửa
+        checkPermissions();
 
         // Card vẽ tay (fix borderColor/shadow)
         JPanel card = new JPanel(new BorderLayout()) {
@@ -86,6 +97,24 @@ public class AttenDanceTable extends JPanel {
         currentMonth = now.getMonthValue();
         currentYear  = now.getYear();
         refreshData(currentMonth, currentYear);
+    }
+
+    /**
+     * Kiểm tra quyền xem và sửa chấm công
+     */
+    private void checkPermissions() {
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            // CN03_ATTENANCE là mã chức năng quản lý chấm công trong DB
+            canViewAttendance = permissionService.canView(currentUser, "CN03_ATTENANCE");
+            canEditAttendance = permissionService.canEdit(currentUser, "CN03_ATTENANCE");
+        }
+        if (!canViewAttendance) {
+            System.out.println("⚠ User không có quyền xem chấm công");
+        }
+        if (!canEditAttendance) {
+            System.out.println("⚠ User không có quyền chỉnh sửa chấm công");
+        }
     }
 
     public AttenDanceTable() { this(null); }
@@ -279,6 +308,14 @@ public class AttenDanceTable extends JPanel {
 
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
+                // Chỉ cho phép click detail nếu có quyền QUYEN_SUA
+                if (!canEditAttendance) {
+                    JOptionPane.showMessageDialog(AttenDanceTable.this,
+                        "Bạn không có quyền chỉnh sửa check-in/check-out.\nVui lòng liên hệ quản trị viên để cấp quyền.",
+                        "Quyền hạn không đủ", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
                 int row = table.rowAtPoint(e.getPoint());
                 int col = table.columnAtPoint(e.getPoint());
                 if (col == 6 && row >= 0 && onDetailClick != null && currentData != null) {

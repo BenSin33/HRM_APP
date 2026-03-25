@@ -60,6 +60,59 @@ public class NhanVienService {
             .count();
     }
 
+    // ==================== DASHBOARD BY DEPARTMENT ====================
+
+    public int countAllByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) return 0;
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        return list != null ? list.size() : 0;
+    }
+
+    public int countDonChoDuyetByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) return 0;
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        if (list == null) return 0;
+        return (int) list.stream()
+            .filter(nv -> "CHO_DUYET".equals(nv.getTrangthai()))
+            .count();
+    }
+
+    public int countNghiHomNayByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) return 0;
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        if (list == null) return 0;
+        return (int) list.stream()
+            .filter(nv -> "NGHI".equals(nv.getTrangthai()))
+            .count();
+    }
+
+    public String getHieuSuatTrungBinhByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) return "0%";
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        if (list == null || list.isEmpty()) return "0%";
+        double avg = list.stream()
+            .mapToInt(NhanVienDTO::getSongayphep)
+            .average()
+            .orElse(0);
+        return (int) avg + "%";
+    }
+
+    public int countChuaDanhGiaTheoDotByPhongBan(String maDot, String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) return 0;
+        
+        com.hrm.DAO.PhieuDanhGiaDAO phieuDao = new com.hrm.DAO.PhieuDanhGiaDAO();
+        List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
+        if (list == null || list.isEmpty()) return 0;
+
+        int count = 0;
+        for (NhanVienDTO nv : list) {
+            if (nv == null || nv.getManv() == null) continue;
+            boolean daDanhGia = phieuDao.hasEvaluation(nv.getManv(), maDot);
+            if (!daDanhGia) count++;
+        }
+        return count;
+    }
+
     // ==================== TEAM PANEL ====================
 
     public int countDangHoatDong() {
@@ -286,9 +339,10 @@ public class NhanVienService {
     /**
      * Lấy dữ liệu đánh giá cho manager hiện tại (chỉ nhân viên cùng phòng ban)
      * @param maphongban mã phòng ban của manager
+     * @param maDot mã đợt đánh giá cần xem
      * @return Object[][] dữ liệu với các cột: ten, maNV, chucVu, phongBan, trangThai
      */
-    public Object[][] getTableDataForEvaluationByPhongBan(String maphongban) {
+    public Object[][] getTableDataForEvaluationByPhongBan(String maphongban, String maDot) {
         if (maphongban == null || maphongban.trim().isEmpty()) {
             return new Object[0][5];
         }
@@ -296,7 +350,6 @@ public class NhanVienService {
         List<NhanVienDTO> list = dao.getEmployeesByPhongBan(maphongban);
         if (list == null || list.isEmpty()) return new Object[0][5];
 
-        String maDot = defaultMaDotNow();
         Object[][] data = new Object[list.size()][5];
         for (int i = 0; i < list.size(); i++) {
             NhanVienDTO nv = list.get(i);
@@ -308,6 +361,13 @@ public class NhanVienService {
             data[i][4] = daDanhGia ? "Đã hoàn thành" : "Chưa đánh giá";
         }
         return data;
+    }
+
+    /**
+     * Overload method - lấy dữ liệu dùng đợt mặc định hiện tại
+     */
+    public Object[][] getTableDataForEvaluationByPhongBan(String maphongban) {
+        return getTableDataForEvaluationByPhongBan(maphongban, defaultMaDotNow());
     }
 
     public int countDaHoanThanhDanhGia() {

@@ -14,9 +14,11 @@ public class ContractHeader extends JPanel {
     private JButton addButton;
     private JButton exportButton;
     private JButton importButton;
+    private JButton refreshButton;
     private Runnable onAddCallback;
     private Runnable onExportCallback;
     private Runnable onImportCallback;
+    private Runnable onRefreshCallback;
     private ContractDAO contractDAO;
 
     public ContractHeader() {
@@ -37,6 +39,10 @@ public class ContractHeader extends JPanel {
         this.onImportCallback = callback;
     }
 
+    public void setOnRefreshCallback(Runnable callback) {
+        this.onRefreshCallback = callback;
+    }
+
     public void setAddButtonEnabled(boolean enabled) {
         addButton.setEnabled(enabled);
     }
@@ -47,6 +53,10 @@ public class ContractHeader extends JPanel {
 
     public void setImportButtonEnabled(boolean enabled) {
         importButton.setEnabled(enabled);
+    }
+
+    public void setRefreshButtonEnabled(boolean enabled) {
+        refreshButton.setEnabled(enabled);
     }
 
     private void initComponent() {
@@ -119,9 +129,24 @@ public class ContractHeader extends JPanel {
             }
         });
         
+        // Nút Làm mới
+        refreshButton = new JButton("↻ Làm mới");
+        refreshButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        refreshButton.setForeground(Color.WHITE);
+        refreshButton.setBackground(new Color(158, 158, 158)); // Gray
+        refreshButton.setFocusPainted(false);
+        refreshButton.setBorderPainted(false);
+        refreshButton.setPreferredSize(new Dimension(100, 38));
+        refreshButton.addActionListener(e -> {
+            if (onRefreshCallback != null) {
+                onRefreshCallback.run();
+            }
+        });
+        
         buttonPanel.add(addButton);
         buttonPanel.add(exportButton);
         buttonPanel.add(importButton);
+        buttonPanel.add(refreshButton);
         
         titlePanel.add(buttonPanel, BorderLayout.EAST);
         

@@ -93,4 +93,40 @@ public class NghiPhepService {
     public int countOnLeaveToday() {
         return dao.countOnLeaveToday();
     }
+    
+    /**
+     * Đếm số đơn chờ duyệt trong phòng ban
+     * @param maphongban mã phòng ban
+     * @return số đơn chờ duyệt
+     */
+    public int countChoDuyetByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            return 0;
+        }
+        List<NghiPhepDTO> list = dao.getAllByPhongBan(maphongban);
+        if (list == null || list.isEmpty()) return 0;
+        return (int) list.stream()
+            .filter(np -> "Chờ duyệt".equals(np.getTrangthai()))
+            .count();
+    }
+    
+    /**
+     * Đếm số nhân viên đang nghỉ hôm nay trong phòng ban
+     * @param maphongban mã phòng ban
+     * @return số nhân viên nghỉ hôm nay
+     */
+    public int countOnLeaveTodayByPhongBan(String maphongban) {
+        if (maphongban == null || maphongban.trim().isEmpty()) {
+            return 0;
+        }
+        List<NghiPhepDTO> list = dao.getAllByPhongBan(maphongban);
+        if (list == null || list.isEmpty()) return 0;
+        
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return (int) list.stream()
+            .filter(np -> "Đã duyệt".equals(np.getTrangthai()) 
+                && np.getNgaynghi() != null 
+                && np.getNgaynghi().equals(today))
+            .count();
+    }
 }

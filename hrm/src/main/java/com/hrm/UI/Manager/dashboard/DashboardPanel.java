@@ -3,6 +3,9 @@ package com.hrm.UI.Manager.dashboard;
 import com.hrm.UI.Manager.color.ColorScheme;
 import com.hrm.Service.NhanVienService;
 import com.hrm.Service.NghiPhepService;
+import com.hrm.DTO.UserDTO;
+import com.hrm.DTO.Manager.NhanVienDTO;
+import com.hrm.utils.SessionManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -62,10 +65,38 @@ public class DashboardPanel extends JPanel {
     }
 
     private void loadData() {
-        int totalEmployees = nhanVienService.countAll();
-        int choDuyet = nghiPhepService.countChoDuyet();
-        int onLeaveToday = nghiPhepService.countOnLeaveToday();
-        String hieuSuat = nhanVienService.getHieuSuatTrungBinh();
+        // Lấy phòng ban của user hiện tại
+        UserDTO currentUser = SessionManager.getInstance().getCurrentUser();
+        String maphongban = null;
+        
+        if (currentUser != null && currentUser.getManv() != null) {
+            // Lấy thông tin nhân viên để get phòng ban
+            com.hrm.DAO.NhanVienDAO nvDao = new com.hrm.DAO.NhanVienDAO();
+            com.hrm.DTO.Manager.NhanVienDTO nv = nvDao.findById(currentUser.getManv());
+            if (nv != null) {
+                maphongban = nv.getMaphongban();
+            }
+        }
+
+        // Lấy thống kê theo phòng ban nếu có
+        int totalEmployees;
+        int choDuyet;
+        int onLeaveToday;
+        String hieuSuat;
+        
+        if (maphongban != null && !maphongban.trim().isEmpty()) {
+            // Thống kê theo phòng ban
+            totalEmployees = nhanVienService.countAllByPhongBan(maphongban);
+            choDuyet = nhanVienService.countDonChoDuyetByPhongBan(maphongban);
+            onLeaveToday = nhanVienService.countNghiHomNayByPhongBan(maphongban);
+            hieuSuat = nhanVienService.getHieuSuatTrungBinhByPhongBan(maphongban);
+        } else {
+            // Fallback: thống kê toàn hệ thống
+            totalEmployees = nhanVienService.countAll();
+            choDuyet = nhanVienService.countDonChoDuyet();
+            onLeaveToday = nhanVienService.countNghiHomNay();
+            hieuSuat = nhanVienService.getHieuSuatTrungBinh();
+        }
 
         stats.updateStats(
                 totalEmployees,
@@ -80,7 +111,12 @@ public class DashboardPanel extends JPanel {
 
         // 2) Đợt cần hoàn thành: hiểu là số NV CHƯA được đánh giá trong kỳ hiện tại (Qx-YYYY)
         String maDot = getCurrentMaDot();
-        int canHoanThanh = countChuaDanhGiaTheoDot(maDot);
+        int canHoanThanh;
+        if (maphongban != null && !maphongban.trim().isEmpty()) {
+            canHoanThanh = nhanVienService.countChuaDanhGiaTheoDotByPhongBan(maDot, maphongban);
+        } else {
+            canHoanThanh = countChuaDanhGiaTheoDot(maDot);
+        }
 
         // 3) Thành viên team: dùng tổng nhân viên
         int thanhVienTeam = totalEmployees;
@@ -89,7 +125,13 @@ public class DashboardPanel extends JPanel {
 
         // ==== Team panel: hiển thị danh sách thành viên (tối đa 9) ====
         teamPanel.clearMembers();
-        Object[][] teamData = nhanVienService.getTableDataForTeam();
+        Object[][] teamData;
+        if (maphongban != null && !maphongban.trim().isEmpty()) {
+            teamData = nhanVienService.getTableDataForTeamByPhongBan(maphongban);
+        } else {
+            teamData = nhanVienService.getTableDataForTeam();
+        }
+        
         if (teamData != null) {
             int limit = Math.min(teamData.length, 9);
             for (int i = 0; i < limit; i++) {

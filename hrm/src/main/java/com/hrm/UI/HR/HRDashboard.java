@@ -14,6 +14,7 @@ import com.hrm.DTO.Manager.NhanVienDTO;
 import com.hrm.Service.PermissionService;
 import com.hrm.UI.HR.AccountManagerTab.AccountManagerPanel;
 import com.hrm.UI.HR.Attendancetab.AttenDanceManagement;
+import com.hrm.UI.HR.HRStaffAttendance.HRStaffAttendancePanel;
 import com.hrm.UI.HR.ContractTab.ContractManagement;
 import com.hrm.UI.HR.Department.DepartmentManagementPanel;
 import com.hrm.UI.HR.EmployeeTab.EmployeeManagementPanel;
@@ -103,6 +104,10 @@ public class HRDashboard extends JFrame {
             HRTabs.add(new SidebarTab("QUẢN LÝ DANH MỤC", "CATEGORY_MANAGEMENT"));
         }
 
+        // Special check for HR Staff Attendance - HR admin (R1) but NOT trưởng phòng (CV != CV01)
+        if (isHRStaff(currentUser)) {
+            HRTabs.add(new SidebarTab("CHẤM CÔNG NHÂN VIÊN", "HR_STAFF_ATTENDANCE"));
+        }
 
         HRTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
         // register dashboard/overview panel first so the default tab can display
@@ -119,6 +124,7 @@ public class HRDashboard extends JFrame {
         contentPanel.add(createDashboardPanel(new MainPermissionPanel()), "PERMISSION_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new AccountManagerPanel()), "ACCOUNT_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new CategoryPanel()), "CATEGORY_MANAGEMENT");
+        contentPanel.add(createDashboardPanel(new HRStaffAttendancePanel()), "HR_STAFF_ATTENDANCE");
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, HRTabs); // tạo sidebar
 
@@ -141,6 +147,25 @@ public class HRDashboard extends JFrame {
         boolean isHeadOfDepartment = "CV01".equals(employeeDetails.getMachucvu());
 
         return isHRDepartment && isHeadOfDepartment;
+    }
+
+    /**
+     * Check nếu user là HR nhân viên (role=R1 nhưng CV != CV01 - không phải trưởng phòng)
+     * Những người này có thể checkin/checkout
+     */
+    private boolean isHRStaff(UserDTO user) {
+        if (user == null || !"R1".equals(user.getRoleId())) {
+            return false;
+        }
+        NhanVienDTO employeeDetails = nhanVienDAO.findById(user.getManv());
+        if (employeeDetails == null) {
+            return false;
+        }
+        // HR staff: phòng Nhân sự (PB01) nhưng KHÔNG phải Trưởng phòng (CV != CV01)
+        boolean isHRDepartment = "PB01".equals(employeeDetails.getMaphongban());
+        boolean isNotHeadOfDepartment = !"CV01".equals(employeeDetails.getMachucvu());
+        
+        return isHRDepartment && isNotHeadOfDepartment;
     }
 
     private JPanel createDashboardPanel(JPanel panel) {

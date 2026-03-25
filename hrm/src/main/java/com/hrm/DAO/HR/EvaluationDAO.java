@@ -107,19 +107,19 @@ public class EvaluationDAO {
 
     public List<EvaluationDTO> getEvaluationsByPeriod(String maDot) {
         List<EvaluationDTO> list = new ArrayList<>();
-        // JOIN dotdanhgia để lấy NGUOIDANHGIA từ đợt
+        // Lấy người đánh giá từ cột MANVDANHGIA trong phieudanhgia
         String sql = "SELECT " +
                      "  p.MAPHIEU, p.MANV, nv.HOTEN, " +
                      "  cv.TENVITRI AS CHUCVU, pb.TENPHONGBAN AS PHONGBAN, " +
-                     "  d.NGUOIDANHGIA, p.TONGDIEM, p.NHANXET, " +
+                     "  COALESCE(nvdg.HOTEN, '') AS NGUOIDANHGIA, " +
+                     "  p.TONGDIEM, p.NHANXET, " +
                      "  p.QUYETDINH, p.LOAIQUYETDINH, p.TRANGTHAI_DUYET, " +
-                     "  p.NGAYDANHGIA, tc.TENTIEUCHI, p.MADOT, p.MATIEUCHI " +
+                     "  p.NGAYDANHGIA, p.MADOT " +
                      "FROM phieudanhgia p " +
                      "JOIN nhanvien nv             ON p.MANV      = nv.MANV " +
                      "JOIN chucvu cv               ON nv.MACHUCVU = cv.MACHUCVU " +
                      "JOIN phongban pb             ON nv.MAPHONGBAN = pb.MAPHONGBAN " +
-                     "LEFT JOIN tieuchidanhgia tc  ON p.MATIEUCHI = tc.MATIEUCHI " +
-                     "LEFT JOIN dotdanhgia d       ON p.MADOT     = d.MADOT " +
+                     "LEFT JOIN nhanvien nvdg     ON p.MANVDANHGIA = nvdg.MANV " +
                      "WHERE p.MADOT = ? " +
                      "ORDER BY p.TONGDIEM DESC";
 
@@ -133,7 +133,6 @@ public class EvaluationDAO {
                     dto.setMaPhieu(rs.getString("MAPHIEU"));
                     dto.setMaNV(rs.getString("MANV"));
                     dto.setMaDot(rs.getString("MADOT"));
-                    dto.setMaTieuChi(rs.getString("MATIEUCHI"));
                     dto.setHoTen(rs.getString("HOTEN"));
                     dto.setChucVu(rs.getString("CHUCVU"));
                     dto.setPhongBan(rs.getString("PHONGBAN"));
@@ -144,7 +143,6 @@ public class EvaluationDAO {
                     dto.setLoaiQuyetDinh(rs.getString("LOAIQUYETDINH"));
                     dto.setTrangThaiDuyet(rs.getString("TRANGTHAI_DUYET"));
                     dto.setNgayDanhGia(rs.getDate("NGAYDANHGIA"));
-                    dto.setTenTieuChi(rs.getString("TENTIEUCHI"));
                     dto.setXepLoai(tinhXepLoai(dto.getTongDiem()));
                     list.add(dto);
                 }
