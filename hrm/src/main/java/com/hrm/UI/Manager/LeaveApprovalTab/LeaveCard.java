@@ -90,45 +90,45 @@ public class LeaveCard extends JPanel {
         System.out.println("[LeaveCard] " + ten + " | Trạng thái: [" + trangThai + "]");
         
         if (trangThai != null && trangThai.trim().equals("Chờ duyệt")) {
-            System.out.println("[LeaveCard] → Hiện buttons DUYỆT/TỪ CHỐI");
+           
             topRow.add(createActionButtons(), BorderLayout.EAST);
         } else {
-            System.out.println("[LeaveCard] → KHÔNG hiện buttons (trạng thái: " + trangThai + ")");
+            
         }
 
         return topRow;
     }
 
     private JPanel createActionButtons() {
-        JPanel btnPanel = new JPanel(new GridLayout(2, 1, 0, 8));
-        btnPanel.setBackground(Color.WHITE);
+   JPanel btnPanel = new JPanel(new GridLayout(2, 1, 0, 8));
+    btnPanel.setBackground(Color.WHITE);
 
-        JButton btnDuyet = new JButton("✓  Duyệt");
-        btnDuyet.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnDuyet.setBackground(new Color(34, 197, 94));
-        btnDuyet.setForeground(Color.WHITE);
-        btnDuyet.setFocusPainted(false);
-        btnDuyet.setBorderPainted(false);
-        btnDuyet.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnDuyet.setPreferredSize(new Dimension(120, 38));
-        btnDuyet.addActionListener(e -> handleApprove());
+    // Dùng HTML để hiển thị icon
+    JButton btnDuyet = new JButton("<html><font size='+1'>✅</font> Duyệt</html>");
+    btnDuyet.setFont(new Font("Segoe UI", Font.BOLD, 13));
+    btnDuyet.setBackground(new Color(34, 197, 94));
+    btnDuyet.setForeground(Color.WHITE);
+    btnDuyet.setFocusPainted(false);
+    btnDuyet.setBorderPainted(false);
+    btnDuyet.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    btnDuyet.setPreferredSize(new Dimension(110, 40));
+    btnDuyet.addActionListener(e -> handleApprove());
 
-        JButton btnTuChoi = new JButton("✗  Từ chối");
-        btnTuChoi.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnTuChoi.setBackground(new Color(239, 68, 68));
-        btnTuChoi.setForeground(Color.WHITE);
-        btnTuChoi.setFocusPainted(false);
-        btnTuChoi.setBorderPainted(false);
-        btnTuChoi.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnTuChoi.setPreferredSize(new Dimension(120, 38));
-        btnTuChoi.addActionListener(e -> handleReject());
+    JButton btnTuChoi = new JButton("<html><font size='+1'>❌</font> Từ chối</html>");
+    btnTuChoi.setFont(new Font("Segoe UI", Font.BOLD, 13));
+    btnTuChoi.setBackground(new Color(239, 68, 68));
+    btnTuChoi.setForeground(Color.WHITE);
+    btnTuChoi.setFocusPainted(false);
+    btnTuChoi.setBorderPainted(false);
+    btnTuChoi.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    btnTuChoi.setPreferredSize(new Dimension(110, 40));
+    btnTuChoi.addActionListener(e -> handleReject());
 
-        btnPanel.add(btnDuyet);
-        btnPanel.add(btnTuChoi);
+    btnPanel.add(btnDuyet);
+    btnPanel.add(btnTuChoi);
 
-        return btnPanel;
-    }
-
+    return btnPanel;
+}
     private JPanel createCenterPanel() {
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));

@@ -31,6 +31,7 @@ public class EvaluationDetailPanel extends JPanel {
     /** Quyết định → Loại quyết định: Thưởng→Tăng lương, Kỷ luật→Trừ lương, Không có→Giữ nguyên */
     private static final String[] QUYET_DINH_OPTIONS = new String[] { "Không có", "Thưởng", "Kỷ luật" };
     
+    private JLabel lblTongDiem;
     private List<ScoreRadioPanel> scorePanels;
     private Runnable onBackListener;
     private SaveListener onSaveListener;
@@ -114,7 +115,16 @@ public class EvaluationDetailPanel extends JPanel {
             TitledBorder.TOP,
             new Font("Segoe UI", Font.BOLD, 14)
         ));
+        // Footer tổng điểm
+        JPanel tongDiemPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+        tongDiemPanel.setOpaque(false);
+        lblTongDiem = new JLabel("Tổng điểm: 0 / 0");
+        lblTongDiem.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblTongDiem.setForeground(new Color(99, 102, 241));
+        tongDiemPanel.add(lblTongDiem);
+
         tieuChiWrapPanel.add(criteriaPanel, BorderLayout.CENTER);
+        tieuChiWrapPanel.add(tongDiemPanel, BorderLayout.SOUTH);
         
         // === NHẬN XÉT PANEL (Không scroll riêng - vừa vặn) ===
         JPanel nhanXetPanel = new JPanel(new BorderLayout(5, 5));
@@ -344,6 +354,9 @@ public class EvaluationDetailPanel extends JPanel {
             btnReset.setEnabled(false);  // Chưa lưu thì không cần reset
         }
         
+        // Cập nhật tổng điểm ngay khi load
+        updateDecisionByScore();
+
         criteriaPanel.revalidate();
         criteriaPanel.repaint();
         this.revalidate();
@@ -446,6 +459,21 @@ public class EvaluationDetailPanel extends JPanel {
         int maxRaw = scorePanels.size() * 10; // mỗi tiêu chí 0-10
         if (maxRaw == 0) {
             return;
+        }
+
+        // Cập nhật nhãn tổng điểm
+        if (lblTongDiem != null) {
+            int percent = (int) (totalRaw * 100.0 / maxRaw);
+            lblTongDiem.setText("Tổng điểm: " + totalRaw + " / " + maxRaw + "  (" + percent + "%)");
+            if (percent >= 75) {
+                lblTongDiem.setForeground(new Color(22, 163, 74));   // xanh lá
+            } else if (percent >= 65) {
+                lblTongDiem.setForeground(new Color(99, 102, 241));  // tím
+            } else if (percent > 0) {
+                lblTongDiem.setForeground(new Color(239, 68, 68));   // đỏ
+            } else {
+                lblTongDiem.setForeground(new Color(150, 150, 150)); // xám
+            }
         }
         
         int percent = (int) (totalRaw * 100.0 / maxRaw); // lấy phần nguyên để khớp mốc
