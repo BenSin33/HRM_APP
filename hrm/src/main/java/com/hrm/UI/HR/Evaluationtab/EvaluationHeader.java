@@ -94,7 +94,7 @@ public class EvaluationHeader extends JPanel {
                 SwingUtilities.getWindowAncestor(this),
                 "Tạo đợt đánh giá mới",
                 Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setSize(420, 360);
+        dialog.setSize(420, 300);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
 
@@ -135,15 +135,6 @@ public class EvaluationHeader extends JPanel {
         namSpinner.putClientProperty("FlatLaf.style", "arc:8; borderColor:#E5E7EB");
         form.add(namSpinner, gbc);
 
-        // Người đánh giá
-        gbc.gridy = 6;
-        form.add(new JLabel("Người đánh giá:"), gbc);
-        gbc.gridy = 7;
-        JTextField nguoiDGField = new JTextField();
-        nguoiDGField.setPreferredSize(new Dimension(350, 34));
-        nguoiDGField.putClientProperty("FlatLaf.style", "arc:8; borderColor:#E5E7EB");
-        form.add(nguoiDGField, gbc);
-
         // ── Button panel ─────────────────────────────────────────
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 16));
         btnPanel.setBackground(Color.WHITE);
@@ -164,18 +155,11 @@ public class EvaluationHeader extends JPanel {
             String tenDot   = tenDotField.getText().trim();
             String kyKy     = (String) kyBox.getSelectedItem();
             int    nam      = (Integer) namSpinner.getValue();
-            String nguoiDG  = nguoiDGField.getText().trim();
 
             // Validate
             if (tenDot.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog,
                         "Vui lòng nhập tên đợt đánh giá!", "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (nguoiDG.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "Vui lòng nhập tên người đánh giá!", "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -186,7 +170,7 @@ public class EvaluationHeader extends JPanel {
             dto.setTenDot(tenDot);
             dto.setKyKy(kyKy);
             dto.setNam(nam);
-            dto.setNguoiDanhGia(nguoiDG);
+            dto.setNguoiDanhGia("");  // Để trống, sẽ lấy từ MANVDANHGIA khi lưu điểm
             dto.setTrangThai("Đang mở");
 
             boolean ok = dao.insertPeriod(dto);

@@ -19,6 +19,7 @@ import com.hrm.UI.HR.ContractTab.ContractManagement;
 import com.hrm.UI.HR.Department.DepartmentManagementPanel;
 import com.hrm.UI.HR.EmployeeTab.EmployeeManagementPanel;
 import com.hrm.UI.HR.Evaluationtab.EvaluationManagement;
+import com.hrm.UI.HR.HREvaluationtab.HREvaluationManagement;
 import com.hrm.UI.HR.Leavetab.LeaveManagement;
 import com.hrm.UI.HR.Overview.DashboardOverview;
 import com.hrm.UI.HR.CategoryTab.*;
@@ -77,6 +78,10 @@ public class HRDashboard extends JFrame {
         if (permissionService.canView(currentUser, "CN05")) {
             HRTabs.add(new SidebarTab("QUẢN LÝ ĐÁNH GIÁ", "EVALUATION_MANAGEMENT"));
         }
+        // HR Evaluation: Đánh giá nhân viên HR (Yêu cầu: Trưởng phòng hoặc Admin)
+        if (canAccessHREvaluation(currentUser)) {
+            HRTabs.add(new SidebarTab("ĐÁNH GIÁ NHÂN VIÊN HR", "HR_EVALUATION_MANAGEMENT"));
+        }
         // NOTE: Schedule maps to CN10 in DB - for HR staff to manage HR department schedule
         if (permissionService.canView(currentUser, "CN10")) {
             HRTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
@@ -120,6 +125,7 @@ public class HRDashboard extends JFrame {
         contentPanel.add(createDashboardPanel(new AttenDanceManagement()), "ATTENDANCE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new LeaveManagement()), "LEAVE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new EvaluationManagement()), "EVALUATION_MANAGEMENT");
+        contentPanel.add(createDashboardPanel(new HREvaluationManagement()), "HR_EVALUATION_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new SchedulePanel()), "SCHEDULE_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new MainPermissionPanel()), "PERMISSION_MANAGEMENT");
         contentPanel.add(createDashboardPanel(new AccountManagerPanel()), "ACCOUNT_MANAGEMENT");
@@ -147,6 +153,26 @@ public class HRDashboard extends JFrame {
         boolean isHeadOfDepartment = "CV01".equals(employeeDetails.getMachucvu());
 
         return isHRDepartment && isHeadOfDepartment;
+    }
+
+    /**
+     * Check nếu user có quyền truy cập chức năng đánh giá nhân viên HR
+     * Yêu cầu: Chức vụ Trưởng phòng (CV01) hoặc Role Admin
+     */
+    private boolean canAccessHREvaluation(UserDTO user) {
+        if (user == null) {
+            return false;
+        }
+        NhanVienDTO employeeDetails = nhanVienDAO.findById(user.getManv());
+        if (employeeDetails == null) {
+            return false;
+        }
+        // Kiểm tra chức vụ trưởng phòng (CV01)
+        boolean isHeadOfDepartment = "CV01".equals(employeeDetails.getMachucvu());
+        // Kiểm tra có role admin (R2)
+        boolean hasAdminRole = "R2".equals(user.getRoleId());
+        
+        return isHeadOfDepartment || hasAdminRole;
     }
 
     /**
