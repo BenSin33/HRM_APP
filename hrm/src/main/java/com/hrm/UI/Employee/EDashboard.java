@@ -47,30 +47,30 @@ public class EDashboard extends JFrame {
         List<SidebarTab> employeeTabs = new ArrayList<>();
         // NOTE: Dashboard/Profile map to CN01 (Quản lý nhân sự) in DB.
         if (permissionService.canView(currentUser, "CN01")) {
-            employeeTabs.add(new SidebarTab("TỔNG QUAN", "DASHBOARD"));
-            employeeTabs.add(new SidebarTab("HỒ SƠ CÁ NHÂN", "PROFILE"));
+            employeeTabs.add(new SidebarTab("TỔNG QUAN", "DASHBOARD", "/icons/home.svg"));
+            employeeTabs.add(new SidebarTab("HỒ SƠ CÁ NHÂN", "PROFILE", "/icons/user.svg"));
         }
         // NOTE: Attendance maps to CN03 in DB.
         if (permissionService.canView(currentUser, "CN03")) {
-            employeeTabs.add(new SidebarTab("CHẤM CÔNG", "ATTENDANCE"));
+            employeeTabs.add(new SidebarTab("CHẤM CÔNG", "ATTENDANCE", "/icons/clock.svg"));
         }
         // NOTE: Schedule maps to CN10 in DB.
         if (permissionService.canView(currentUser, "CN10")) {
-            employeeTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE"));
+            employeeTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE", "/icons/calendar.svg"));
         }
         // NOTE: Payroll maps to CN02 in DB.
         if (permissionService.canView(currentUser, "CN02")) {
-            employeeTabs.add(new SidebarTab("BẢNG LƯƠNG", "PAYROLL"));
+            employeeTabs.add(new SidebarTab("BẢNG LƯƠNG", "PAYROLL", "/icons/money.svg"));
         }
         // NOTE: Leave maps to CN04 in DB.
         if (permissionService.canView(currentUser, "CN04")) {
-            employeeTabs.add(new SidebarTab("NGHỈ PHÉP", "LEAVE"));
+            employeeTabs.add(new SidebarTab("NGHỈ PHÉP", "LEAVE", "/icons/calendar.svg"));
         }
         // NOTE: Evaluation maps to CN05 in DB.
         if (permissionService.canView(currentUser, "CN05")) {
-            employeeTabs.add(new SidebarTab("ĐÁNH GIÁ", "EVALUATION"));
+            employeeTabs.add(new SidebarTab("ĐÁNH GIÁ", "EVALUATION", "/icons/check.svg"));
         }
-        employeeTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
+        employeeTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT", "/icons/logout.svg"));
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, employeeTabs); // tạo sidebar
 

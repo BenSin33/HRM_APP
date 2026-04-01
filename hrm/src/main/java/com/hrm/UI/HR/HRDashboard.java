@@ -56,65 +56,70 @@ public class HRDashboard extends JFrame {
         List<SidebarTab> HRTabs = new ArrayList<>();
         // NOTE: Use base CNxx codes (stored in DB) to make permissions effective.
         if (permissionService.canView(currentUser, "CN01")) { // CN01: Quản lý nhân sự (dashboard entry point)
-            HRTabs.add(new SidebarTab("TỔNG QUAN", "DASHBOARD"));
+            HRTabs.add(new SidebarTab("TỔNG QUAN", "DASHBOARD", "/icons/home.svg"));
         }
         // NOTE: Employee management maps to CN01 in DB.
         if (permissionService.canView(currentUser, "CN01")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ NHÂN VIÊN", "EMPLOYEE_MANAGEMENT"));
+            HRTabs.add(new SidebarTab("QUẢN LÝ NHÂN VIÊN", "EMPLOYEE_MANAGEMENT", "/icons/users.svg"));
         }
         // NOTE: Department management maps to CN07 in DB.
         if (permissionService.canView(currentUser, "CN07")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ PHÒNG BAN", "DEPARTMENT_MANAGEMENT"));
-        }
-        // NOTE: Attendance maps to CN03 in DB.
-        if (permissionService.canView(currentUser, "CN03")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ CHẤM CÔNG", "ATTENDANCE_MANAGEMENT"));
-        }
-        // NOTE: Leave maps to CN04 in DB.
-        if (permissionService.canView(currentUser, "CN04")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ NGHỈ PHÉP", "LEAVE_MANAGEMENT"));
-        }
-        // NOTE: Evaluation maps to CN05 in DB.
-        if (permissionService.canView(currentUser, "CN05")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ ĐÁNH GIÁ", "EVALUATION_MANAGEMENT"));
-        }
-        // HR Evaluation: Đánh giá nhân viên HR (Yêu cầu: Trưởng phòng hoặc Admin)
-        if (canAccessHREvaluation(currentUser)) {
-            HRTabs.add(new SidebarTab("ĐÁNH GIÁ NHÂN VIÊN HR", "HR_EVALUATION_MANAGEMENT"));
-        }
-        // NOTE: Schedule maps to CN10 in DB - for HR staff to manage HR department schedule
-        if (permissionService.canView(currentUser, "CN10")) {
-            HRTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
-        }
-        // NOTE: Payroll maps to CN02 in DB.
-        if (permissionService.canView(currentUser, "CN02")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ LƯƠNG", "PAYROLL_MANAGEMENT"));
-        }
-        
-        // Special check for Permission Management - Only HR Head (PB01 + CV01) can access
-        if (isHRAdmin(currentUser)) {
-            HRTabs.add(new SidebarTab("PHÂN QUYỀN", "PERMISSION_MANAGEMENT"));
+            HRTabs.add(new SidebarTab("PHÒNG BAN", "DEPARTMENT_MANAGEMENT", "/icons/building.svg"));
         }
 
         // NOTE: Contract maps to CN06 in DB.
         if (permissionService.canView(currentUser, "CN06")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ HỢP ĐỒNG", "CONTRACT_MANAGEMENT"));
+            HRTabs.add(new SidebarTab("HỢP ĐỒNG", "CONTRACT_MANAGEMENT", "/icons/contract.svg"));
         }
+
+        // NOTE: Attendance maps to CN03 in DB.
+        if (permissionService.canView(currentUser, "CN03")) {
+            HRTabs.add(new SidebarTab("CHẤM CÔNG", "ATTENDANCE_MANAGEMENT", "/icons/clock.svg"));
+        }
+
+        // NOTE: Payroll maps to CN02 in DB.
+        if (permissionService.canView(currentUser, "CN02")) {
+            HRTabs.add(new SidebarTab("BẢNG LƯƠNG", "PAYROLL_MANAGEMENT", "/icons/money.svg"));
+        }
+
+        // NOTE: Leave maps to CN04 in DB.
+        if (permissionService.canView(currentUser, "CN04")) {
+            HRTabs.add(new SidebarTab("NGHỈ PHÉP", "LEAVE_MANAGEMENT", "/icons/calendar.svg"));
+        }
+
+        // NOTE: Evaluation maps to CN05 in DB.
+        if (permissionService.canView(currentUser, "CN05")) {
+            HRTabs.add(new SidebarTab("ĐÁNH GIÁ", "EVALUATION_MANAGEMENT", "/icons/check.svg"));
+        }
+        // HR Evaluation: Đánh giá nhân viên HR (Yêu cầu: Trưởng phòng hoặc Admin)
+        if (canAccessHREvaluation(currentUser)) {
+            HRTabs.add(new SidebarTab("ĐÁNH GIÁ NHÂN VIÊN HR", "HR_EVALUATION_MANAGEMENT", "/icons/check.svg"));
+        }
+        // NOTE: Schedule maps to CN10 in DB - for HR staff to manage HR department schedule
+        if (permissionService.canView(currentUser, "CN10")) {
+            HRTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT", "/icons/calendar.svg"));
+        }
+        
+        // Special check for Permission Management - Only HR Head (PB01 + CV01) can access
+        if (isHRAdmin(currentUser)) {
+            HRTabs.add(new SidebarTab("PHÂN QUYỀN", "PERMISSION_MANAGEMENT", "/icons/shield.svg"));
+        }
+
         // NOTE: Account management not in DB list; map to CN01 (HR core) for now.
         if (permissionService.canView(currentUser, "CN01")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ TÀI KHOẢN", "ACCOUNT_MANAGEMENT"));
+            HRTabs.add(new SidebarTab("TÀI KHOẢN", "ACCOUNT_MANAGEMENT", "/icons/user.svg"));
         }
         // NOTE: Category management maps to CN09 in DB.
         if (permissionService.canView(currentUser, "CN09")) {
-            HRTabs.add(new SidebarTab("QUẢN LÝ DANH MỤC", "CATEGORY_MANAGEMENT"));
+            HRTabs.add(new SidebarTab("CÀI ĐẶT", "CATEGORY_MANAGEMENT", "/icons/settings.svg"));
         }
 
         // Special check for HR Staff Attendance - HR admin (R1) but NOT trưởng phòng (CV != CV01)
         if (isHRStaff(currentUser)) {
-            HRTabs.add(new SidebarTab("CHẤM CÔNG NHÂN VIÊN", "HR_STAFF_ATTENDANCE"));
+            HRTabs.add(new SidebarTab("CHẤM CÔNG NHÂN VIÊN", "HR_STAFF_ATTENDANCE", "/icons/clock.svg"));
         }
 
-        HRTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
+        HRTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT", "/icons/logout.svg"));
         // register dashboard/overview panel first so the default tab can display
         contentPanel.add(new DashboardOverview(), "DASHBOARD");
 
