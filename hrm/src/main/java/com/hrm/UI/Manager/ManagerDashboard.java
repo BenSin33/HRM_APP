@@ -61,27 +61,27 @@ public class ManagerDashboard extends JFrame {
 
         // Cấu hình sidebar
         List<SidebarTab> ManagerTabs = new ArrayList<>();
-        // NOTE: Use base CNxx codes (stored in DB) to make permissions effective.
-        if (permissionService.canView(currentUser, "CN01")) { // CN01: Quản lý nhân sự (dashboard entry point)
-            ManagerTabs.add(new SidebarTab("TỔNG QUAN", "MANAGER_DASHBOARD"));
+        // NOTE: Dashboard entry point maps to CN01 in DB.
+        if (permissionService.canView(currentUser, "CN01")) {
+            ManagerTabs.add(new SidebarTab("TỔNG QUAN", "MANAGER_DASHBOARD", "/icons/home.svg"));
         }
         // NOTE: Team management maps to CN01 in DB.
         if (permissionService.canView(currentUser, "CN01")) {
-            ManagerTabs.add(new SidebarTab("QUẢN LÝ ĐỘI NHÓM", "TEAM_MANAGEMENT"));
+            ManagerTabs.add(new SidebarTab("QUẢN LÝ ĐỘI NHÓM", "TEAM_MANAGEMENT", "/icons/users.svg"));
         }
         // NOTE: Schedule maps to CN10 in DB.
         if (permissionService.canView(currentUser, "CN10")) {
-            ManagerTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT"));
+            ManagerTabs.add(new SidebarTab("LỊCH LÀM VIỆC", "SCHEDULE_MANAGEMENT", "/icons/calendar.svg"));
         }
         // NOTE: Leave approval maps to CN04 in DB.
         if (permissionService.canView(currentUser, "CN04")) { // Assuming LEAVE_APPROVAL uses the same permission as LEAVE_MANAGEMENT
-            ManagerTabs.add(new SidebarTab("DUYỆT NGHỈ PHÉP", "LEAVE_APPROVAL"));
+            ManagerTabs.add(new SidebarTab("DUYỆT NGHỈ PHÉP", "LEAVE_APPROVAL", "/icons/calendar.svg"));
         }
         // NOTE: Evaluation maps to CN05 in DB.
         if (permissionService.canView(currentUser, "CN05")) { // Assuming PERFORMANCE_EVALUATION uses the same permission
-            ManagerTabs.add(new SidebarTab("ĐÁNH GIÁ HIỆU SUẤT", "PERFORMANCE_EVALUATION"));
+            ManagerTabs.add(new SidebarTab("ĐÁNH GIÁ HIỆU SUẤT", "PERFORMANCE_EVALUATION", "/icons/check.svg"));
         }
-        ManagerTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT"));
+        ManagerTabs.add(new SidebarTab("ĐĂNG XUẤT", "LOGOUT", "/icons/logout.svg"));
 
         Sidebar sidebar = new Sidebar(contentPanel, cardLayout, ManagerTabs);
 

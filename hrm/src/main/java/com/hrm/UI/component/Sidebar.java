@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.*;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.hrm.UI.LoginUI;
 import com.hrm.utils.*;
 
@@ -129,7 +130,8 @@ public class Sidebar extends JPanel {
             URL url = getClass().getResource("/icons/HRM_Logo.png");
             ImageIcon logoIcon = (url != null) ? new ImageIcon(url) : new ImageIcon();
             JLabel logo = new JLabel(IconResize.resizeIcon(logoIcon, 120, 120));
-            logo.setAlignmentX(CENTER_ALIGNMENT);
+            logo.setAlignmentX(LEFT_ALIGNMENT);
+            logo.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
             menuContainer.add(logo);
             menuContainer.add(Box.createRigidArea(new Dimension(0, 20)));
         } catch (Exception e) {
@@ -141,15 +143,16 @@ public class Sidebar extends JPanel {
             SidebarTab tab = tabsLists.get(i);
             JLabel menuLabel = createMenuLabel(tab);
             menuContainer.add(menuLabel);
+            menuContainer.add(Box.createRigidArea(new Dimension(0, 5)));
             tabLabelMap.put(tab.getCardName(), menuLabel);
             
             // Thêm đường ngăn cách giữa các tab (trừ tab cuối)
-            if (i < tabsLists.size() - 1) {
-                JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
-                separator.setMaximumSize(new Dimension(EXPANDED_WIDTH - 20, 1));
-                separator.setForeground(Color.WHITE);
-                menuContainer.add(separator);
-            }
+            // if (i < tabsLists.size() - 1) {
+            //     JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
+            //     separator.setMaximumSize(new Dimension(EXPANDED_WIDTH - 20, 1));
+            //     separator.setForeground(Color.WHITE);
+            //     menuContainer.add(separator);
+            // }
             
             // Lưu tab đầu tiên (không phải LOGOUT)
             if (i == 0 && firstMenuTab == null && !"LOGOUT".equals(tab.getCardName())) {
@@ -160,15 +163,35 @@ public class Sidebar extends JPanel {
 
     private JLabel createMenuLabel(SidebarTab tab) {
         JLabel label = new JLabel(tab.getTitle());
-        label.setAlignmentX(CENTER_ALIGNMENT);
-        label.setMaximumSize(new Dimension(EXPANDED_WIDTH - 10, 45));
-        label.setPreferredSize(new Dimension(EXPANDED_WIDTH - 10, 45));
+        
+        // Thêm icon nếu có
+        if (tab.getIconPath() != null) {
+            try {
+                if (tab.getIconPath().endsWith(".svg")) {
+                    FlatSVGIcon icon = new FlatSVGIcon(getClass().getResource(tab.getIconPath()));
+                    label.setIcon(icon.derive(24, 24));
+                } else {
+                    URL url = getClass().getResource(tab.getIconPath());
+                    if (url != null) {
+                        ImageIcon icon = new ImageIcon(url);
+                        label.setIcon(IconResize.resizeIcon(icon, 24, 24));
+                    }
+                }
+                label.setIconTextGap(15);
+            } catch (Exception e) {
+                System.err.println("Lỗi load icon: " + tab.getIconPath());
+            }
+        }
+
+        label.setAlignmentX(LEFT_ALIGNMENT);
+        label.setMaximumSize(new Dimension(EXPANDED_WIDTH - 20, 45));
+        label.setPreferredSize(new Dimension(EXPANDED_WIDTH - 20, 45));
         label.setOpaque(false);
         label.setForeground(Color.WHITE);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        label.setHorizontalAlignment(SwingConstants.LEFT);
         label.setVerticalAlignment(SwingConstants.CENTER);
-        label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        label.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 10));
         label.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         label.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -201,11 +224,13 @@ public class Sidebar extends JPanel {
                     // Clear previous hovered tab if exists
                     if (currentHoveredTab != null && currentHoveredTab != currentSelectedTab) {
                         currentHoveredTab.setOpaque(false);
+                        currentHoveredTab.setBackground(null);
                         currentHoveredTab.repaint();
                     }
                     // Apply hover effect to current tab
                     label.setOpaque(true);
-                    label.setBackground(new Color(180, 100, 255));
+                    label.setBackground(new Color(115, 0, 230)); // Slightly lighter than sidebar
+                    label.putClientProperty("FlatLaf.style", "arc: 15");
                     label.repaint();
                     currentHoveredTab = label;
                 }
@@ -231,13 +256,15 @@ public class Sidebar extends JPanel {
             if (c instanceof JLabel && c != label) {
                 JLabel otherLabel = (JLabel) c;
                 otherLabel.setOpaque(false);
+                otherLabel.setBackground(null);
                 otherLabel.repaint();
             }
         }
         currentSelectedTab = label;
         currentHoveredTab = null;  // Clear hovered tab when selecting a new tab
         label.setOpaque(true);
-        label.setBackground(new Color(180, 100, 255));
+        label.setBackground(new Color(128, 0, 255)); // Lighter purple for selected tab
+        label.putClientProperty("FlatLaf.style", "arc: 15"); // Rounded corners
         label.repaint();
     }
 
