@@ -1,13 +1,34 @@
 package com.hrm.UI.component;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.swing.*;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+
 import com.hrm.UI.LoginUI;
-import com.hrm.utils.*;
+import com.hrm.utils.IconResize;
+import com.hrm.utils.SidebarIcon;
 
 public class Sidebar extends JPanel {
 
@@ -16,18 +37,18 @@ public class Sidebar extends JPanel {
     private Color sidebarColor = new Color(102, 0, 204);
 
     private boolean isCollapsed = false;
-    private final int EXPANDED_WIDTH = 250;
+    private final int EXPANDED_WIDTH = 280;
     private final int COLLAPSED_WIDTH = 70;
     private final int ANIMATION_DURATION = 300;
     
     private JPanel menuContainer;
     private JPanel sidebarPanel;
     private JScrollPane scrollPane;
-    private JLabel currentSelectedTab = null;
-    private JLabel currentHoveredTab = null;
-    private JLabel firstMenuTab = null;
+    private JPanel currentSelectedTab = null;
+    private JPanel currentHoveredTab = null;
+    private JPanel firstMenuTab = null;
     private List<SidebarTab> tabsList;
-    private Map<String, JLabel> tabLabelMap = new HashMap<>();
+    private Map<String, JPanel> tabLabelMap = new HashMap<>();
 
     public Sidebar(JPanel contentPanel, CardLayout cardLayout, List<SidebarTab> tabsList) {
         this.contentPanel = contentPanel;
@@ -38,13 +59,16 @@ public class Sidebar extends JPanel {
         this.setLayout(new BorderLayout());
 
         // 1. Nút điều khiển thu phóng
-        JButton toggleBtn = new JButton("<<");
+        JButton toggleBtn = new JButton("\u25C0");
         toggleBtn.setBackground(new Color(128, 0, 255));
         toggleBtn.setForeground(Color.WHITE);
         toggleBtn.setFocusPainted(false);
         toggleBtn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         toggleBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        toggleBtn.addActionListener(e -> toggleSidebarSmooth(toggleBtn));
+        toggleBtn.addActionListener(e -> {
+            toggleSidebarSmooth(toggleBtn);
+            toggleBtn.setText(isCollapsed ? "\u25C0" : "\u25B6");
+        });
         this.add(toggleBtn, BorderLayout.NORTH);
 
         // 2. Sidebar panel chứa content
@@ -77,7 +101,7 @@ public class Sidebar extends JPanel {
     private void toggleSidebarSmooth(JButton btn) {
         isCollapsed = !isCollapsed;
         int targetWidth = isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
-        btn.setText(isCollapsed ? ">>" : "<<");
+        btn.setText(isCollapsed ? "\u25B6" : "\u25C0");
         
         // Animate width change
         new Thread(() -> {
@@ -114,11 +138,20 @@ public class Sidebar extends JPanel {
         
         // Update button visibility
         for (Component c : menuContainer.getComponents()) {
-            if (c instanceof JLabel && !(c instanceof JLabel)) {
-                JLabel menuLabel = (JLabel) c;
-                menuLabel.setToolTipText(isCollapsed ? menuLabel.getText() : null);
+            if (c instanceof JPanel) {
+                JPanel menuPanel = (JPanel) c;
+                menuPanel.setToolTipText(isCollapsed ? getTabTitleFromPanel(menuPanel) : null);
             }
         }
+    }
+
+    private String getTabTitleFromPanel(JPanel panel) {
+        for (Component c : panel.getComponents()) {
+            if (c instanceof JLabel && c.getFont() != null && c.getFont().isBold()) {
+                return ((JLabel) c).getText();
+            }
+        }
+        return null;
     }
 
     private void renderMenu(List<SidebarTab> tabsLists) {
@@ -139,9 +172,9 @@ public class Sidebar extends JPanel {
         // Render các nút
         for (int i = 0; i < tabsLists.size(); i++) {
             SidebarTab tab = tabsLists.get(i);
-            JLabel menuLabel = createMenuLabel(tab);
-            menuContainer.add(menuLabel);
-            tabLabelMap.put(tab.getCardName(), menuLabel);
+            JPanel menuPanel = createMenuLabel(tab);
+            menuContainer.add(menuPanel);
+            tabLabelMap.put(tab.getCardName(), menuPanel);
             
             // Thêm đường ngăn cách giữa các tab (trừ tab cuối)
             if (i < tabsLists.size() - 1) {
@@ -153,25 +186,37 @@ public class Sidebar extends JPanel {
             
             // Lưu tab đầu tiên (không phải LOGOUT)
             if (i == 0 && firstMenuTab == null && !"LOGOUT".equals(tab.getCardName())) {
-                firstMenuTab = menuLabel;
+                firstMenuTab = menuPanel;
             }
         }
     }
 
-    private JLabel createMenuLabel(SidebarTab tab) {
-        JLabel label = new JLabel(tab.getTitle());
-        label.setAlignmentX(CENTER_ALIGNMENT);
-        label.setMaximumSize(new Dimension(EXPANDED_WIDTH - 10, 45));
-        label.setPreferredSize(new Dimension(EXPANDED_WIDTH - 10, 45));
-        label.setOpaque(false);
-        label.setForeground(Color.WHITE);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setHorizontalAlignment(SwingConstants.CENTER);
-        label.setVerticalAlignment(SwingConstants.CENTER);
-        label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private JPanel createMenuLabel(SidebarTab tab) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        panel.setOpaque(false);
+        panel.setMaximumSize(new Dimension(EXPANDED_WIDTH - 10, 40));
+        panel.setPreferredSize(new Dimension(EXPANDED_WIDTH - 10, 40));
+        panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
 
-        label.addMouseListener(new java.awt.event.MouseAdapter() {
+        ImageIcon icon = SidebarIcon.getIcon(tab.getCardName());
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setPreferredSize(new Dimension(32, 32));
+        iconLabel.setMaximumSize(new Dimension(32, 32));
+
+        JLabel textLabel = new JLabel(tab.getTitle());
+        textLabel.setForeground(Color.WHITE);
+        textLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        textLabel.setPreferredSize(new Dimension(200, 40));
+        textLabel.setMaximumSize(new Dimension(200, 40));
+
+        panel.add(iconLabel);
+        panel.add(Box.createHorizontalStrut(12));
+        panel.add(textLabel);
+        panel.add(Box.createHorizontalGlue());
+
+        panel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 if ("LOGOUT".equals(tab.getCardName())) {
@@ -191,54 +236,51 @@ public class Sidebar extends JPanel {
                     }
                 } else {
                     cardLayout.show(contentPanel, tab.getCardName());
-                    selectTab(label);
+                    selectTab(panel);
                 }
             }
 
             @Override
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (label != currentSelectedTab) {
-                    // Clear previous hovered tab if exists
+                if (panel != currentSelectedTab) {
                     if (currentHoveredTab != null && currentHoveredTab != currentSelectedTab) {
                         currentHoveredTab.setOpaque(false);
                         currentHoveredTab.repaint();
                     }
-                    // Apply hover effect to current tab
-                    label.setOpaque(true);
-                    label.setBackground(new Color(180, 100, 255));
-                    label.repaint();
-                    currentHoveredTab = label;
+                    panel.setOpaque(true);
+                    panel.setBackground(new Color(180, 100, 255));
+                    panel.repaint();
+                    currentHoveredTab = panel;
                 }
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (label != currentSelectedTab && label == currentHoveredTab) {
-                    label.setOpaque(false);
-                    label.setBackground(sidebarColor);
-                    label.repaint();
+                if (panel != currentSelectedTab && panel == currentHoveredTab) {
+                    panel.setOpaque(false);
+                    panel.setBackground(sidebarColor);
+                    panel.repaint();
                     currentHoveredTab = null;
                 }
             }
         });
 
-        return label;
+        return panel;
     }
 
-    private void selectTab(JLabel label) {
-        // Reset all other tabs to initial state (no background)
+    private void selectTab(JPanel panel) {
         for (Component c : menuContainer.getComponents()) {
-            if (c instanceof JLabel && c != label) {
-                JLabel otherLabel = (JLabel) c;
-                otherLabel.setOpaque(false);
-                otherLabel.repaint();
+            if (c instanceof JPanel && c != panel) {
+                JPanel otherPanel = (JPanel) c;
+                otherPanel.setOpaque(false);
+                otherPanel.repaint();
             }
         }
-        currentSelectedTab = label;
-        currentHoveredTab = null;  // Clear hovered tab when selecting a new tab
-        label.setOpaque(true);
-        label.setBackground(new Color(180, 100, 255));
-        label.repaint();
+        currentSelectedTab = panel;
+        currentHoveredTab = null;
+        panel.setOpaque(true);
+        panel.setBackground(new Color(180, 100, 255));
+        panel.repaint();
     }
 
     private void selectFirstTab() {
@@ -249,10 +291,10 @@ public class Sidebar extends JPanel {
     }
 
     public void selectTabByCardName(String cardName) {
-        JLabel label = tabLabelMap.get(cardName);
-        if (label != null) {
+        JPanel panel = tabLabelMap.get(cardName);
+        if (panel != null) {
             cardLayout.show(contentPanel, cardName);
-            selectTab(label);
+            selectTab(panel);
         }
     }
 }

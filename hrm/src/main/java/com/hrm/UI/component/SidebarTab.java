@@ -6,10 +6,18 @@ public class SidebarTab {
 
     private String title;
     private String cardName;
+    private String iconPath;
 
     public SidebarTab(String title, String cardName) {
         this.title = title;
         this.cardName = cardName;
+        this.iconPath = "/icons/sidebar/" + cardName.toLowerCase() + ".png";
+    }
+
+    public SidebarTab(String title, String cardName, String iconPath) {
+        this.title = title;
+        this.cardName = cardName;
+        this.iconPath = iconPath;
     }
 
     public String getTitle() {
@@ -19,5 +27,8 @@ public class SidebarTab {
     public String getCardName() {
         return cardName;
     }
-    
+
+    public String getIconPath() {
+        return iconPath;
+    }
 }
