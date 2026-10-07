@@ -277,9 +277,7 @@ public class EvaluationDetailPanel extends JPanel {
                        String loaiQD,
                        BigDecimal tiLeThayDoi,
                        boolean locked) {
-        System.out.println("🔍 DEBUG: EvaluationDetailPanel.setData() được gọi!");
-        System.out.println("   maNV=" + maNV + ", quyetDinh=" + quyetDinh + ", loaiQD=" + loaiQD + ", tiLe=" + tiLeThayDoi);
-        
+       
         this.currentMaNV = maNV;
         this.currentMaDot = maDot;
         this.currentHoTen = hoTen;
